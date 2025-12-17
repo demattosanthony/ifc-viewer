@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { useViewer } from "../context/viewer-context";
+import { useViewer } from "../context";
 import * as OBF from "@thatopen/components-front";
 import * as OBC from "@thatopen/components";
-import type { ElementSelectedEvent, ElementHoveredEvent } from "../types";
+import type { ElementSelectedEvent } from "../../types";
 
 export interface UseViewerEventsOptions {
   onElementSelected?: (event: ElementSelectedEvent) => void;

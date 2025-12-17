@@ -1,5 +1,5 @@
-import { useViewer } from "../context/viewer-context";
-import type { ViewerProps } from "../types";
+import { useViewer } from "./context";
+import type { ViewerProps } from "./types";
 import { useEffect, useRef, type CSSProperties } from "react";
 
 const defaultStyles: CSSProperties = {

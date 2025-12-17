@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 export function ViewerToolBar() {
-  const { loadModel, isLoading, isInitialized, unloadAllModels, getElement } =
-    useViewer();
+  const { loadModel, isInitialized, unloadAllModels, getElement } = useViewer();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -25,11 +24,11 @@ export function ViewerToolBar() {
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    if (isLoading) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
+    setProgress(0);
     await unloadAllModels();
     const buffer = await file.arrayBuffer();
     await loadModel(buffer, file.name, (progress) => {
@@ -57,7 +56,7 @@ export function ViewerToolBar() {
     if (isInitialized) {
       loadSampleModel();
     }
-  }, [isInitialized, loadModel]);
+  }, [isInitialized]);
 
   if (uploading) {
     return (
@@ -76,7 +75,7 @@ export function ViewerToolBar() {
         <Button
           onClick={() => document.getElementById("file-upload")?.click()}
           variant={"default"}
-          disabled={isLoading}
+          disabled={uploading}
         >
           Upload your own ifc model
         </Button>

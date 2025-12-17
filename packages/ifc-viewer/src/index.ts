@@ -1,18 +1,21 @@
-// Components
-export { ViewerProvider } from "./context/viewer-context";
-export { Viewer } from "./components/viewer";
+// React components and hooks
+export { Viewer } from "./react/viewer";
+export { ViewerProvider, useViewer } from "./react/context";
+export { useViewerEvents } from "./react/hooks";
 
-// Hooks
-export { useViewer } from "./context/viewer-context";
-export { useViewerEvents } from "./hooks";
-
-// Types
+// Types - re-export from react/types which includes shared types
 export type {
-  ViewerProps,
-  ViewerConfig,
-  ViewerContextValue,
-  ViewerState,
-  ViewerActions,
-  ViewerProviderProps,
+  // Shared types
+  LoadedModel,
   ElementInfo,
-} from "./types";
+  HighlighterConfig,
+  HovererConfig,
+  ViewerEventHandlers,
+  ElementSelectedEvent,
+  ElementHoveredEvent,
+  // React-specific types
+  ViewerConfig,
+  ViewerProps,
+  ViewerState,
+  ViewerContextValue,
+} from "./react/types";
