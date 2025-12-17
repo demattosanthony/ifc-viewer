@@ -1,0 +1,11 @@
+{
+  "name": "ifc-viewer-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/stats.js": "^0.17.4"
+  }
+}
