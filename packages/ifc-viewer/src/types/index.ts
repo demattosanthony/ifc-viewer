@@ -45,8 +45,8 @@ export interface HovererConfig {
   opacity?: number;
   transparent?: boolean;
   depthTest?: boolean;
-  animation?: boolean;
-  duration?: number;
+  /** Throttle in milliseconds for hover updates (default: 16ms ~60fps). Set to 0 for no throttle. */
+  throttleMs?: number;
 }
 
 // ============================================================================

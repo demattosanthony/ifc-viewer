@@ -12,6 +12,7 @@ import {
   setupFeatures,
   setupHighlighter,
   setupHoverer,
+  InstantHoverer,
 } from "../core/scene";
 import { ModelManager } from "../core/models/manager";
 import type {
@@ -51,6 +52,7 @@ export const ViewerProvider = ({
   const highlighterRef = useRef<ReturnType<typeof setupHighlighter> | null>(
     null
   );
+  const hovererRef = useRef<InstantHoverer | null>(null);
   const cameraManagerRef = useRef<CameraManager | null>(null);
   const planViewManagerRef = useRef<PlanViewManager | null>(null);
 
@@ -124,7 +126,7 @@ export const ViewerProvider = ({
         }
 
         if (config?.hoverer !== false) {
-          setupHoverer(
+          hovererRef.current = setupHoverer(
             scene.components,
             scene.world,
             typeof config?.hoverer === "object" ? config.hoverer : {}
@@ -178,6 +180,7 @@ export const ViewerProvider = ({
 
   const dispose = useCallback(() => {
     highlighterRef.current?.dispose();
+    hovererRef.current?.dispose();
     featuresRef.current?.dispose();
     planViewManagerRef.current?.dispose();
     modelManagerRef.current?.dispose();
@@ -191,6 +194,7 @@ export const ViewerProvider = ({
     modelManagerRef.current = null;
     featuresRef.current = null;
     highlighterRef.current = null;
+    hovererRef.current = null;
     cameraManagerRef.current = null;
     planViewManagerRef.current = null;
 
