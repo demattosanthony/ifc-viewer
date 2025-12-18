@@ -31,7 +31,7 @@ export interface FeaturesConfig {
 
 /** Interaction configuration (hover + selection) */
 export interface InteractionConfig {
-  /** Hover highlight color (default: 0xffffff - white) */
+  /** Hover highlight color (default: 0x0b99ff - blue) */
   hoverColor?: number;
   /** Hover highlight opacity (default: 0.4) */
   hoverOpacity?: number;
