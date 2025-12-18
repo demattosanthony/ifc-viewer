@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useViewer, useViewerEvents, type CameraMode } from "ifc-viewer";
+import { useViewer, type CameraMode } from "ifc-viewer";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -215,7 +215,6 @@ function PlanViewSelector({
 
   const handleSelect = (planId: string) => {
     onPlanSelect(planId);
-    setOpen(false);
   };
 
   return (
@@ -229,12 +228,7 @@ function PlanViewSelector({
           <LayoutDashboard className="size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-44 p-1"
-        align="center"
-        side="top"
-        sideOffset={8}
-      >
+      <PopoverContent className="p-1" align="center" side="top" sideOffset={8}>
         <div className="flex flex-col">
           {plans.map((plan) => (
             <Button

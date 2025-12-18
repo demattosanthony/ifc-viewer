@@ -8,11 +8,12 @@ export type {
   // Shared types
   LoadedModel,
   ElementInfo,
-  HighlighterConfig,
-  HovererConfig,
+  InteractionConfig,
   ViewerEventHandlers,
   ElementSelectedEvent,
   ElementHoveredEvent,
+  MousePosition,
+  Point3D,
   // React-specific types
   ViewerConfig,
   ViewerProps,

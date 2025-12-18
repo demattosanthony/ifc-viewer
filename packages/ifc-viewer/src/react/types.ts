@@ -2,26 +2,29 @@ import * as OBC from "@thatopen/components";
 import type {
   LoadedModel,
   ElementData,
-  HighlighterConfig,
-  HovererConfig,
+  InteractionConfig,
   ViewerEventHandlers,
   ElementSelectedEvent,
   ElementHoveredEvent,
+  MousePosition,
+  Point3D,
   CameraMode,
   CameraProjection,
   FloorPlan,
 } from "../types";
 import type { CameraCursor } from "../core/camera/manager";
+import type { InteractionManager } from "../core/scene/interactions";
 
 // Re-export shared types for convenience
 export type {
   LoadedModel,
   ElementData,
-  HighlighterConfig,
-  HovererConfig,
+  InteractionConfig,
   ViewerEventHandlers,
   ElementSelectedEvent,
   ElementHoveredEvent,
+  MousePosition,
+  Point3D,
 };
 
 // Alias for backward compatibility
@@ -75,6 +78,7 @@ export interface ViewerActions {
 export interface ViewerContextValue extends ViewerState, ViewerActions {
   components: OBC.Components | null;
   fragmentsManager: OBC.FragmentsManager | null;
+  interactionManager: InteractionManager | null;
   camera: CameraControls | null;
   planViews: PlanViewControls | null;
 }
@@ -90,8 +94,8 @@ export interface ViewerConfig {
   gridEnabled?: boolean;
   statsEnabled?: boolean;
   showGizmo?: boolean;
-  highlighter?: HighlighterConfig | false;
-  hoverer?: HovererConfig | false;
+  /** Interaction configuration (hover + selection). Set to false to disable. */
+  interaction?: InteractionConfig | false;
   events?: ViewerEventHandlers;
 }
 
@@ -99,5 +103,5 @@ export interface ViewerProps {
   onReady?: () => void;
   onError?: (error: Error) => void;
   onElementSelected?: (event: ElementSelectedEvent) => void;
-  onElementHovered?: (event: ElementHoveredEvent) => void;
+  onElementHovered?: (event: ElementHoveredEvent | null) => void;
 }
