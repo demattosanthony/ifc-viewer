@@ -1,6 +1,10 @@
 {
   "name": "ifc-viewer-monorepo",
   "private": true,
+  "scripts": {
+    "dev:playground": "bun --filter=ifc-viewer/playground run dev",
+    "build:ifc-viewer": "bun --filter=ifc-viewer run build"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"

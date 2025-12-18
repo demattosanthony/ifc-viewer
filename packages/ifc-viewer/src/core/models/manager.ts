@@ -2,7 +2,6 @@ import * as OBC from "@thatopen/components";
 import * as WEBIFC from "web-ifc";
 import type { FragmentsModel, IfcImporter } from "@thatopen/fragments";
 import type {
-  LoadedModel,
   ElementData,
   ModelLoadedCallback,
   ModelUnloadedCallback,
@@ -107,9 +106,18 @@ export class ModelManager {
         fragments.init(this.workerUrl);
         this.fragmentsInitialized = true;
 
+        // Update fragments when camera stops moving
         this.world.camera?.controls?.addEventListener("rest", () =>
           fragments.core.update(true)
         );
+
+        // Update models to use new camera when Views switches cameras
+        this.world.onCameraChanged.add((camera) => {
+          for (const [, model] of fragments.list) {
+            model.useCamera(camera.three);
+          }
+          fragments.core.update(true);
+        });
       }
 
       fragments.list.onItemSet.add(handleModelLoaded);

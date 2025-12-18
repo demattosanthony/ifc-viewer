@@ -18,4 +18,14 @@ export type {
   ViewerProps,
   ViewerState,
   ViewerContextValue,
+  CameraControls,
+  PlanViewControls,
 } from "./react/types";
+
+// Camera types
+export type { CameraMode, CameraProjection } from "./types";
+export type { CameraCursor, CameraState } from "./core/camera/manager";
+
+// Plan view types
+export type { FloorPlan } from "./types";
+export type { PlanViewState } from "./core/plans/manager";

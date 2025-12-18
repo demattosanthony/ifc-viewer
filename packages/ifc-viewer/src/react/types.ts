@@ -7,7 +7,11 @@ import type {
   ViewerEventHandlers,
   ElementSelectedEvent,
   ElementHoveredEvent,
+  CameraMode,
+  CameraProjection,
+  FloorPlan,
 } from "../types";
+import type { CameraCursor } from "../core/camera/manager";
 
 // Re-export shared types for convenience
 export type {
@@ -33,6 +37,25 @@ export interface ViewerState {
   loadedModels: Map<string, LoadedModel>;
 }
 
+export interface CameraControls {
+  // Current state
+  mode: CameraMode;
+  projection: CameraProjection;
+  cursor: CameraCursor;
+
+  // Controls
+  setMode: (mode: CameraMode) => void;
+  setProjection: (projection: CameraProjection) => void;
+  fitToItems: () => void;
+}
+
+export interface PlanViewControls {
+  plans: FloorPlan[];
+  activePlanId: string | null;
+  open: (planId: string) => void;
+  close: () => void;
+}
+
 export interface ViewerActions {
   loadModel: (
     buffer: ArrayBuffer,
@@ -52,6 +75,8 @@ export interface ViewerActions {
 export interface ViewerContextValue extends ViewerState, ViewerActions {
   components: OBC.Components | null;
   fragmentsManager: OBC.FragmentsManager | null;
+  camera: CameraControls | null;
+  planViews: PlanViewControls | null;
 }
 
 export interface ViewerProviderProps {

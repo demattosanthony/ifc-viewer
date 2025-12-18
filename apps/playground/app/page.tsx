@@ -6,11 +6,11 @@ export default function Home() {
     <ViewerProvider
       workerUrl="/worker.mjs"
       config={{
-        gridEnabled: true,
+        gridEnabled: false,
         statsEnabled: true,
       }}
     >
-      <div className="h-screen w-screen dark:bg-secondary">
+      <div className="h-screen w-screen bg-secondary">
         <Viewer />
         <ViewerToolBar />
       </div>

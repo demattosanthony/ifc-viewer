@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -17,8 +18,16 @@ import type {
   ViewerProviderProps,
   ViewerState,
   ViewerContextValue,
+  CameraControls,
+  PlanViewControls,
 } from "./types";
 import * as OBC from "@thatopen/components";
+import {
+  CameraManager,
+  type CameraState,
+  PlanViewManager,
+  type PlanViewState,
+} from "../core";
 
 // Create context for the viewer
 const ViewerContext = createContext<ViewerContextValue | undefined>(undefined);
@@ -42,6 +51,8 @@ export const ViewerProvider = ({
   const highlighterRef = useRef<ReturnType<typeof setupHighlighter> | null>(
     null
   );
+  const cameraManagerRef = useRef<CameraManager | null>(null);
+  const planViewManagerRef = useRef<PlanViewManager | null>(null);
 
   // React state (UI updates)
   const [state, setState] = useState<ViewerState>({
@@ -49,6 +60,14 @@ export const ViewerProvider = ({
     error: null,
     loadedModels: new Map(),
   });
+
+  const [cameraState, setCameraState] = useState<CameraState | null>(null);
+  const [planViewState, setPlanViewState] = useState<PlanViewState | null>(
+    null
+  );
+
+  // Track previous camera mode to detect mode changes
+  const previousCameraModeRef = useRef<CameraState["mode"] | null>(null);
 
   // Initialize using core functions
   const initialize = useCallback(
@@ -61,6 +80,22 @@ export const ViewerProvider = ({
           backgroundColor: config?.backgroundColor,
         });
         sceneRef.current = scene;
+
+        // Setup camera manager with state sync callback
+        cameraManagerRef.current = new CameraManager(scene.camera, {
+          onChange: setCameraState,
+        });
+        // Initialize React state from manager's defaults
+        setCameraState(cameraManagerRef.current.getState());
+
+        // Setup plan view manager (uses CameraManager for state sync)
+        planViewManagerRef.current = new PlanViewManager(
+          scene.components,
+          scene.world,
+          cameraManagerRef.current,
+          { onChange: setPlanViewState }
+        );
+        setPlanViewState(planViewManagerRef.current.getState());
 
         // Use core features setup
         const features = setupFeatures(scene.components, scene.world, {
@@ -111,6 +146,11 @@ export const ViewerProvider = ({
                 newModels.set(model.id, model);
                 return { ...prev, loadedModels: newModels };
               });
+
+              // Extract plans from newly loaded model
+              setTimeout(() => {
+                planViewManagerRef.current?.extractFromModel(model.id);
+              }, 100);
             },
             onModelUnloaded: (modelId) => {
               setState((prev) => {
@@ -118,6 +158,8 @@ export const ViewerProvider = ({
                 newModels.delete(modelId);
                 return { ...prev, loadedModels: newModels };
               });
+              // Clear views for unloaded model
+              planViewManagerRef.current?.clearModel(modelId);
             },
           }
         );
@@ -137,7 +179,9 @@ export const ViewerProvider = ({
   const dispose = useCallback(() => {
     highlighterRef.current?.dispose();
     featuresRef.current?.dispose();
+    planViewManagerRef.current?.dispose();
     modelManagerRef.current?.dispose();
+    cameraManagerRef.current?.dispose();
 
     if (sceneRef.current) {
       sceneRef.current.components.dispose();
@@ -147,12 +191,16 @@ export const ViewerProvider = ({
     modelManagerRef.current = null;
     featuresRef.current = null;
     highlighterRef.current = null;
+    cameraManagerRef.current = null;
+    planViewManagerRef.current = null;
 
     setState({
       isInitialized: false,
       error: null,
       loadedModels: new Map(),
     });
+    setCameraState(null);
+    setPlanViewState(null);
   }, []);
 
   useEffect(() => {
@@ -160,6 +208,20 @@ export const ViewerProvider = ({
       dispose();
     };
   }, [dispose]);
+
+  // Handle camera mode changes - close plan view if user switches away from Plan mode
+  useEffect(() => {
+    if (!cameraState) return;
+
+    const currentMode = cameraState.mode;
+    const previousMode = previousCameraModeRef.current;
+
+    if (previousMode === "Plan" && currentMode !== "Plan") {
+      planViewManagerRef.current?.onCameraModeChange(currentMode);
+    }
+
+    previousCameraModeRef.current = currentMode;
+  }, [cameraState]);
 
   // Memoize the functions with useCallback
   const getElement = useCallback(
@@ -191,6 +253,54 @@ export const ViewerProvider = ({
     []
   );
 
+  // Camera control callbacks
+  const setCameraMode = useCallback(
+    (mode: CameraState["mode"]) => cameraManagerRef.current?.setMode(mode),
+    []
+  );
+
+  const setCameraProjection = useCallback(
+    (projection: CameraState["projection"]) =>
+      cameraManagerRef.current?.setProjection(projection),
+    []
+  );
+
+  const fitCameraToItems = useCallback(
+    () => cameraManagerRef.current?.fitToItems(),
+    []
+  );
+
+  // Plan view callbacks
+  const openPlan = useCallback((planId: string) => {
+    planViewManagerRef.current?.open(planId);
+  }, []);
+
+  const closePlan = useCallback(() => planViewManagerRef.current?.close(), []);
+
+  // Memoize camera object to prevent unnecessary re-renders
+  const camera = useMemo<CameraControls | null>(() => {
+    if (!cameraState) return null;
+    return {
+      mode: cameraState.mode,
+      projection: cameraState.projection,
+      cursor: cameraState.cursor,
+      setMode: setCameraMode,
+      setProjection: setCameraProjection,
+      fitToItems: fitCameraToItems,
+    };
+  }, [cameraState, setCameraMode, setCameraProjection, fitCameraToItems]);
+
+  // Memoize plan views object to prevent unnecessary re-renders
+  const planViews = useMemo<PlanViewControls | null>(() => {
+    if (!planViewState) return null;
+    return {
+      plans: planViewState.plans,
+      activePlanId: planViewState.activePlanId,
+      open: openPlan,
+      close: closePlan,
+    };
+  }, [planViewState, openPlan, closePlan]);
+
   // Return the value object
   const value: ViewerContextValue = {
     ...state,
@@ -203,6 +313,8 @@ export const ViewerProvider = ({
     unloadAllModels,
     initialize,
     dispose,
+    camera,
+    planViews,
   };
 
   return (

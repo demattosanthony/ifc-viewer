@@ -78,3 +78,22 @@ export type ModelUnloadedCallback = (modelId: string) => void;
 export type ProgressCallback = (progress: number) => void;
 export type SelectionCallback = (data: OBC.ModelIdMap) => void;
 export type ClearCallback = () => void;
+
+// ============================================================================
+// Camera Types
+// ============================================================================
+
+export type CameraMode = "Orbit" | "FirstPerson" | "Plan";
+export type CameraProjection = "Orthographic" | "Perspective";
+
+// ============================================================================
+// Plan View Types
+// ============================================================================
+
+/** Represents a single floor plan extracted from an IFC model */
+export interface FloorPlan {
+  id: string;
+  name: string;
+  elevation: number;
+  modelId: string;
+}

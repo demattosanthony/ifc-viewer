@@ -1,18 +1,22 @@
 import { useViewer } from "./context";
 import type { ViewerProps } from "./types";
-import { useEffect, useRef, type CSSProperties } from "react";
-
-const defaultStyles: CSSProperties = {
-  width: "100%",
-  height: "100%",
-  position: "relative",
-  overflow: "hidden",
-};
+import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 
 export function Viewer({ onReady, onError }: ViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { initialize, isInitialized, error } = useViewer();
+  const { initialize, isInitialized, error, camera } = useViewer();
   const hasInitialized = useRef(false);
+
+  const styles = useMemo<CSSProperties>(
+    () => ({
+      width: "100%",
+      height: "100%",
+      position: "relative",
+      overflow: "hidden",
+      cursor: camera?.cursor ?? "default",
+    }),
+    [camera?.cursor]
+  );
 
   // Init the viewer when the container mounts
   useEffect(() => {
@@ -39,5 +43,5 @@ export function Viewer({ onReady, onError }: ViewerProps) {
     }
   }, [error, onError]);
 
-  return <div ref={containerRef} style={defaultStyles}></div>;
+  return <div ref={containerRef} style={styles}></div>;
 }

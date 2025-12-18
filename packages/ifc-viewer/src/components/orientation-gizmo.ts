@@ -15,19 +15,19 @@ export class OrientationGizmo
   readonly onBeforeUpdate = new OBC.Event();
   readonly onAfterUpdate = new OBC.Event();
 
-  private size = 90;
-  private padding = 8;
-  private bubbleSizePrimary = 8;
+  private size = 100;
+  private padding = 12;
+  private bubbleSizePrimary = 10;
   private bubbleSizeSecondary = 6;
-  private lineWidth = 2;
-  private fontSize = "12px";
-  private fontFamily = "arial";
-  private fontWeight = "bold";
-  private fontColor = "#222222";
+  private lineWidth = 1.5;
+  private fontSize = "11px";
+  private fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  private fontWeight = "600";
+  private fontColor = "#ffffff";
   private colors = {
-    x: ["#f73c3c", "#942424"],
-    y: ["#6ccb26", "#417a17"],
-    z: ["#178cf0", "#0e5490"],
+    x: ["#ef4444", "#b91c1c"],
+    y: ["#22c55e", "#15803d"],
+    z: ["#3b82f6", "#1d4ed8"],
   };
 
   private domElement: HTMLCanvasElement;
@@ -259,16 +259,34 @@ export class OrientationGizmo
     p: THREE.Vector3,
     radius = 10,
     color = "#FF0000",
-    opacity = 1.0
+    highlight = false
   ) {
-    this.context.save(); // Save the current context state
-    this.context.globalAlpha = opacity; // Set the desired opacity
+    this.context.save();
+
+    // Subtle shadow for depth
+    this.context.shadowColor = "rgba(0, 0, 0, 0.3)";
+    this.context.shadowBlur = 3;
+    this.context.shadowOffsetX = 0;
+    this.context.shadowOffsetY = 1;
+
     this.context.beginPath();
     this.context.arc(p.x, p.y, radius, 0, 2 * Math.PI, false);
     this.context.fillStyle = color;
     this.context.fill();
+
+    // Reset shadow for highlight ring
+    this.context.shadowColor = "transparent";
+    this.context.shadowBlur = 0;
+
+    // Highlight ring on hover
+    if (highlight) {
+      this.context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      this.context.lineWidth = 2;
+      this.context.stroke();
+    }
+
     this.context.closePath();
-    this.context.restore(); // Restore the context to its original state
+    this.context.restore();
   }
 
   private drawLine(
@@ -277,13 +295,27 @@ export class OrientationGizmo
     width = 1,
     color = "#FF0000"
   ) {
+    this.context.save();
     this.context.beginPath();
     this.context.moveTo(p1.x, p1.y);
     this.context.lineTo(p2.x, p2.y);
     this.context.lineWidth = width;
     this.context.strokeStyle = color;
+    this.context.lineCap = "round";
     this.context.stroke();
     this.context.closePath();
+    this.context.restore();
+  }
+
+  private drawCenterPoint() {
+    const ctx = this.context;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(this.center.x, this.center.y, 2, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fill();
+    ctx.closePath();
+    ctx.restore();
   }
 
   private drawLayers(clear = true) {
@@ -296,6 +328,9 @@ export class OrientationGizmo
       );
     }
 
+    // Draw center point
+    this.drawCenterPoint();
+
     for (const axis of this.axes) {
       const highlight = this.selectedAxis === axis;
       const color = axis.position.z >= -0.01 ? axis.color[0] : axis.color[1];
@@ -304,16 +339,23 @@ export class OrientationGizmo
         this.drawLine(this.center, axis.position, axis.line, color);
       }
 
-      // Set opacity when highlighted
-      const opacity = highlight ? 0.6 : 1.0; // Adjust the opacity value as desired
-      this.drawCircle(axis.position, axis.size, color, opacity);
+      this.drawCircle(axis.position, axis.size, color, highlight);
 
       if (axis.label) {
+        this.context.save();
         this.context.font = `${this.fontWeight} ${this.fontSize} ${this.fontFamily}`;
-        this.context.fillStyle = this.fontColor;
         this.context.textBaseline = "middle";
         this.context.textAlign = "center";
+
+        // Text shadow for better readability
+        this.context.shadowColor = "rgba(0, 0, 0, 0.5)";
+        this.context.shadowBlur = 2;
+        this.context.shadowOffsetX = 0;
+        this.context.shadowOffsetY = 1;
+
+        this.context.fillStyle = this.fontColor;
         this.context.fillText(axis.label, axis.position.x, axis.position.y);
+        this.context.restore();
       }
     }
   }
