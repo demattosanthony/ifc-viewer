@@ -1,37 +1,69 @@
 import { useEffect } from "react";
 import { useViewer } from "../context";
-import * as OBF from "@thatopen/components-front";
-import * as OBC from "@thatopen/components";
-import type { ElementSelectedEvent } from "../../types";
+import type { ElementSelectedEvent, ElementHoveredEvent } from "../../types";
 
 export interface UseViewerEventsOptions {
   onElementSelected?: (event: ElementSelectedEvent) => void;
+  onElementHovered?: (event: ElementHoveredEvent | null) => void;
 }
 
 export function useViewerEvents(options: UseViewerEventsOptions) {
-  const { components, isInitialized } = useViewer();
+  const { interactionManager, isInitialized } = useViewer();
 
   useEffect(() => {
-    if (!components || !isInitialized || !options.onElementSelected) return;
+    if (!interactionManager || !isInitialized) return;
 
-    try {
-      const highlighter = components.get(OBF.Highlighter);
-      const selectName = highlighter.config.selectName;
+    // Subscribe to selection events
+    const selectHandler = options.onElementSelected
+      ? (event: {
+          modelIdMap: Record<string, Set<number>>;
+          mousePosition?: { clientX: number; clientY: number };
+          point?: { x: number; y: number; z: number };
+        }) => {
+          options.onElementSelected?.({
+            modelIdMap: event.modelIdMap,
+            position: event.mousePosition,
+            point: event.point,
+          });
+        }
+      : undefined;
 
-      const highlightHandler = (data: OBC.ModelIdMap) =>
-        options.onElementSelected?.({ modelIdMap: data });
-      const clearHandler = () =>
-        options.onElementSelected?.({ modelIdMap: {} });
+    // Subscribe to hover events
+    const hoverHandler = options.onElementHovered
+      ? (
+          event: {
+            modelId: string;
+            localId: number;
+            mousePosition?: { clientX: number; clientY: number };
+            point: { x: number; y: number; z: number };
+          } | null
+        ) => {
+          options.onElementHovered?.(
+            event
+              ? {
+                  modelIdMap: { [event.modelId]: new Set([event.localId]) },
+                  position: event.mousePosition,
+                  point: event.point,
+                }
+              : null
+          );
+        }
+      : undefined;
 
-      highlighter.events[selectName]?.onHighlight.add(highlightHandler);
-      highlighter.events[selectName]?.onClear.add(clearHandler);
-
-      return () => {
-        highlighter.events[selectName]?.onHighlight.remove(highlightHandler);
-        highlighter.events[selectName]?.onClear.remove(clearHandler);
-      };
-    } catch (e) {
-      console.warn("Highlighter not available:", e);
+    if (selectHandler) {
+      interactionManager.onSelect.add(selectHandler);
     }
-  }, [components, isInitialized, options.onElementSelected]);
+    if (hoverHandler) {
+      interactionManager.onHover.add(hoverHandler);
+    }
+
+    return () => {
+      if (selectHandler) {
+        interactionManager.onSelect.remove(selectHandler);
+      }
+      if (hoverHandler) {
+        interactionManager.onHover.remove(hoverHandler);
+      }
+    };
+  }, [interactionManager, isInitialized, options.onElementSelected, options.onElementHovered]);
 }

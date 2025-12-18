@@ -10,9 +10,9 @@ import {
 import {
   createScene,
   setupFeatures,
-  setupHighlighter,
-  setupHoverer,
-  InstantHoverer,
+  InteractionManager,
+  type SelectionEvent,
+  type HoverEvent,
 } from "../core/scene";
 import { ModelManager } from "../core/models/manager";
 import type {
@@ -49,10 +49,7 @@ export const ViewerProvider = ({
   const sceneRef = useRef<Awaited<ReturnType<typeof createScene>> | null>(null);
   const modelManagerRef = useRef<ModelManager | null>(null);
   const featuresRef = useRef<ReturnType<typeof setupFeatures> | null>(null);
-  const highlighterRef = useRef<ReturnType<typeof setupHighlighter> | null>(
-    null
-  );
-  const hovererRef = useRef<InstantHoverer | null>(null);
+  const interactionRef = useRef<InteractionManager | null>(null);
   const cameraManagerRef = useRef<CameraManager | null>(null);
   const planViewManagerRef = useRef<PlanViewManager | null>(null);
 
@@ -108,29 +105,40 @@ export const ViewerProvider = ({
         featuresRef.current = features;
 
         // Use core interactions setup
-        if (config?.highlighter !== false) {
-          const highlighter = setupHighlighter(
-            scene.components,
-            scene.world,
-            typeof config?.highlighter === "object" ? config.highlighter : {},
-            {
-              onSelect: (data) => {
-                config?.events?.onElementSelected?.({ modelIdMap: data });
-              },
-              onClear: () => {
-                config?.events?.onElementSelected?.({ modelIdMap: {} });
-              },
-            }
-          );
-          highlighterRef.current = highlighter;
-        }
+        if (config?.interaction !== false) {
+          const interactionConfig =
+            typeof config?.interaction === "object" ? config.interaction : {};
 
-        if (config?.hoverer !== false) {
-          hovererRef.current = setupHoverer(
+          interactionRef.current = new InteractionManager(
             scene.components,
             scene.world,
-            typeof config?.hoverer === "object" ? config.hoverer : {}
+            interactionConfig,
+            cameraManagerRef.current ?? undefined
           );
+
+          // Wire up selection events
+          interactionRef.current.onSelect.add((event: SelectionEvent) => {
+            config?.events?.onElementSelected?.({
+              modelIdMap: event.modelIdMap,
+              position: event.mousePosition,
+              point: event.point
+                ? { x: event.point.x, y: event.point.y, z: event.point.z }
+                : undefined,
+            });
+          });
+
+          // Wire up hover events
+          interactionRef.current.onHover.add((event: HoverEvent | null) => {
+            config?.events?.onElementHovered?.(
+              event
+                ? {
+                    modelIdMap: { [event.modelId]: new Set([event.localId]) },
+                    position: event.mousePosition,
+                    point: { x: event.point.x, y: event.point.y, z: event.point.z },
+                  }
+                : null
+            );
+          });
         }
 
         scene.components.init();
@@ -179,8 +187,7 @@ export const ViewerProvider = ({
   );
 
   const dispose = useCallback(() => {
-    highlighterRef.current?.dispose();
-    hovererRef.current?.dispose();
+    interactionRef.current?.dispose();
     featuresRef.current?.dispose();
     planViewManagerRef.current?.dispose();
     modelManagerRef.current?.dispose();
@@ -193,8 +200,7 @@ export const ViewerProvider = ({
     sceneRef.current = null;
     modelManagerRef.current = null;
     featuresRef.current = null;
-    highlighterRef.current = null;
-    hovererRef.current = null;
+    interactionRef.current = null;
     cameraManagerRef.current = null;
     planViewManagerRef.current = null;
 
@@ -311,6 +317,7 @@ export const ViewerProvider = ({
     components: sceneRef.current?.components ?? null,
     fragmentsManager:
       sceneRef.current?.components?.get(OBC.FragmentsManager) ?? null,
+    interactionManager: interactionRef.current,
     getElement,
     loadModel,
     unloadModel,

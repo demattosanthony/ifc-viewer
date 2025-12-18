@@ -2,51 +2,109 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as FRAGS from "@thatopen/fragments";
 import * as THREE from "three";
-import type {
-  HighlighterConfig,
-  HovererConfig,
-  SelectionCallback,
-  ClearCallback,
-} from "../../types";
+import type { InteractionConfig, MousePosition } from "../../types";
+import type { CameraManager } from "../camera/manager";
 
 // ============================================================================
-// InstantHoverer - Custom lightweight hover implementation
+// Types
 // ============================================================================
 
-export class InstantHoverer {
+interface RaycastResult {
+  model: FRAGS.FragmentsModel;
+  localId: number;
+  point: THREE.Vector3;
+}
+
+export interface SelectionEvent {
+  modelIdMap: Record<string, Set<number>>;
+  mousePosition?: MousePosition;
+  point?: THREE.Vector3;
+}
+
+export interface HoverEvent {
+  modelId: string;
+  localId: number;
+  mousePosition?: MousePosition;
+  point: THREE.Vector3;
+}
+
+// ============================================================================
+// InteractionManager - Unified hover and selection
+// ============================================================================
+
+export class InteractionManager {
   private components: OBC.Components;
   private world: OBC.World;
-  private meshes: THREE.Mesh[] = [];
-  private currentLocalId: number | null = null;
-  private currentModelId: string | null = null;
-  private enabled = true;
-  private lastHoverTime = 0;
-  private throttleMs: number;
-  private pendingRaycast: boolean = false;
+  private cameraManager?: CameraManager;
 
-  material: THREE.Material;
+  // Hover state (single element)
+  private hoverMeshes: THREE.Mesh[] = [];
+  private hoveredLocalId: number | null = null;
+  private hoveredModelId: string | null = null;
+
+  // Selection state (multi-element via Ctrl+click)
+  private selectionMeshes: Map<string, THREE.Mesh[]> = new Map();
+  private selection: Map<string, Set<number>> = new Map();
+
+  // Mouse tracking
+  private lastMousePosition: MousePosition | undefined;
+  private lastClickPoint: THREE.Vector3 | undefined;
+
+  // Throttling
+  private lastHoverTime = 0;
+  private pendingRaycast = false;
+  private readonly throttleMs = 16; // ~60fps
+
+  // State
+  private enabled = true;
+
+  // Events
+  readonly onSelect = new OBC.Event<SelectionEvent>();
+  readonly onHover = new OBC.Event<HoverEvent | null>();
+
+  // Materials
+  hoverMaterial: THREE.Material;
+  selectionMaterial: THREE.Material;
+
+  // Config
+  adaptiveOrbitOnHover: boolean;
+  adaptiveOrbitOnSelect: boolean;
 
   constructor(
     components: OBC.Components,
     world: OBC.World,
-    config: HovererConfig = {}
+    config: InteractionConfig = {},
+    cameraManager?: CameraManager
   ) {
     this.components = components;
     this.world = world;
-    this.throttleMs = config.throttleMs ?? 16; // ~60fps default
+    this.cameraManager = cameraManager;
 
-    this.material = new THREE.MeshBasicMaterial({
-      color: config.color ?? 0x0b99ff,
-      transparent: config.transparent ?? true,
-      opacity: config.opacity ?? 0.5,
-      depthTest: config.depthTest ?? false,
+    this.adaptiveOrbitOnHover = config.adaptiveOrbitOnHover ?? true;
+    this.adaptiveOrbitOnSelect = config.adaptiveOrbitOnSelect ?? true;
+
+    this.hoverMaterial = new THREE.MeshBasicMaterial({
+      color: config.hoverColor ?? 0x0b99ff,
+      transparent: true,
+      opacity: config.hoverOpacity ?? 0.4,
+      depthTest: false,
     });
 
-    // Initialize the raycaster for this world
-    this.components.get(OBC.Raycasters).get(world);
+    this.selectionMaterial = new THREE.MeshBasicMaterial({
+      color: config.selectionColor ?? 0x0b99ff,
+      transparent: true,
+      opacity: config.selectionOpacity ?? 0.6,
+      depthTest: false,
+    });
 
+    // Initialize raycaster
+    this.components.get(OBC.Raycasters).get(world);
     this.setupEvents();
   }
+
+  // ============================================================================
+  // Event Setup
+  // ============================================================================
 
   private setupEvents() {
     if (!this.world.renderer) {
@@ -56,153 +114,320 @@ export class InstantHoverer {
     const container = this.world.renderer.three.domElement;
     container.addEventListener("mousemove", this.onMouseMove);
     container.addEventListener("mouseleave", this.onMouseLeave);
+    container.addEventListener("mousedown", this.onMouseDown);
+    container.addEventListener("click", this.onClick);
   }
 
-  private onMouseMove = async () => {
+  // ============================================================================
+  // Mouse Handlers
+  // ============================================================================
+
+  private onMouseDown = (e: MouseEvent) => {
+    this.lastMousePosition = { clientX: e.clientX, clientY: e.clientY };
+  };
+
+  private onMouseMove = async (e: MouseEvent) => {
     if (!this.enabled) return;
 
-    // Throttle to prevent excessive raycasting
+    // Update mouse position for hover
+    this.lastMousePosition = { clientX: e.clientX, clientY: e.clientY };
+
+    // Throttle raycasting
     const now = performance.now();
     if (now - this.lastHoverTime < this.throttleMs) return;
     this.lastHoverTime = now;
 
-    // Prevent overlapping raycasts
     if (this.pendingRaycast) return;
     this.pendingRaycast = true;
 
     try {
-      const casters = this.components.get(OBC.Raycasters);
-      const caster = casters.get(this.world);
-
-      const result = (await caster.castRay()) as unknown as {
-        fragments: FRAGS.FragmentsModel;
-        localId: number;
-      } | null;
+      const result = await this.raycast();
 
       if (!result) {
-        this.clear();
+        this.clearHover();
+        this.onHover.trigger(null);
         return;
       }
 
-      const { fragments: model, localId } = result;
+      const { model, localId, point } = result;
 
-      // Same element - do nothing
+      // Same element - skip
       if (
-        this.currentLocalId === localId &&
-        this.currentModelId === model.modelId
+        this.hoveredLocalId === localId &&
+        this.hoveredModelId === model.modelId
       ) {
         return;
       }
 
-      // Different element - clear old and highlight new
-      this.clear();
-      this.currentLocalId = localId;
-      this.currentModelId = model.modelId;
+      // Clear old hover
+      this.clearHover();
 
-      // Create highlight mesh immediately
-      const modelIdMap = { [model.modelId]: new Set([localId]) };
-      const mesher = this.components.get(OBF.Mesher);
-      const meshesResult = await mesher.get(modelIdMap);
+      // Update hover state
+      this.hoveredLocalId = localId;
+      this.hoveredModelId = model.modelId;
 
-      for (const [, data] of meshesResult.entries()) {
-        const meshList = [...data.values()].flat();
-        for (const mesh of meshList) {
-          mesh.material = this.material;
-          this.world.scene.three.add(mesh);
-          this.meshes.push(mesh);
-        }
+      // Update orbit point
+      if (this.adaptiveOrbitOnHover) {
+        this.setOrbitPoint(point);
       }
+
+      // Create hover meshes
+      await this.highlightElement(
+        model.modelId,
+        localId,
+        this.hoverMaterial,
+        this.hoverMeshes
+      );
+
+      this.onHover.trigger({
+        modelId: model.modelId,
+        localId,
+        mousePosition: this.lastMousePosition,
+        point,
+      });
     } finally {
       this.pendingRaycast = false;
     }
   };
 
   private onMouseLeave = () => {
-    this.clear();
+    this.clearHover();
+    this.onHover.trigger(null);
   };
 
-  clear() {
-    for (const mesh of this.meshes) {
+  private onClick = async (e: MouseEvent) => {
+    if (!this.enabled) return;
+
+    const result = await this.raycast();
+    const isCtrlClick = e.ctrlKey || e.metaKey;
+
+    if (!result) {
+      // Click on empty = clear selection
+      this.clearSelection();
+      this.emitSelectionEvent();
+      return;
+    }
+
+    const { model, localId, point } = result;
+    this.lastClickPoint = point;
+
+    if (isCtrlClick) {
+      // Ctrl+click: toggle element
+      const modelSet = this.selection.get(model.modelId);
+      if (modelSet?.has(localId)) {
+        this.removeFromSelection(model.modelId, localId);
+      } else {
+        await this.addToSelection(model.modelId, localId);
+      }
+    } else {
+      // Normal click: replace selection
+      this.clearSelection();
+      await this.addToSelection(model.modelId, localId);
+    }
+
+    // Update orbit to selection center
+    if (this.adaptiveOrbitOnSelect) {
+      await this.setOrbitToSelection();
+    }
+
+    this.emitSelectionEvent();
+  };
+
+  // ============================================================================
+  // Raycasting
+  // ============================================================================
+
+  private async raycast(): Promise<RaycastResult | null> {
+    const casters = this.components.get(OBC.Raycasters);
+    const caster = casters.get(this.world);
+
+    const result = (await caster.castRay()) as unknown as {
+      fragments: FRAGS.FragmentsModel;
+      localId: number;
+      point: THREE.Vector3;
+    } | null;
+
+    if (!result) return null;
+
+    return {
+      model: result.fragments,
+      localId: result.localId,
+      point: result.point,
+    };
+  }
+
+  // ============================================================================
+  // Highlighting
+  // ============================================================================
+
+  private async highlightElement(
+    modelId: string,
+    localId: number,
+    material: THREE.Material,
+    meshArray: THREE.Mesh[]
+  ): Promise<void> {
+    const modelIdMap = { [modelId]: new Set([localId]) };
+    const mesher = this.components.get(OBF.Mesher);
+    const meshesResult = await mesher.get(modelIdMap);
+
+    for (const [, data] of meshesResult.entries()) {
+      const meshList = [...data.values()].flat();
+      for (const mesh of meshList) {
+        mesh.material = material;
+        this.world.scene.three.add(mesh);
+        meshArray.push(mesh);
+      }
+    }
+  }
+
+  // ============================================================================
+  // Selection Management
+  // ============================================================================
+
+  private async addToSelection(
+    modelId: string,
+    localId: number
+  ): Promise<void> {
+    // Add to selection map
+    if (!this.selection.has(modelId)) {
+      this.selection.set(modelId, new Set());
+    }
+    this.selection.get(modelId)!.add(localId);
+
+    // Create meshes
+    const key = `${modelId}:${localId}`;
+    const meshes: THREE.Mesh[] = [];
+    await this.highlightElement(
+      modelId,
+      localId,
+      this.selectionMaterial,
+      meshes
+    );
+    this.selectionMeshes.set(key, meshes);
+  }
+
+  private removeFromSelection(modelId: string, localId: number): void {
+    // Remove from selection map
+    const modelSet = this.selection.get(modelId);
+    if (modelSet) {
+      modelSet.delete(localId);
+      if (modelSet.size === 0) {
+        this.selection.delete(modelId);
+      }
+    }
+
+    // Remove meshes
+    const key = `${modelId}:${localId}`;
+    const meshes = this.selectionMeshes.get(key);
+    if (meshes) {
+      for (const mesh of meshes) {
+        mesh.removeFromParent();
+        mesh.geometry.dispose();
+      }
+      this.selectionMeshes.delete(key);
+    }
+  }
+
+  private emitSelectionEvent(): void {
+    // Convert internal Map to Record format
+    const modelIdMap: Record<string, Set<number>> = {};
+    for (const [modelId, localIds] of this.selection.entries()) {
+      modelIdMap[modelId] = new Set(localIds);
+    }
+
+    this.onSelect.trigger({
+      modelIdMap,
+      mousePosition: this.lastMousePosition,
+      point: this.lastClickPoint,
+    });
+  }
+
+  // ============================================================================
+  // Orbit Control
+  // ============================================================================
+
+  private setOrbitPoint(point: THREE.Vector3): void {
+    // Only update orbit point when in Orbit mode
+    if (this.cameraManager && this.cameraManager.getMode() !== "Orbit") {
+      return;
+    }
+    const camera = this.world.camera as OBC.SimpleCamera;
+    if (!camera.controls) return;
+    camera.controls.setOrbitPoint(point.x, point.y, point.z);
+  }
+
+  private async setOrbitToSelection(): Promise<void> {
+    if (this.selection.size === 0) return;
+
+    // Get center of all selected elements
+    const boxer = this.components.get(OBC.BoundingBoxer);
+    const modelIdMap: Record<string, Set<number>> = {};
+    for (const [modelId, localIds] of this.selection.entries()) {
+      modelIdMap[modelId] = localIds;
+    }
+    const center = await boxer.getCenter(modelIdMap);
+    this.setOrbitPoint(center);
+  }
+
+  // ============================================================================
+  // Clear Methods
+  // ============================================================================
+
+  private clearHover(): void {
+    for (const mesh of this.hoverMeshes) {
       mesh.removeFromParent();
       mesh.geometry.dispose();
     }
-    this.meshes = [];
-    this.currentLocalId = null;
-    this.currentModelId = null;
+    this.hoverMeshes = [];
+    this.hoveredLocalId = null;
+    this.hoveredModelId = null;
   }
 
-  setEnabled(value: boolean) {
+  clearSelection(): void {
+    for (const meshes of this.selectionMeshes.values()) {
+      for (const mesh of meshes) {
+        mesh.removeFromParent();
+        mesh.geometry.dispose();
+      }
+    }
+    this.selectionMeshes.clear();
+    this.selection.clear();
+    this.lastClickPoint = undefined;
+  }
+
+  // ============================================================================
+  // Public API
+  // ============================================================================
+
+  setEnabled(value: boolean): void {
     this.enabled = value;
-    if (!value) this.clear();
+    if (!value) {
+      this.clearHover();
+    }
   }
 
-  dispose() {
-    this.clear();
-    this.material.dispose();
+  getSelection(): Record<string, Set<number>> {
+    const result: Record<string, Set<number>> = {};
+    for (const [modelId, localIds] of this.selection.entries()) {
+      result[modelId] = new Set(localIds);
+    }
+    return result;
+  }
+
+  dispose(): void {
+    this.clearHover();
+    this.clearSelection();
+    this.hoverMaterial.dispose();
+    this.selectionMaterial.dispose();
+    this.onSelect.reset();
+    this.onHover.reset();
 
     if (this.world.renderer) {
       const container = this.world.renderer.three.domElement;
       container.removeEventListener("mousemove", this.onMouseMove);
       container.removeEventListener("mouseleave", this.onMouseLeave);
+      container.removeEventListener("mousedown", this.onMouseDown);
+      container.removeEventListener("click", this.onClick);
     }
   }
-}
-
-export function setupHighlighter(
-  components: OBC.Components,
-  world: OBC.World,
-  config: HighlighterConfig = {},
-  callbacks?: {
-    onSelect?: SelectionCallback;
-    onClear?: ClearCallback;
-  }
-): { instance: OBF.Highlighter; dispose: () => void } {
-  const highlighter = components.get(OBF.Highlighter);
-
-  highlighter.setup({
-    world,
-    selectMaterialDefinition: {
-      color: new THREE.Color(config.selectColor ?? 0x0b99ff),
-      opacity: config.selectOpacity ?? 0.75,
-      transparent: config.selectTransparent ?? true,
-      renderedFaces: 0,
-    },
-  });
-
-  highlighter.zoomToSelection = config.zoomToSelection ?? false;
-
-  const cleanupFns: Array<() => void> = [];
-
-  if (callbacks?.onSelect || callbacks?.onClear) {
-    const selectName = highlighter.config.selectName;
-
-    if (callbacks.onSelect) {
-      highlighter.events[selectName]?.onHighlight.add(callbacks.onSelect);
-      cleanupFns.push(() => {
-        highlighter.events[selectName]?.onHighlight.remove(callbacks.onSelect!);
-      });
-    }
-
-    if (callbacks.onClear) {
-      highlighter.events[selectName]?.onClear.add(callbacks.onClear);
-      cleanupFns.push(() => {
-        highlighter.events[selectName]?.onClear.remove(callbacks.onClear!);
-      });
-    }
-  }
-
-  return {
-    instance: highlighter,
-    dispose: () => {
-      cleanupFns.forEach((fn) => fn());
-    },
-  };
-}
-
-export function setupHoverer(
-  components: OBC.Components,
-  world: OBC.World,
-  config: HovererConfig = {}
-): InstantHoverer {
-  return new InstantHoverer(components, world, config);
 }
