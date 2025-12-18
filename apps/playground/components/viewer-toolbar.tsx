@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useViewer, useViewerEvents, type CameraMode } from "ifc-viewer";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   Popover,
   PopoverContent,
@@ -12,181 +11,354 @@ import {
   Rotate3D,
   PersonStanding,
   LayoutDashboard,
+  Upload,
 } from "lucide-react";
+
+// ============================================================================
+// Constants
+// ============================================================================
 
 const CAMERA_MODES = [
   { mode: "Orbit" as CameraMode, label: "Orbit", icon: Rotate3D },
-  { mode: "Plan" as CameraMode, label: "Grab", icon: HandGrab },
-  {
-    mode: "FirstPerson" as CameraMode,
-    label: "First Person",
-    icon: PersonStanding,
-  },
+  { mode: "Plan" as CameraMode, label: "Pan", icon: HandGrab },
+  { mode: "FirstPerson" as CameraMode, label: "Walk", icon: PersonStanding },
 ] as const;
 
-export function ViewerToolBar() {
-  const {
-    loadModel,
-    isInitialized,
-    unloadAllModels,
-    getElement,
-    camera,
-    planViews,
-  } = useViewer();
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [cameraModeOpen, setCameraModeOpen] = useState(false);
-  const [planViewsOpen, setPlanViewsOpen] = useState(false);
+// ============================================================================
+// Loading Overlay - Apple-inspired minimal design
+// ============================================================================
 
-  const currentModeConfig = CAMERA_MODES.find((m) => m.mode === camera?.mode);
-  const CurrentIcon = currentModeConfig?.icon ?? Rotate3D;
+interface LoadingOverlayProps {
+  progress: number;
+}
 
-  useViewerEvents({
-    onElementSelected: (event) => {
-      console.log("on element selected", event);
+function LoadingOverlay({ progress }: LoadingOverlayProps) {
+  const percentage = Math.round(progress * 100);
+  const circumference = 2 * Math.PI * 20;
+  const strokeDashoffset = circumference - progress * circumference;
 
-      Object.entries(event.modelIdMap).forEach(([modelId, localIdSet]) => {
-        localIdSet.forEach(async (localId) => {
-          const element = await getElement(modelId, localId);
-          console.log("element", element);
-        });
-      });
-    },
-  });
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-neutral-950">
+      <div className="flex flex-col items-center gap-6">
+        {/* Circular progress indicator */}
+        <div className="relative w-14 h-14">
+          {/* Background ring */}
+          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 44 44">
+            <circle
+              cx="22"
+              cy="22"
+              r="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-neutral-800"
+            />
+            <circle
+              cx="22"
+              cy="22"
+              r="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              className="text-white transition-all duration-300 ease-out"
+              style={{
+                strokeDasharray: circumference,
+                strokeDashoffset: strokeDashoffset,
+              }}
+            />
+          </svg>
+          {/* Percentage in center */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-light text-neutral-400 tabular-nums">
+              {percentage}
+            </span>
+          </div>
+        </div>
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+        {/* Status text */}
+        <p className="text-sm font-light text-neutral-500 tracking-wide">
+          Loading
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// File Upload Button
+// ============================================================================
+
+interface FileUploadButtonProps {
+  onFileSelect: (file: File) => void;
+  disabled?: boolean;
+}
+
+function FileUploadButton({ onFileSelect, disabled }: FileUploadButtonProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    setProgress(0);
-    await unloadAllModels();
-    const buffer = await file.arrayBuffer();
-    await loadModel(buffer, file.name, (progress) => {
-      setProgress(progress);
-    });
-    setUploading(false);
+    if (file) {
+      onFileSelect(file);
+      // Reset input so the same file can be selected again
+      if (inputRef.current) inputRef.current.value = "";
+    }
   };
 
+  return (
+    <>
+      <Button
+        onClick={() => inputRef.current?.click()}
+        variant="ghost"
+        size="sm"
+        disabled={disabled}
+        className="gap-2"
+      >
+        <Upload className="size-4" />
+        <span className="hidden sm:inline">Upload IFC</span>
+      </Button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".ifc"
+        onChange={handleChange}
+        className="hidden"
+        aria-hidden="true"
+      />
+    </>
+  );
+}
+
+// ============================================================================
+// Camera Mode Selector
+// ============================================================================
+
+interface CameraModeSelectorProps {
+  currentMode: CameraMode | undefined;
+  onModeChange: (mode: CameraMode) => void;
+}
+
+function CameraModeSelector({
+  currentMode,
+  onModeChange,
+}: CameraModeSelectorProps) {
+  const [open, setOpen] = useState(false);
+
+  const currentConfig = CAMERA_MODES.find((m) => m.mode === currentMode);
+  const CurrentIcon = currentConfig?.icon ?? Rotate3D;
+
+  const handleSelect = (mode: CameraMode) => {
+    onModeChange(mode);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          title={`Camera: ${currentConfig?.label ?? "Orbit"}`}
+        >
+          <CurrentIcon className="size-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-36 p-1"
+        align="center"
+        side="top"
+        sideOffset={8}
+      >
+        <div className="flex flex-col">
+          {CAMERA_MODES.map(({ mode, label, icon: Icon }) => (
+            <Button
+              key={mode}
+              variant={currentMode === mode ? "secondary" : "ghost"}
+              size="sm"
+              className="justify-start gap-2 font-normal"
+              onClick={() => handleSelect(mode)}
+            >
+              <Icon className="size-4" />
+              {label}
+            </Button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ============================================================================
+// Plan View Selector
+// ============================================================================
+
+interface Plan {
+  id: string;
+  name: string;
+}
+
+interface PlanViewSelectorProps {
+  plans: Plan[];
+  activePlanId: string | null;
+  onPlanSelect: (planId: string) => void;
+}
+
+function PlanViewSelector({
+  plans,
+  activePlanId,
+  onPlanSelect,
+}: PlanViewSelectorProps) {
+  const [open, setOpen] = useState(false);
+
+  if (plans.length === 0) return null;
+
+  const handleSelect = (planId: string) => {
+    onPlanSelect(planId);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant={activePlanId ? "secondary" : "ghost"}
+          size="icon"
+          title="Floor Plans"
+        >
+          <LayoutDashboard className="size-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-44 p-1"
+        align="center"
+        side="top"
+        sideOffset={8}
+      >
+        <div className="flex flex-col">
+          {plans.map((plan) => (
+            <Button
+              key={plan.id}
+              variant={activePlanId === plan.id ? "secondary" : "ghost"}
+              size="sm"
+              className="justify-start font-normal truncate"
+              onClick={() => handleSelect(plan.id)}
+            >
+              {plan.name}
+            </Button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ============================================================================
+// Toolbar Container
+// ============================================================================
+
+interface ToolbarContainerProps {
+  children: React.ReactNode;
+}
+
+function ToolbarContainer({ children }: ToolbarContainerProps) {
+  return (
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+      <div className="flex items-center gap-1 px-2 py-1.5 bg-background/80 backdrop-blur-lg rounded-xl border border-border/50 shadow-lg">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Divider
+// ============================================================================
+
+function ToolbarDivider() {
+  return <div className="w-px h-6 bg-border/50 mx-1" />;
+}
+
+// ============================================================================
+// Main ViewerToolBar Component
+// ============================================================================
+
+export function ViewerToolBar() {
+  const { loadModel, isInitialized, unloadAllModels, camera, planViews } =
+    useViewer();
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // Load sample model on initialization
   useEffect(() => {
+    if (!isInitialized) return;
+
     const loadSampleModel = async () => {
-      const sampleIfc = "/sample.ifc";
       try {
-        const response = await fetch(sampleIfc);
-        const blob = await response.blob();
-        const file = new File([blob], "sample.ifc", {
-          type: "application/ifc",
-        });
-        const buffer = await file.arrayBuffer();
-        loadModel(buffer, file.name);
+        const response = await fetch("/sample.ifc");
+        const buffer = await response.arrayBuffer();
+        await loadModel(buffer, "sample.ifc");
       } catch (error) {
-        console.error("Error loading sample model:", error);
+        console.error("Failed to load sample model:", error);
       }
     };
 
-    if (isInitialized) {
-      loadSampleModel();
+    loadSampleModel();
+  }, [isInitialized, loadModel]);
+
+  // File upload handler
+  const handleFileUpload = async (file: File) => {
+    setIsLoading(true);
+    setProgress(0);
+
+    try {
+      await unloadAllModels();
+      const buffer = await file.arrayBuffer();
+      await loadModel(buffer, file.name, setProgress);
+    } catch (error) {
+      console.error("Failed to load model:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isInitialized]);
-
-  if (uploading) {
-    return (
-      <div className="absolute top-0 left-0 w-full h-full z-100 flex items-center justify-center bg-background">
-        <div className="w-full max-w-md flex flex-col items-center justify-center gap-2">
-          <Progress value={progress * 100} />
-          <p className="text-sm text-center mt-1"> Loading IFC model... </p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleModeChange = (mode: CameraMode) => {
-    camera?.setMode(mode);
-    setCameraModeOpen(false);
   };
 
+  // Camera mode handler
+  const handleCameraModeChange = (mode: CameraMode) => {
+    camera?.setMode(mode);
+  };
+
+  // Plan view handler
   const handlePlanSelect = (planId: string) => {
     if (planViews?.activePlanId === planId) {
-      planViews?.close();
+      planViews.close();
     } else {
       planViews?.open(planId);
     }
   };
 
+  // Show loading overlay
+  if (isLoading) {
+    return <LoadingOverlay progress={progress} />;
+  }
+
   return (
-    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-      <div className="flex items-center gap-1 p-1.5 bg-background rounded-lg border shadow-lg">
-        <Button
-          onClick={() => document.getElementById("file-upload")?.click()}
-          variant="default"
-          disabled={uploading}
-        >
-          Upload your own ifc model
-        </Button>
-        <input
-          id="file-upload"
-          type="file"
-          accept=".ifc"
-          onChange={handleFileChange}
-          className="hidden"
+    <ToolbarContainer>
+      <FileUploadButton onFileSelect={handleFileUpload} disabled={isLoading} />
+
+      <ToolbarDivider />
+
+      <CameraModeSelector
+        currentMode={camera?.mode}
+        onModeChange={handleCameraModeChange}
+      />
+
+      {planViews && planViews.plans.length > 0 && (
+        <PlanViewSelector
+          plans={planViews.plans}
+          activePlanId={planViews.activePlanId}
+          onPlanSelect={handlePlanSelect}
         />
-
-        <Popover open={cameraModeOpen} onOpenChange={setCameraModeOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" title="Camera Mode">
-              <CurrentIcon className="size-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-40 p-1" align="start" side="top">
-            <div className="flex flex-col gap-0.5">
-              {CAMERA_MODES.map(({ mode, label, icon: Icon }) => (
-                <Button
-                  key={mode}
-                  variant={camera?.mode === mode ? "secondary" : "ghost"}
-                  size="sm"
-                  className="justify-start gap-2 font-light"
-                  onClick={() => handleModeChange(mode)}
-                >
-                  <Icon className="size-4" />
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {planViews && planViews.plans.length > 0 && (
-          <Popover open={planViewsOpen} onOpenChange={setPlanViewsOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={planViews.activePlanId ? "secondary" : "ghost"}
-                size="icon"
-                title="Floor Plans"
-              >
-                <LayoutDashboard className="size-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-1" align="start" side="top">
-              <div className="flex flex-col gap-0.5">
-                {planViews.plans.map((plan) => (
-                  <Button
-                    key={plan.id}
-                    variant={
-                      planViews.activePlanId === plan.id ? "secondary" : "ghost"
-                    }
-                    className="justify-start gap-2 font-light"
-                    onClick={() => handlePlanSelect(plan.id)}
-                  >
-                    {plan.name}
-                  </Button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-      </div>
-    </div>
+      )}
+    </ToolbarContainer>
   );
 }

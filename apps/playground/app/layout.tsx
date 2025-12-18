@@ -2,6 +2,7 @@ import React from "react";
 import type { PageMetadata } from "@ademattos/bunbox";
 import "./index.css";
 import { ThemeProvider } from "@ademattos/bunbox/theme";
+import { ViewerProvider } from "ifc-viewer";
 
 export const metadata: PageMetadata = {
   title: "ifc-viewer",
@@ -14,7 +15,15 @@ export default function RootLayout({
 }) {
   return (
     <ThemeProvider>
-      <main>{children}</main>
+      <ViewerProvider
+        workerUrl="/worker.mjs"
+        config={{
+          gridEnabled: true,
+          statsEnabled: true,
+        }}
+      >
+        <main>{children}</main>
+      </ViewerProvider>
     </ThemeProvider>
   );
 }
