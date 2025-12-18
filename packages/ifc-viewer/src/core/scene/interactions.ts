@@ -3,6 +3,7 @@ import * as OBF from "@thatopen/components-front";
 import * as FRAGS from "@thatopen/fragments";
 import * as THREE from "three";
 import type { InteractionConfig, MousePosition } from "../../types";
+import type { CameraManager } from "../camera/manager";
 
 // ============================================================================
 // Types
@@ -34,6 +35,7 @@ export interface HoverEvent {
 export class InteractionManager {
   private components: OBC.Components;
   private world: OBC.World;
+  private cameraManager?: CameraManager;
 
   // Hover state (single element)
   private hoverMeshes: THREE.Mesh[] = [];
@@ -71,10 +73,12 @@ export class InteractionManager {
   constructor(
     components: OBC.Components,
     world: OBC.World,
-    config: InteractionConfig = {}
+    config: InteractionConfig = {},
+    cameraManager?: CameraManager
   ) {
     this.components = components;
     this.world = world;
+    this.cameraManager = cameraManager;
 
     this.adaptiveOrbitOnHover = config.adaptiveOrbitOnHover ?? true;
     this.adaptiveOrbitOnSelect = config.adaptiveOrbitOnSelect ?? true;
@@ -343,6 +347,10 @@ export class InteractionManager {
   // ============================================================================
 
   private setOrbitPoint(point: THREE.Vector3): void {
+    // Only update orbit point when in Orbit mode
+    if (this.cameraManager && this.cameraManager.getMode() !== "Orbit") {
+      return;
+    }
     const camera = this.world.camera as OBC.SimpleCamera;
     if (!camera.controls) return;
     camera.controls.setOrbitPoint(point.x, point.y, point.z);

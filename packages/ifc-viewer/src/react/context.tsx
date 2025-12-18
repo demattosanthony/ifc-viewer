@@ -112,7 +112,8 @@ export const ViewerProvider = ({
           interactionRef.current = new InteractionManager(
             scene.components,
             scene.world,
-            interactionConfig
+            interactionConfig,
+            cameraManagerRef.current ?? undefined
           );
 
           // Wire up selection events

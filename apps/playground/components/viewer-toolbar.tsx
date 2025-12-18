@@ -10,8 +10,10 @@ import {
   HandGrab,
   Rotate3D,
   PersonStanding,
-  LayoutDashboard,
   Upload,
+  Layers,
+  Check,
+  X,
 } from "lucide-react";
 
 // ============================================================================
@@ -224,23 +226,80 @@ function PlanViewSelector({
           variant={activePlanId ? "secondary" : "ghost"}
           size="icon"
           title="Floor Plans"
+          className="relative"
         >
-          <LayoutDashboard className="size-4" />
+          <Layers className="size-4" />
+          {activePlanId && (
+            <span className="absolute -top-0.5 -right-0.5 size-2 bg-foreground rounded-full ring-2 ring-background" />
+          )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-1" align="center" side="top" sideOffset={8}>
-        <div className="flex flex-col">
-          {plans.map((plan) => (
-            <Button
-              key={plan.id}
-              variant={activePlanId === plan.id ? "secondary" : "ghost"}
-              size="sm"
-              className="justify-start font-normal truncate"
-              onClick={() => handleSelect(plan.id)}
+      <PopoverContent
+        className="w-56 p-0 overflow-hidden"
+        align="center"
+        side="top"
+        sideOffset={8}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/50 bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Layers className="size-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Floor Plans</span>
+          </div>
+          {activePlanId && (
+            <button
+              onClick={() => onPlanSelect(activePlanId)}
+              className="p-1 rounded-md hover:bg-muted transition-colors"
+              title="Exit floor plan view"
             >
-              {plan.name}
-            </Button>
-          ))}
+              <X className="size-3.5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+
+        {/* Floor Plans List */}
+        <div className="py-1.5 max-h-64 overflow-y-auto">
+          {plans.map((plan, index) => {
+            const isActive = activePlanId === plan.id;
+            return (
+              <button
+                key={plan.id}
+                onClick={() => handleSelect(plan.id)}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2 text-left
+                  transition-all duration-150 ease-out
+                  ${
+                    isActive
+                      ? "bg-secondary text-secondary-foreground"
+                      : "hover:bg-muted/50 text-foreground"
+                  }
+                `}
+              >
+                {/* Floor Level Indicator */}
+                <div
+                  className={`
+                  flex items-center justify-center size-7 rounded-md text-xs font-medium
+                  transition-colors duration-150
+                  ${
+                    isActive
+                      ? "bg-foreground text-background"
+                      : "bg-muted text-muted-foreground"
+                  }
+                `}
+                >
+                  {index + 1}
+                </div>
+
+                {/* Plan Name */}
+                <span className="flex-1 text-sm truncate">{plan.name}</span>
+
+                {/* Active Check */}
+                {isActive && (
+                  <Check className="size-4 text-foreground shrink-0" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </PopoverContent>
     </Popover>

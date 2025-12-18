@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback } from "react";
 import {
   useViewer,
@@ -27,8 +25,6 @@ export default function Home() {
       async (event: ElementSelectedEvent) => {
         const entries = Object.entries(event.modelIdMap);
 
-        console.log("event", event);
-
         // If no selection, clear the panel
         if (entries.length === 0) {
           setSelectedElement(null);
@@ -39,7 +35,6 @@ export default function Home() {
         for (const [modelId, localIdSet] of entries) {
           for (const localId of localIdSet) {
             const element = await getElement(modelId, localId);
-            console.log("element", element);
             if (element) {
               setSelectedElement({
                 data: element as Record<string, unknown>,
