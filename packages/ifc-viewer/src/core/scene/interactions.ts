@@ -49,6 +49,8 @@ export class InteractionManager {
   // Mouse tracking
   private lastMousePosition: MousePosition | undefined;
   private lastClickPoint: THREE.Vector3 | undefined;
+  private isDragging = false;
+  private mouseDownButton: number | null = null;
 
   // Throttling
   private lastHoverTime = 0;
@@ -115,6 +117,7 @@ export class InteractionManager {
     container.addEventListener("mousemove", this.onMouseMove);
     container.addEventListener("mouseleave", this.onMouseLeave);
     container.addEventListener("mousedown", this.onMouseDown);
+    container.addEventListener("mouseup", this.onMouseUp);
     container.addEventListener("click", this.onClick);
   }
 
@@ -124,6 +127,16 @@ export class InteractionManager {
 
   private onMouseDown = (e: MouseEvent) => {
     this.lastMousePosition = { clientX: e.clientX, clientY: e.clientY };
+    this.mouseDownButton = e.button;
+    this.isDragging = false;
+  };
+
+  private onMouseUp = () => {
+    if (this.isDragging && this.mouseDownButton === 2) {
+      this.world.renderer!.three.domElement.style.cursor = "";
+    }
+    this.mouseDownButton = null;
+    this.isDragging = false;
   };
 
   private onMouseMove = async (e: MouseEvent) => {
@@ -131,6 +144,15 @@ export class InteractionManager {
 
     // Update mouse position for hover
     this.lastMousePosition = { clientX: e.clientX, clientY: e.clientY };
+
+    // Detect dragging (any mouse button held while moving)
+    if (this.mouseDownButton !== null) {
+      if (!this.isDragging && this.mouseDownButton === 2) {
+        this.world.renderer!.three.domElement.style.cursor = "grabbing";
+      }
+      this.isDragging = true;
+      return; // Skip hover raycasting during drag
+    }
 
     // Throttle raycasting
     const now = performance.now();
@@ -193,6 +215,8 @@ export class InteractionManager {
   private onMouseLeave = () => {
     this.clearHover();
     this.onHover.trigger(null);
+    this.mouseDownButton = null;
+    this.isDragging = false;
   };
 
   private onClick = async (e: MouseEvent) => {
@@ -427,6 +451,7 @@ export class InteractionManager {
       container.removeEventListener("mousemove", this.onMouseMove);
       container.removeEventListener("mouseleave", this.onMouseLeave);
       container.removeEventListener("mousedown", this.onMouseDown);
+      container.removeEventListener("mouseup", this.onMouseUp);
       container.removeEventListener("click", this.onClick);
     }
   }

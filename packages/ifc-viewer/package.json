@@ -39,7 +39,7 @@
   "dependencies": {
     "@thatopen/components": "^3.2.6",
     "@thatopen/components-front": "^3.2.16",
-    "@thatopen/fragments": "^3.2.13",
+    "@thatopen/fragments": "/Users/anthonydemattos/that-open/engine_fragment/packages/fragments",
     "stats.js": "^0.17.0",
     "three": "0.175.0",
     "web-ifc": "^0.0.74"
