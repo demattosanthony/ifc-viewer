@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { X, ChevronRight, ChevronDown, Layers, Box, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -7,14 +7,8 @@ import { cn } from "@/lib/utils";
 // Types
 // ============================================================================
 
-interface MousePosition {
-  clientX: number;
-  clientY: number;
-}
-
 interface ElementPropertiesPanelProps {
   element: Record<string, unknown> | null;
-  position?: MousePosition;
   onClose: () => void;
 }
 
@@ -179,20 +173,20 @@ function PropertySection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-border/50 last:border-b-0">
+    <div className="border-b border-[#3c3c3c] last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-[#2a2d2e] transition-colors"
       >
         {isOpen ? (
-          <ChevronDown className="size-4 text-muted-foreground" />
+          <ChevronDown className="size-4 text-[#858585]" />
         ) : (
-          <ChevronRight className="size-4 text-muted-foreground" />
+          <ChevronRight className="size-4 text-[#858585]" />
         )}
         {icon}
-        <span className="text-sm font-medium">{title}</span>
+        <span className="text-xs font-medium text-[#cccccc]">{title}</span>
       </button>
-      {isOpen && <div className="px-4 pb-3">{children}</div>}
+      {isOpen && <div className="px-3 pb-2">{children}</div>}
     </div>
   );
 }
@@ -204,12 +198,12 @@ function PropertyRow({ label, value, indent = 0 }: PropertyRowProps) {
   return (
     <div
       className={cn(
-        "flex justify-between items-start gap-4 py-1.5 text-sm",
-        indent > 0 && "ml-4"
+        "flex justify-between items-start gap-3 py-1 text-xs",
+        indent > 0 && "ml-3"
       )}
     >
-      <span className="text-muted-foreground shrink-0">{label}</span>
-      <span className="text-right font-mono text-xs break-all">
+      <span className="text-[#858585] shrink-0">{label}</span>
+      <span className="text-right font-mono text-[#9cdcfe] break-all">
         {formattedValue}
       </span>
     </div>
@@ -224,15 +218,15 @@ function MaterialsList({
   if (materials.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {materials.map((mat, i) => (
         <div
           key={i}
-          className="flex justify-between items-center py-1.5 text-sm"
+          className="flex justify-between items-center py-1 text-xs"
         >
-          <span className="text-muted-foreground">{mat.name}</span>
+          <span className="text-[#858585]">{mat.name}</span>
           {mat.thickness && (
-            <span className="font-mono text-xs">
+            <span className="font-mono text-[#9cdcfe]">
               {mat.thickness.toFixed(1)} cm
             </span>
           )}
@@ -250,13 +244,13 @@ function PropertySetsList({
   if (psets.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {psets.map((pset, i) => (
         <div key={i}>
-          <div className="text-xs font-medium text-muted-foreground mb-1">
+          <div className="text-[10px] font-medium text-[#4ec9b0] mb-1">
             {pset.name.replace("Pset_", "")}
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-0">
             {pset.properties.map((prop, j) => (
               <PropertyRow key={j} label={prop.name} value={prop.value} />
             ))}
@@ -275,22 +269,6 @@ export function ElementPropertiesPanel({
   element,
   onClose,
 }: ElementPropertiesPanelProps) {
-  const [isVisible, setIsVisible] = useState(false);
-
-  // Animate in when element changes
-  useEffect(() => {
-    if (element) {
-      requestAnimationFrame(() => setIsVisible(true));
-    } else {
-      setIsVisible(false);
-    }
-  }, [element]);
-
-  const handleClose = useCallback(() => {
-    setIsVisible(false);
-    setTimeout(onClose, 200);
-  }, [onClose]);
-
   // Extract data from element
   const { materials, propertySets, location, basicInfo } = useMemo(() => {
     if (!element) {
@@ -328,24 +306,19 @@ export function ElementPropertiesPanel({
   return (
     <div
       className={cn(
-        "fixed top-4 right-4 bottom-4 w-80 z-50",
-        "bg-background/95 backdrop-blur-xl",
-        "border border-border/50 rounded-xl shadow-2xl",
-        "flex flex-col overflow-hidden",
-        "transition-all duration-200 ease-out",
-        isVisible
-          ? "opacity-100 translate-x-0"
-          : "opacity-0 translate-x-4 pointer-events-none"
+        "w-72 shrink-0",
+        "bg-[#252526] border-l border-[#3c3c3c]",
+        "flex flex-col overflow-hidden"
       )}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 p-4 border-b border-border/50">
+      <div className="flex items-start justify-between gap-2 p-3 border-b border-[#3c3c3c]">
         <div className="min-w-0">
-          <h2 className="font-semibold text-sm truncate">
+          <h2 className="font-medium text-sm text-[#cccccc] truncate">
             {basicInfo?.name?.split(":")[0] || "Element"}
           </h2>
           {basicInfo?.type && (
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
+            <p className="text-xs text-[#858585] truncate mt-0.5">
               {basicInfo.type.split(":")[0]}
             </p>
           )}
@@ -353,8 +326,8 @@ export function ElementPropertiesPanel({
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 shrink-0"
-          onClick={handleClose}
+          className="size-7 shrink-0 text-[#858585] hover:text-[#cccccc] hover:bg-[#3c3c3c]"
+          onClick={onClose}
         >
           <X className="size-4" />
         </Button>
@@ -365,7 +338,7 @@ export function ElementPropertiesPanel({
         {/* Basic Info */}
         <PropertySection
           title="Information"
-          icon={<Info className="size-4 text-muted-foreground" />}
+          icon={<Info className="size-4 text-[#858585]" />}
         >
           <div className="space-y-0.5">
             {basicInfo?.tag && <PropertyRow label="ID" value={basicInfo.tag} />}
@@ -382,7 +355,7 @@ export function ElementPropertiesPanel({
         {materials.length > 0 && (
           <PropertySection
             title="Materials"
-            icon={<Layers className="size-4 text-muted-foreground" />}
+            icon={<Layers className="size-4 text-[#858585]" />}
           >
             <MaterialsList materials={materials} />
           </PropertySection>
@@ -392,7 +365,7 @@ export function ElementPropertiesPanel({
         {propertySets.length > 0 && (
           <PropertySection
             title="Properties"
-            icon={<Box className="size-4 text-muted-foreground" />}
+            icon={<Box className="size-4 text-[#858585]" />}
             defaultOpen={true}
           >
             <PropertySetsList psets={propertySets} />
@@ -401,8 +374,8 @@ export function ElementPropertiesPanel({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-border/50 bg-muted/30">
-        <p className="text-[10px] text-muted-foreground text-center">
+      <div className="px-3 py-2 border-t border-[#3c3c3c] bg-[#1e1e1e]">
+        <p className="text-[10px] text-[#858585] text-center">
           Click elsewhere to deselect
         </p>
       </div>

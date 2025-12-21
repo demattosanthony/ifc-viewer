@@ -6,7 +6,9 @@ const DEFAULT_ARGS = isWindows ? [] : ["--norc", "--noprofile"];
 
 // Filter undefined values from process.env
 const baseEnv = Object.fromEntries(
-  Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)
+  Object.entries(process.env).filter(
+    (entry): entry is [string, string] => entry[1] !== undefined
+  )
 );
 
 export class LocalShell implements Shell {
@@ -53,12 +55,14 @@ export class LocalShell implements Shell {
     const terminal = proc.terminal;
     if (!terminal) throw new Error("Failed to create PTY terminal");
 
-    proc.exited.then((code) => {
-      for (const cb of exitCallbacks) cb(code);
-      // Clear callbacks after exit handlers have fired
-      dataCallbacks.length = 0;
-      exitCallbacks.length = 0;
-    }).catch(() => {});
+    proc.exited
+      .then((code) => {
+        for (const cb of exitCallbacks) cb(code);
+        // Clear callbacks after exit handlers have fired
+        dataCallbacks.length = 0;
+        exitCallbacks.length = 0;
+      })
+      .catch(() => {});
 
     return {
       id,

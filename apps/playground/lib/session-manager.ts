@@ -38,6 +38,14 @@ class SessionManager {
     await Promise.all([
       computer.files.write("print_info.py", samplePy),
       computer.files.write("sample.ifc", sampleIfc),
+      computer.files.write(
+        "README.md",
+        "Welcome to the IFC Viewer Playground! This is a sample README file."
+      ),
+      computer.files.write(
+        "/folder/file.txt",
+        "This is a sample file in a folder."
+      ),
     ]);
 
     const timeoutId = setTimeout(

@@ -25,11 +25,18 @@ export function setupFeatures(
   if (config.stats) {
     stats = new Stats();
     stats.showPanel(0);
-    document.body.append(stats.dom);
-    stats.dom.style.position = "absolute";
-    stats.dom.style.top = "0px";
-    stats.dom.style.left = "0px";
-    stats.dom.style.zIndex = "10";
+
+    // Append to the viewer container instead of document.body
+    const container = world.renderer?.three.domElement.parentElement;
+    if (container) {
+      container.style.position = "relative";
+      container.append(stats.dom);
+      stats.dom.style.position = "absolute";
+      stats.dom.style.top = "0px";
+      stats.dom.style.left = "0px";
+      stats.dom.style.zIndex = "10";
+    }
+
     world.renderer?.onBeforeUpdate.add(() => stats!.begin());
     world.renderer?.onAfterUpdate.add(() => stats!.end());
   }

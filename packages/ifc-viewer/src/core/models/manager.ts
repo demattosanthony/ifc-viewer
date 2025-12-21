@@ -159,6 +159,10 @@ export class ModelManager {
   }
 
   async unloadAllModels(): Promise<void> {
+    if (!this.fragmentsInitialized) {
+      return;
+    }
+
     const fragments = this.components.get(OBC.FragmentsManager);
     const modelIds = Array.from(fragments.list.keys());
 

@@ -339,22 +339,6 @@ export function ViewerToolBar() {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Load sample model on initialization
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const loadSampleModel = async () => {
-      try {
-        const response = await fetch("/sample.ifc");
-        const buffer = await response.arrayBuffer();
-        await loadModel(buffer, "sample.ifc");
-      } catch (error) {
-        console.error("Failed to load sample model:", error);
-      }
-    };
-
-    loadSampleModel();
-  }, [isInitialized, loadModel]);
 
   // File upload handler
   const handleFileUpload = async (file: File) => {
