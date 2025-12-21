@@ -229,9 +229,6 @@ function PlanViewSelector({
           className="relative"
         >
           <Layers className="size-4" />
-          {activePlanId && (
-            <span className="absolute -top-0.5 -right-0.5 size-2 bg-foreground rounded-full ring-2 ring-background" />
-          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent

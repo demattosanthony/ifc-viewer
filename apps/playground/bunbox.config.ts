@@ -10,6 +10,12 @@ const config: BunboxConfig = {
   hostname: "localhost",
   appDir: "./app",
   publicDir: "./public",
+  openapi: {
+    enabled: true,
+    title: "IFC Viewer Playground API",
+    description: "API for the IFC Viewer Playground",
+    version: "1.0.0",
+  },
   cors: {
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

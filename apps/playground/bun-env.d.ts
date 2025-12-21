@@ -32,3 +32,13 @@ declare module "*.module.css" {
   const classes: { readonly [key: string]: string };
   export = classes;
 }
+
+declare module "*.py" {
+  const path: string;
+  export default path;
+}
+
+declare module "*.ifc" {
+  const path: string;
+  export default path;
+}

@@ -23,6 +23,7 @@ import type {
   PlanViewControls,
 } from "./types";
 import * as OBC from "@thatopen/components";
+import * as THREE from "three";
 import {
   CameraManager,
   type CameraState,
@@ -47,6 +48,7 @@ export const ViewerProvider = ({
 }: ViewerProviderProps) => {
   // Core instances (refs because we don't want to re-create them on every render)
   const sceneRef = useRef<Awaited<ReturnType<typeof createScene>> | null>(null);
+  const worldRef = useRef<OBC.World | null>(null);
   const modelManagerRef = useRef<ModelManager | null>(null);
   const featuresRef = useRef<ReturnType<typeof setupFeatures> | null>(null);
   const interactionRef = useRef<InteractionManager | null>(null);
@@ -79,6 +81,16 @@ export const ViewerProvider = ({
           backgroundColor: config?.backgroundColor,
         });
         sceneRef.current = scene;
+        worldRef.current = scene.world;
+
+        // Set up renderer resize handler to update camera aspect ratio
+        scene.world.renderer?.onResize.add((size) => {
+          const camera = scene.world.camera?.three;
+          if (camera instanceof THREE.PerspectiveCamera) {
+            camera.aspect = size.x / size.y;
+            camera.updateProjectionMatrix();
+          }
+        });
 
         // Setup camera manager with state sync callback
         cameraManagerRef.current = new CameraManager(scene.camera, {
@@ -198,6 +210,7 @@ export const ViewerProvider = ({
     }
 
     sceneRef.current = null;
+    worldRef.current = null;
     modelManagerRef.current = null;
     featuresRef.current = null;
     interactionRef.current = null;
@@ -287,6 +300,11 @@ export const ViewerProvider = ({
 
   const closePlan = useCallback(() => planViewManagerRef.current?.close(), []);
 
+  // Resize callback - triggers renderer resize and camera aspect ratio update
+  const resize = useCallback(() => {
+    worldRef.current?.renderer?.resize(undefined);
+  }, []);
+
   // Memoize camera object to prevent unnecessary re-renders
   const camera = useMemo<CameraControls | null>(() => {
     if (!cameraState) return null;
@@ -324,6 +342,7 @@ export const ViewerProvider = ({
     unloadAllModels,
     initialize,
     dispose,
+    resize,
     camera,
     planViews,
   };

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 
 export function Viewer({ onReady, onError }: ViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { initialize, isInitialized, error, camera } = useViewer();
+  const { initialize, isInitialized, error, camera, resize } = useViewer();
   const hasInitialized = useRef(false);
 
   const styles = useMemo<CSSProperties>(
@@ -42,6 +42,22 @@ export function Viewer({ onReady, onError }: ViewerProps) {
       onError?.(error);
     }
   }, [error, onError]);
+
+  // Watch container for resize events and trigger renderer resize
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !isInitialized) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      resize();
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [isInitialized, resize]);
 
   return <div ref={containerRef} style={styles}></div>;
 }

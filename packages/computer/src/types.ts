@@ -33,6 +33,7 @@ export interface Shell {
 export interface TerminalSession {
   readonly id: string;
   write(data: string): Promise<void>;
+  resize(cols: number, rows: number): void;
   kill(signal?: number): Promise<void>;
   onData(callback: (data: string) => void): () => void;
   onExit(callback: (code: number) => void): () => void;
@@ -67,6 +68,8 @@ export interface ReadOptions {
 export interface TerminalOptions {
   cwd?: string;
   env?: Record<string, string>;
+  cols?: number;
+  rows?: number;
 }
 
 export type FileContent =

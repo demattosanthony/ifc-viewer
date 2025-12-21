@@ -73,6 +73,8 @@ export interface ViewerActions {
   ) => Promise<ElementData | null>;
   initialize: (container: HTMLElement) => Promise<void>;
   dispose: () => void;
+  /** Manually trigger a resize of the viewer renderer */
+  resize: () => void;
 }
 
 export interface ViewerContextValue extends ViewerState, ViewerActions {

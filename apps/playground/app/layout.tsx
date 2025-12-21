@@ -1,11 +1,11 @@
 import React from "react";
 import type { PageMetadata } from "@ademattos/bunbox";
-import "./index.css";
-import { ThemeProvider } from "@ademattos/bunbox/theme";
 import { ViewerProvider } from "ifc-viewer";
+import "./index.css";
+import "@xterm/xterm/css/xterm.css";
 
 export const metadata: PageMetadata = {
-  title: "ifc-viewer",
+  title: "IFC Studio",
 };
 
 export default function RootLayout({
@@ -14,16 +14,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider>
-      <ViewerProvider
-        workerUrl="/worker.mjs"
-        config={{
-          gridEnabled: false,
-          statsEnabled: true,
-        }}
-      >
-        <main>{children}</main>
-      </ViewerProvider>
-    </ThemeProvider>
+    <ViewerProvider
+      workerUrl="/worker.mjs"
+      config={{
+        gridEnabled: false,
+        statsEnabled: true,
+      }}
+    >
+      <main>{children}</main>
+    </ViewerProvider>
   );
 }
