@@ -4,24 +4,17 @@ import type { ServerWebSocket, WebSocketContext } from "@ademattos/bunbox";
 interface CustomData {
   sessionId: string;
   terminalId?: string;
+  unsubscribeData?: () => void;
+  unsubscribeExit?: () => void;
 }
 
 interface BunboxWsData {
   data: CustomData;
 }
 
-interface InputMessage {
-  type: "input";
-  data: string;
-}
-
-interface ResizeMessage {
-  type: "resize";
-  cols: number;
-  rows: number;
-}
-
-type ClientMessage = InputMessage | ResizeMessage;
+type ClientMessage =
+  | { type: "input"; data: string }
+  | { type: "resize"; cols: number; rows: number };
 
 function getCustomData(ws: ServerWebSocket): CustomData {
   return (ws.data as BunboxWsData).data;
@@ -30,11 +23,7 @@ function getCustomData(ws: ServerWebSocket): CustomData {
 export function upgrade(req: Request): boolean | { data?: unknown } {
   const url = new URL(req.url);
   const sessionId = url.searchParams.get("sessionId");
-
-  if (!sessionId) {
-    return false;
-  }
-
+  if (!sessionId) return false;
   return { data: { sessionId } };
 }
 
@@ -57,17 +46,16 @@ export async function onOpen(ws: ServerWebSocket, _ctx: WebSocketContext) {
     const terminal = await sessionManager.createTerminal(sessionId);
     customData.terminalId = terminal.id;
 
-    terminal.onExit((code: number) => {
+    customData.unsubscribeExit = terminal.onExit((code: number) => {
       if (ws.readyState === 1) {
         ws.send(JSON.stringify({ type: "exit", code }));
         ws.close(1000, "Terminal exited");
       }
     });
 
-    terminal.onData((data: string) => {
+    customData.unsubscribeData = terminal.onData((data: string) => {
       if (ws.readyState === 1) {
-        const cleanData = data.replace(/\x1b\[\?1034h/g, "");
-        ws.send(JSON.stringify({ type: "output", data: cleanData }));
+        ws.send(JSON.stringify({ type: "output", data: data.replace(/\x1b\[\?1034h/g, "") }));
       }
     });
 
@@ -78,11 +66,7 @@ export async function onOpen(ws: ServerWebSocket, _ctx: WebSocketContext) {
   }
 }
 
-export async function onMessage(
-  ws: ServerWebSocket,
-  message: string,
-  _ctx: WebSocketContext
-) {
+export async function onMessage(ws: ServerWebSocket, message: string, _ctx: WebSocketContext) {
   const { sessionId, terminalId } = getCustomData(ws);
 
   if (!sessionId || !terminalId) {
@@ -104,24 +88,21 @@ export async function onMessage(
 
   try {
     const parsed: ClientMessage = JSON.parse(message);
-
     if (parsed.type === "input" && parsed.data) {
       await terminal.write(parsed.data);
     } else if (parsed.type === "resize" && parsed.cols && parsed.rows) {
       terminal.resize(parsed.cols, parsed.rows);
     }
   } catch {
-    await terminal.write(message);
+    console.error("[WS] Invalid message format");
   }
 }
 
-export function onClose(
-  ws: ServerWebSocket,
-  _code: number,
-  _reason: string,
-  _ctx: WebSocketContext
-) {
-  const { sessionId, terminalId } = getCustomData(ws);
+export function onClose(ws: ServerWebSocket, _code: number, _reason: string, _ctx: WebSocketContext) {
+  const { sessionId, terminalId, unsubscribeData, unsubscribeExit } = getCustomData(ws);
+
+  unsubscribeData?.();
+  unsubscribeExit?.();
 
   if (!sessionId || !terminalId) return;
 

@@ -1,10 +1,13 @@
 import type { Shell, TerminalSession, TerminalOptions } from "../../types";
 
-interface BunTerminal {
-  write(data: string | Uint8Array): void;
-  resize(cols: number, rows: number): void;
-  close(): void;
-}
+const isWindows = process.platform === "win32";
+const DEFAULT_SHELL = isWindows ? "powershell.exe" : "/bin/bash";
+const DEFAULT_ARGS = isWindows ? [] : ["--norc", "--noprofile"];
+
+// Filter undefined values from process.env
+const baseEnv = Object.fromEntries(
+  Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)
+);
 
 export class LocalShell implements Shell {
   constructor(
@@ -14,81 +17,66 @@ export class LocalShell implements Shell {
 
   async startTerminal(options?: TerminalOptions): Promise<TerminalSession> {
     const cwd = options?.cwd || this.workDir;
-    const isWindows = process.platform === "win32";
-
-    const shell = isWindows ? "powershell.exe" : "/bin/bash";
-    const args = isWindows ? [] : ["--norc", "--noprofile"];
 
     const env: Record<string, string> = {
-      ...(process.env as Record<string, string>),
+      ...baseEnv,
       ...this.defaultEnv,
       ...options?.env,
-      TERM: "xterm-256color",
-      SHELL: shell,
-      HOME: cwd, // Set HOME so ~ shows as workspace root
-      PS1: "\\[\\033[90m\\]\\w\\[\\033[0m\\] \\[\\033[36m\\]>\\[\\033[0m\\] ",
-      BASH_SILENCE_DEPRECATION_WARNING: "1",
+      SHELL: DEFAULT_SHELL,
+      // Bash-specific settings
+      ...(!isWindows && {
+        PS1: "\\[\\033[36m\\]$\\[\\033[0m\\] ",
+        BASH_SILENCE_DEPRECATION_WARNING: "1",
+      }),
     };
 
-    const sessionId = `terminal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const id = `terminal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const dataCallbacks: Array<(data: string) => void> = [];
     const exitCallbacks: Array<(code: number) => void> = [];
-    let ptyTerminal: BunTerminal | null = null;
+    const decoder = new TextDecoder();
+    let killed = false;
 
-    const proc = Bun.spawn([shell, ...args], {
+    const proc = Bun.spawn([DEFAULT_SHELL, ...DEFAULT_ARGS], {
       cwd,
       env,
       terminal: {
-        cols: options?.cols || 80,
-        rows: options?.rows || 24,
-        data(terminal, data) {
-          ptyTerminal = terminal as BunTerminal;
-          const text = new TextDecoder().decode(data);
-          for (const cb of dataCallbacks) {
-            cb(text);
-          }
+        cols: options?.cols ?? 80,
+        rows: options?.rows ?? 24,
+        data: (_, data) => {
+          if (killed) return;
+          const text = decoder.decode(data);
+          for (const cb of dataCallbacks) cb(text);
         },
       },
     });
 
-    const procTerminal = (proc as unknown as { terminal: BunTerminal }).terminal;
-    if (!procTerminal) {
-      throw new Error("Failed to create PTY terminal");
-    }
+    const terminal = proc.terminal;
+    if (!terminal) throw new Error("Failed to create PTY terminal");
 
     proc.exited.then((code) => {
-      for (const cb of exitCallbacks) {
-        cb(code);
-      }
-    });
-
-    const getTerminal = () => ptyTerminal || procTerminal;
+      for (const cb of exitCallbacks) cb(code);
+      // Clear callbacks after exit handlers have fired
+      dataCallbacks.length = 0;
+      exitCallbacks.length = 0;
+    }).catch(() => {});
 
     return {
-      id: sessionId,
-
-      async write(data: string): Promise<void> {
-        getTerminal().write(data);
+      id,
+      write: async (data: string) => void terminal.write(data),
+      resize: (cols: number, rows: number) => terminal.resize(cols, rows),
+      kill: async (signal?: number) => {
+        killed = true;
+        terminal.close();
+        proc.kill(signal);
       },
-
-      resize(cols: number, rows: number): void {
-        getTerminal().resize(cols, rows);
-      },
-
-      async kill(): Promise<void> {
-        getTerminal().close();
-        proc.kill();
-      },
-
-      onData(callback: (data: string) => void): () => void {
+      onData: (callback: (data: string) => void) => {
         dataCallbacks.push(callback);
         return () => {
           const idx = dataCallbacks.indexOf(callback);
           if (idx > -1) dataCallbacks.splice(idx, 1);
         };
       },
-
-      onExit(callback: (code: number) => void): () => void {
+      onExit: (callback: (code: number) => void) => {
         exitCallbacks.push(callback);
         return () => {
           const idx = exitCallbacks.indexOf(callback);
