@@ -9,7 +9,58 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import type { AgentEvent, AgentMessage, ToolInvocation, MessagePart, TextPart, ToolPart } from "@ifc-viewer/agent";
+import type {
+  AgentEvent,
+  AgentMessage,
+  ToolInvocation,
+  MessagePart,
+} from "@ifc-viewer/agent";
+
+// Streaming tool state for tracking partial JSON as it arrives
+interface StreamingToolState {
+  id: string;
+  name: string;
+  buffer: string;
+  lastContentLength: number; // For detecting new content chunks
+  lastPath: string | null; // For file operations
+  currentLine: number; // Track line position for editor cursor
+  currentColumn: number; // Track column position for editor cursor
+}
+
+// Extract a string field value from partial JSON
+function extractStreamingField(
+  buffer: string,
+  fieldName: string
+): string | null {
+  const pattern = `"${fieldName}":`;
+  const idx = buffer.indexOf(pattern);
+  if (idx === -1) return null;
+
+  const afterColon = buffer.slice(idx + pattern.length).trimStart();
+  if (!afterColon.startsWith('"')) return null;
+
+  // Find content between quotes, handling escapes
+  let content = "";
+  let escaped = false;
+  for (let i = 1; i < afterColon.length; i++) {
+    const char = afterColon[i];
+    if (escaped) {
+      // Handle common escape sequences
+      if (char === "n") content += "\n";
+      else if (char === "t") content += "\t";
+      else if (char === "r") content += "\r";
+      else content += char;
+      escaped = false;
+    } else if (char === "\\") {
+      escaped = true;
+    } else if (char === '"') {
+      break; // Found closing quote
+    } else {
+      content += char;
+    }
+  }
+  return content;
+}
 
 interface AgentContextValue {
   messages: AgentMessage[];
@@ -43,6 +94,15 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
   );
   // Track current step for building message parts
   const currentStepRef = useRef<number>(0);
+  // Track streaming tool state for tool-input-delta processing
+  const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map());
+
+  // Helper to emit presence events
+  const emitPresenceEvent = useCallback((event: AgentEvent) => {
+    for (const callback of presenceCallbacksRef.current) {
+      callback(event);
+    }
+  }, []);
 
   // Connect to WebSocket
   const connect = useCallback(() => {
@@ -111,7 +171,10 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
 
             // Find existing text part for current step, or create one
             const lastPart = parts[parts.length - 1];
-            if (lastPart?.type === "text" && lastPart.stepIndex === currentStep) {
+            if (
+              lastPart?.type === "text" &&
+              lastPart.stepIndex === currentStep
+            ) {
               // Append to existing text part
               parts[parts.length - 1] = {
                 ...lastPart,
@@ -140,7 +203,17 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
         break;
 
       case "tool-input-start":
-        // Create tool invocation in "pending" state when input streaming starts
+        // Initialize streaming state for this tool
+        streamingToolsRef.current.set(event.id, {
+          id: event.id,
+          name: event.name,
+          buffer: "",
+          lastContentLength: 0,
+          lastPath: null,
+          currentLine: 0,
+          currentColumn: 0,
+        });
+        // Create tool invocation in "streaming" state when input streaming starts
         setMessages((prev) => {
           const lastIdx = prev.length - 1;
           const lastMsg = prev[lastIdx];
@@ -150,7 +223,7 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
               id: event.id,
               toolName: event.name,
               args: {},
-              state: "pending" as const,
+              state: "streaming" as const,
             };
 
             const parts: MessagePart[] = [...(lastMsg.parts || [])];
@@ -176,12 +249,121 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
         });
         break;
 
-      case "tool-input-delta":
-        // Streaming tool input - could accumulate args here if needed
+      case "tool-input-delta": {
+        const toolState = streamingToolsRef.current.get(event.id);
+        if (!toolState) break;
+
+        // Accumulate the delta
+        toolState.buffer += event.delta;
+
+        // Parse partial JSON to extract field values based on tool type
+        const extractedArgs: Record<string, unknown> = {};
+        let newChunk: string | null = null;
+
+        if (toolState.name === "writeFile") {
+          // Extract path and content for file writing
+          const path = extractStreamingField(toolState.buffer, "path");
+          const content = extractStreamingField(toolState.buffer, "content");
+
+          if (path) {
+            extractedArgs.path = path;
+            // Open file if path changed
+            if (path !== toolState.lastPath) {
+              toolState.lastPath = path;
+              emitPresenceEvent({ type: "editor-open", path });
+            }
+          }
+
+          if (content !== null) {
+            extractedArgs.content = content;
+            // Calculate new content since last update
+            if (content.length > toolState.lastContentLength) {
+              newChunk = content.slice(toolState.lastContentLength);
+              toolState.lastContentLength = content.length;
+
+              // Emit editor insert events for real-time streaming
+              if (path) {
+                for (const char of newChunk) {
+                  if (char === "\n") {
+                    toolState.currentLine++;
+                    toolState.currentColumn = 0;
+                  } else {
+                    emitPresenceEvent({
+                      type: "editor-insert",
+                      path,
+                      position: {
+                        line: toolState.currentLine,
+                        column: toolState.currentColumn,
+                      },
+                      text: char,
+                    });
+                    toolState.currentColumn++;
+                  }
+                }
+              }
+            }
+          }
+        } else if (toolState.name === "executeCommand") {
+          // Extract command for terminal execution
+          const command = extractStreamingField(toolState.buffer, "command");
+
+          if (command !== null) {
+            extractedArgs.command = command;
+            // Calculate new content since last update
+            if (command.length > toolState.lastContentLength) {
+              newChunk = command.slice(toolState.lastContentLength);
+              toolState.lastContentLength = command.length;
+
+              // Emit terminal append event for real-time streaming
+              emitPresenceEvent({
+                type: "terminal-append",
+                text: newChunk,
+              });
+            }
+          }
+        }
+
+        // Update tool invocation args in message state
+        if (Object.keys(extractedArgs).length > 0) {
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1;
+            const lastMsg = prev[lastIdx];
+            if (lastMsg?.role === "assistant") {
+              const newToolInvocations = lastMsg.toolInvocations?.map((t) =>
+                t.id === event.id
+                  ? { ...t, args: { ...t.args, ...extractedArgs } }
+                  : t
+              );
+              const newParts: MessagePart[] = (lastMsg.parts || []).map((p) => {
+                if (p.type === "tool" && p.toolInvocation.id === event.id) {
+                  return {
+                    ...p,
+                    toolInvocation: {
+                      ...p.toolInvocation,
+                      args: { ...p.toolInvocation.args, ...extractedArgs },
+                    },
+                  };
+                }
+                return p;
+              });
+              return [
+                ...prev.slice(0, lastIdx),
+                {
+                  ...lastMsg,
+                  toolInvocations: newToolInvocations,
+                  parts: newParts,
+                },
+              ];
+            }
+            return prev;
+          });
+        }
         break;
+      }
 
       case "tool-input-end":
-        // Tool input streaming complete - will be followed by tool-call with full args
+        // Clean up streaming state - tool-call will follow with final args
+        streamingToolsRef.current.delete(event.id);
         break;
 
       case "tool-call":
@@ -191,7 +373,9 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
           const lastMsg = prev[lastIdx];
           if (lastMsg?.role === "assistant") {
             // Check if tool already exists (from tool-input-start)
-            const existingToolIndex = lastMsg.toolInvocations?.findIndex(t => t.id === event.id);
+            const existingToolIndex = lastMsg.toolInvocations?.findIndex(
+              (t) => t.id === event.id
+            );
 
             if (existingToolIndex !== undefined && existingToolIndex >= 0) {
               // Update existing tool with args and set to running
@@ -217,7 +401,11 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
 
               return [
                 ...prev.slice(0, lastIdx),
-                { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
+                {
+                  ...lastMsg,
+                  toolInvocations: newToolInvocations,
+                  parts: newParts,
+                },
               ];
             } else {
               // Tool didn't have input streaming, create it now
@@ -282,7 +470,11 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
 
             return [
               ...prev.slice(0, lastIdx),
-              { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
+              {
+                ...lastMsg,
+                toolInvocations: newToolInvocations,
+                parts: newParts,
+              },
             ];
           }
           return prev;
@@ -292,23 +484,34 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
       case "finish":
         setIsLoading(false);
         currentStepRef.current = 0; // Reset for next conversation
+        streamingToolsRef.current.clear(); // Clear any remaining streaming state
         setMessages((prev) => {
           const lastIdx = prev.length - 1;
           const lastMsg = prev[lastIdx];
           if (lastMsg?.role === "assistant" && lastMsg.toolInvocations) {
-            // Mark all pending tool invocations as completed
+            // Mark all pending/streaming/running tool invocations as completed
             const newToolInvocations = lastMsg.toolInvocations.map((t) =>
-              t.state === "running" || t.state === "pending"
+              t.state === "running" ||
+              t.state === "pending" ||
+              t.state === "streaming"
                 ? { ...t, state: "completed" as const }
                 : t
             );
 
             // Update parts too
             const newParts: MessagePart[] = (lastMsg.parts || []).map((p) => {
-              if (p.type === "tool" && (p.toolInvocation.state === "running" || p.toolInvocation.state === "pending")) {
+              if (
+                p.type === "tool" &&
+                (p.toolInvocation.state === "running" ||
+                  p.toolInvocation.state === "pending" ||
+                  p.toolInvocation.state === "streaming")
+              ) {
                 return {
                   ...p,
-                  toolInvocation: { ...p.toolInvocation, state: "completed" as const },
+                  toolInvocation: {
+                    ...p.toolInvocation,
+                    state: "completed" as const,
+                  },
                 };
               }
               return p;
@@ -316,7 +519,11 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
 
             return [
               ...prev.slice(0, lastIdx),
-              { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
+              {
+                ...lastMsg,
+                toolInvocations: newToolInvocations,
+                parts: newParts,
+              },
             ];
           }
           return prev;

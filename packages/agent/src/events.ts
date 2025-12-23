@@ -128,6 +128,11 @@ export interface TerminalOutputEvent {
   data: string;
 }
 
+export interface TerminalAppendEvent {
+  type: "terminal-append";
+  text: string;
+}
+
 // File browser events
 export interface FileCreatedEvent {
   type: "file-created";
@@ -163,6 +168,7 @@ export type AgentEvent =
   | TerminalTypeEvent
   | TerminalExecuteEvent
   | TerminalOutputEvent
+  | TerminalAppendEvent
   | FileCreatedEvent
   | FileDeletedEvent;
 

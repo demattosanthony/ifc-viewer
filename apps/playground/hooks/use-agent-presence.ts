@@ -7,6 +7,8 @@ import type { AgentEvent } from "@ifc-viewer/agent";
 
 interface TerminalControl {
   typeText: (text: string, speed?: number) => void;
+  appendText: (text: string) => void;
+  startStreamingCommand: () => void;
   execute: () => void;
   writeOutput: (data: string) => void;
   focus: () => void;
@@ -20,7 +22,7 @@ interface UseAgentPresenceOptions {
 
 export function useAgentPresence(options: UseAgentPresenceOptions = {}) {
   const { onPresenceEvent } = useAgent();
-  const { openFile, setFileContent, updateFileContent } = useEditor();
+  const { openFile, setFileContent, getFileContent } = useEditor();
   const terminalControlRef = useRef<TerminalControl | null>(null);
 
   // Register terminal control
@@ -45,6 +47,25 @@ export function useAgentPresence(options: UseAgentPresenceOptions = {}) {
           setFileContent(event.path, { type: "text", content: event.content });
           break;
 
+        case "editor-insert": {
+          // Append text incrementally during streaming
+          const current = getFileContent(event.path);
+          if (!current || current.type !== "text") {
+            setFileContent(event.path, { type: "text", content: event.text });
+          } else {
+            // Insert at position - for now, just append to the end
+            // A more sophisticated implementation would insert at the exact position
+            setFileContent(event.path, { type: "text", content: current.content + event.text });
+          }
+          break;
+        }
+
+        case "editor-cursor":
+          // Visual cursor position - could be used for highlighting
+          // For now, just ensure the file is open
+          openFile(event.path);
+          break;
+
         // Terminal events
         case "terminal-focus":
           options.onTerminalFocus?.();
@@ -53,6 +74,11 @@ export function useAgentPresence(options: UseAgentPresenceOptions = {}) {
 
         case "terminal-type":
           terminalControlRef.current?.typeText(event.text, event.speed);
+          break;
+
+        case "terminal-append":
+          // Append text during streaming (no prefix, no delay)
+          terminalControlRef.current?.appendText(event.text);
           break;
 
         case "terminal-execute":
@@ -73,7 +99,7 @@ export function useAgentPresence(options: UseAgentPresenceOptions = {}) {
           break;
       }
     },
-    [openFile, setFileContent, options]
+    [openFile, setFileContent, getFileContent, options]
   );
 
   // Subscribe to presence events

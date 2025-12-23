@@ -12,15 +12,14 @@ import {
   Loader2,
   XCircle,
   Terminal,
-  FileText,
-  FolderOpen,
-  Pencil,
 } from "lucide-react"
 import { useState } from "react"
+import { GenericToolView } from "./tool-views"
 
 export type ToolPart = {
   type: string
   state:
+    | "streaming"
     | "input-streaming"
     | "input-available"
     | "output-available"
@@ -39,73 +38,25 @@ export type ToolProps = {
 
 // Get a friendly display name for the tool
 function getToolDisplayName(type: string): string {
-  const names: Record<string, string> = {
-    shell_execute: "Run command",
-    read_file: "Read file",
-    write_file: "Write file",
-    list_directory: "List directory",
-    create_directory: "Create directory",
-    delete_file: "Delete file",
-  }
-  return names[type] || type.replace(/_/g, " ")
+  return type.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim()
 }
 
-// Get icon for tool type
-function getToolIcon(type: string) {
-  const iconClass = "h-3.5 w-3.5"
-  switch (type) {
-    case "shell_execute":
-      return <Terminal className={iconClass} />
-    case "read_file":
-      return <FileText className={iconClass} />
-    case "write_file":
-      return <Pencil className={iconClass} />
-    case "list_directory":
-    case "create_directory":
-      return <FolderOpen className={iconClass} />
-    default:
-      return <Terminal className={iconClass} />
-  }
-}
-
-// Get a summary of the tool input
-function getToolSummary(type: string, input?: Record<string, unknown>): string {
-  if (!input) return ""
-
-  switch (type) {
-    case "shell_execute":
-      return input.command as string || ""
-    case "read_file":
-    case "write_file":
-    case "delete_file":
-      return input.path as string || ""
-    case "list_directory":
-      return input.path as string || "."
-    default:
-      const firstValue = Object.values(input)[0]
-      return typeof firstValue === "string" ? firstValue : ""
-  }
-}
-
+/**
+ * Generic Tool component - used as a fallback for tools without specialized UI.
+ * Specialized tools (writeFile, executeCommand, listFiles) should use their
+ * dedicated components directly (FilePreview, CommandPreview, FileTree).
+ */
 const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const { state, input, output } = toolPart
 
-  const isLoading = state === "input-streaming" || state === "input-available"
+  const isLoading = state === "streaming" || state === "input-streaming" || state === "input-available"
+  const isStreaming = state === "streaming"
   const isError = state === "output-error"
   const isSuccess = state === "output-available"
 
-  const formatValue = (value: unknown): string => {
-    if (value === null) return "null"
-    if (value === undefined) return "undefined"
-    if (typeof value === "string") return value
-    if (typeof value === "object") {
-      return JSON.stringify(value, null, 2)
-    }
-    return String(value)
-  }
-
-  const summary = getToolSummary(toolPart.type, input)
+  const summary = input ? Object.values(input)[0] : undefined
+  const summaryText = typeof summary === "string" ? summary : ""
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -125,7 +76,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
           ) : isSuccess ? (
             <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
           ) : (
-            getToolIcon(toolPart.type)
+            <Terminal className="h-3.5 w-3.5" />
           )}
         </div>
 
@@ -134,9 +85,9 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
           <span className="font-medium text-foreground">
             {getToolDisplayName(toolPart.type)}
           </span>
-          {summary && (
+          {summaryText && (
             <span className="truncate font-mono text-xs text-muted-foreground">
-              {summary}
+              {summaryText}
             </span>
           )}
         </div>
@@ -151,48 +102,13 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
       </CollapsibleTrigger>
 
       <CollapsibleContent>
-        <div className="mt-1 space-y-2 rounded-lg bg-secondary/30 p-3 text-xs">
-          {/* Input */}
-          {input && Object.keys(input).length > 0 && (
-            <div>
-              <div className="mb-1 font-medium text-muted-foreground">Input</div>
-              <div className="rounded bg-background/50 p-2 font-mono">
-                {Object.entries(input).map(([key, value]) => (
-                  <div key={key} className="break-all">
-                    <span className="text-muted-foreground">{key}:</span>{" "}
-                    <span className="text-foreground">{formatValue(value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Output */}
-          {output && (
-            <div>
-              <div className="mb-1 font-medium text-muted-foreground">Output</div>
-              <div className="max-h-40 overflow-auto rounded bg-background/50 p-2 font-mono">
-                <pre className="whitespace-pre-wrap break-all text-foreground">
-                  {formatValue(output)}
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* Error */}
-          {isError && toolPart.errorText && (
-            <div>
-              <div className="mb-1 font-medium text-red-500">Error</div>
-              <div className="rounded bg-red-500/10 p-2 text-red-400">
-                {toolPart.errorText}
-              </div>
-            </div>
-          )}
-
-          {/* Loading state */}
-          {isLoading && !input && (
-            <div className="text-muted-foreground">Processing...</div>
-          )}
+        <div className="mt-1 rounded-lg bg-secondary/30 p-3">
+          <GenericToolView
+            input={input}
+            output={output}
+            isStreaming={isStreaming}
+            error={isError ? toolPart.errorText : undefined}
+          />
         </div>
       </CollapsibleContent>
     </Collapsible>

@@ -1,11 +1,17 @@
 import { ToolLoopAgent, type ModelMessage } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import type { Computer, TerminalSession } from "@ifc-viewer/computer";
 import { createFileTools } from "./tools/file-tools";
 import { createShellTools } from "./tools/shell-tools";
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt";
 import type { UsageStats } from "./types";
 import type { AgentEvent } from "./events";
+
+const anthropic = createAnthropic({
+  headers: {
+    "anthropic-beta": "fine-grained-tool-streaming-2025-05-14",
+  },
+});
 
 export interface BimAgentConfig {
   computer: Computer;

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/prompt-input";
 import { Button } from "@/components/ui/button";
 import { ChatMessage } from "./message";
+import { PulseDotLoader } from "@/components/ui/loader";
 import { X, Trash2, ArrowUp, Square, MessageSquare } from "lucide-react";
 
 interface ChatPanelProps {
@@ -57,7 +58,7 @@ function EmptyStateView({
           isLoading={isLoading}
           onSubmit={onSubmit}
           disabled={!isConnected}
-          className="rounded-xl border border-border bg-secondary/30"
+          className="rounded-xl border border-border bg-input"
         >
           <PromptInputTextarea
             placeholder="Ask anything..."
@@ -122,6 +123,18 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState("");
 
   const hasMessages = messages.length > 0;
+
+  // Check if we're waiting for the first token (loading but no content yet)
+  const isAwaitingFirstToken = (() => {
+    if (!isLoading) return false;
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "assistant") return false;
+    // Show loader if assistant message has no content and no tool invocations
+    const hasContent = lastMessage.content.trim().length > 0;
+    const hasTools =
+      lastMessage.toolInvocations && lastMessage.toolInvocations.length > 0;
+    return !hasContent && !hasTools;
+  })();
 
   const handleSubmit = () => {
     const trimmed = inputValue.trim();
@@ -206,6 +219,11 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
+          {isAwaitingFirstToken && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <PulseDotLoader />
+            </div>
+          )}
           <ChatContainerScrollAnchor />
         </ChatContainerContent>
       </ChatContainerRoot>
@@ -218,7 +236,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           isLoading={isLoading}
           onSubmit={handleSubmit}
           disabled={!isConnected}
-          className="rounded-xl bg-secondary/50"
+          className="rounded-xl bg-input"
         >
           <PromptInputTextarea
             placeholder={!isConnected ? "Connecting..." : "Ask anything..."}

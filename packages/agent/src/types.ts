@@ -38,7 +38,7 @@ export interface ToolInvocation {
   toolName: string;
   args: Record<string, unknown>;
   result?: unknown;
-  state: "pending" | "running" | "completed" | "error" | "needs-approval";
+  state: "pending" | "streaming" | "running" | "completed" | "error" | "needs-approval";
   error?: string;
 }
 

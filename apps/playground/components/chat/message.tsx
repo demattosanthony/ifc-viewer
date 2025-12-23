@@ -1,20 +1,50 @@
-"use client";
-
 import { memo } from "react";
 import type { AgentMessage, MessagePart } from "@ifc-viewer/agent";
 import { Tool, type ToolPart } from "@/components/ui/tool";
 import { Markdown } from "@/components/ui/markdown";
+import {
+  FilePreview,
+  CommandPreview,
+  FileTree,
+} from "@/components/ui/tool-views";
 
 interface ChatMessageProps {
   message: AgentMessage;
 }
 
-function mapToolInvocationToToolPart(
-  invocation: NonNullable<AgentMessage["toolInvocations"]>[number]
-): ToolPart {
+type ToolInvocation = NonNullable<AgentMessage["toolInvocations"]>[number];
+
+function getToolState(invocation: ToolInvocation): {
+  isStreaming: boolean;
+  isComplete: boolean;
+  error?: string;
+} {
+  const isStreaming = invocation.state === "streaming";
+  const isComplete =
+    invocation.state === "completed" || invocation.state === "error";
+
+  let error: string | undefined;
+  if (invocation.state === "error") {
+    error = invocation.error;
+  } else if (invocation.state === "completed") {
+    const result = invocation.result as
+      | { success?: boolean; error?: string }
+      | undefined;
+    if (result?.success === false) {
+      error = result.error || "Tool execution failed";
+    }
+  }
+
+  return { isStreaming, isComplete, error };
+}
+
+function mapToolInvocationToToolPart(invocation: ToolInvocation): ToolPart {
   let state: ToolPart["state"];
 
   switch (invocation.state) {
+    case "streaming":
+      state = "streaming";
+      break;
     case "pending":
     case "running":
       state = "input-streaming";
@@ -43,6 +73,55 @@ function mapToolInvocationToToolPart(
   };
 }
 
+function ToolCard({ invocation }: { invocation: ToolInvocation }) {
+  const { isStreaming, isComplete, error } = getToolState(invocation);
+  const args = invocation.args as Record<string, unknown>;
+  const result = invocation.result as Record<string, unknown> | undefined;
+
+  // File tools (write/read)
+  if (
+    ["write_file", "writeFile", "read_file", "readFile"].includes(
+      invocation.toolName
+    )
+  ) {
+    const path = args?.path as string | undefined;
+    const content = args?.content as string | undefined;
+
+    if (path && content) {
+      return (
+        <FilePreview path={path} content={content} isStreaming={isStreaming} />
+      );
+    }
+  }
+
+  // Command tools
+  if (["shell_execute", "executeCommand"].includes(invocation.toolName)) {
+    const command = args?.command as string | undefined;
+
+    if (command) {
+      return (
+        <CommandPreview
+          command={command}
+          output={result}
+          isStreaming={isStreaming}
+          isComplete={isComplete}
+          error={error}
+        />
+      );
+    }
+  }
+
+  // List directory tools
+  if (["list_directory", "listFiles"].includes(invocation.toolName)) {
+    const path = (args?.path as string) || ".";
+
+    return <FileTree path={path} output={result} isComplete={isComplete} />;
+  }
+
+  // Fallback to generic Tool component
+  return <Tool toolPart={mapToolInvocationToToolPart(invocation)} />;
+}
+
 function UserMessage({ content }: { content: string }) {
   return (
     <div className="rounded-xl bg-secondary/80 px-4 py-3 text-sm text-foreground">
@@ -54,19 +133,9 @@ function UserMessage({ content }: { content: string }) {
 function AssistantText({ content }: { content: string }) {
   if (!content.trim()) return null;
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground">
+    <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 leading-relaxed">
       <Markdown>{content}</Markdown>
     </div>
-  );
-}
-
-function ToolCard({
-  invocation,
-}: {
-  invocation: NonNullable<AgentMessage["toolInvocations"]>[number];
-}) {
-  return (
-    <Tool toolPart={mapToolInvocationToToolPart(invocation)} className="my-2" />
   );
 }
 
@@ -117,7 +186,7 @@ export const ChatMessage = memo(function ChatMessage({
 
   // Assistant message - flowing text with inline tools
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-3">
       {hasParts ? (
         message.parts!.map((part, index) => renderMessagePart(part, index))
       ) : (

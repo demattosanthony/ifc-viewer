@@ -111,7 +111,7 @@ function MainContent({
 
   const { size: chatWidth, handleResizeStart: handleChatResizeStart } =
     useResizable({
-      initialSize: 350,
+      initialSize: 400,
       minSize: 280,
       maxSize: 600,
       direction: "horizontal",

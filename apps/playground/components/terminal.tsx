@@ -5,6 +5,8 @@ import { Minus } from "lucide-react";
 
 export interface TerminalHandle {
   typeText: (text: string, speed?: number) => void;
+  appendText: (text: string) => void; // For streaming - appends without prefix
+  startStreamingCommand: () => void; // Start a new streaming command line
   execute: () => void;
   writeOutput: (data: string) => void;
   focus: () => void;
@@ -22,6 +24,17 @@ interface TerminalMessage {
   code?: number;
 }
 
+// Filter out command completion markers from display
+const MARKER_REGEX = /<<CMD_DONE:(-?\d+)>>/g;
+const ECHO_MARKER_REGEX = /; echo ["']<<CMD_DONE:\$\?>>["']/g;
+
+function filterTerminalOutput(data: string): string {
+  // Remove the marker output and the echo command from display
+  return data
+    .replace(ECHO_MARKER_REGEX, "")  // Remove "; echo '<<CMD_DONE:$?>>'" from command line
+    .replace(MARKER_REGEX, "");       // Remove "<<CMD_DONE:0>>" from output
+}
+
 const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
   { sessionId, onClose },
   ref
@@ -30,6 +43,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
   const terminalRef = useRef<XTerm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isStreamingRef = useRef<boolean>(false); // Track if we're in streaming mode
 
   const sendResize = useCallback(() => {
     const term = terminalRef.current;
@@ -53,6 +67,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
 
       // Show AI indicator and type directly to display (visual only, no execution)
       term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
+      isStreamingRef.current = false; // Not in streaming mode
 
       // Type characters one at a time for visual effect
       let index = 0;
@@ -68,16 +83,45 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
       };
       typeChar();
     },
+    startStreamingCommand: () => {
+      const term = terminalRef.current;
+      if (!term) return;
+
+      // Clear any existing typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+
+      // Show AI indicator for streaming command
+      term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
+      isStreamingRef.current = true;
+    },
+    appendText: (text: string) => {
+      const term = terminalRef.current;
+      if (!term) return;
+
+      // Start streaming if not already
+      if (!isStreamingRef.current) {
+        term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
+        isStreamingRef.current = true;
+      }
+
+      // Write text directly without delay
+      term.write(text);
+    },
     execute: () => {
       const term = terminalRef.current;
       if (!term) return;
       // Just show a newline - execution happens separately via agent's shell
       term.write("\r\n");
+      isStreamingRef.current = false; // End streaming mode
     },
     writeOutput: (data: string) => {
       const term = terminalRef.current;
       if (term) {
-        term.write(data);
+        const filtered = filterTerminalOutput(data);
+        if (filtered) term.write(filtered);
       }
     },
     focus: () => {
@@ -154,7 +198,10 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
           sendResize();
           break;
         case "output":
-          if (message.data) terminal.write(message.data);
+          if (message.data) {
+            const filtered = filterTerminalOutput(message.data);
+            if (filtered) terminal.write(filtered);
+          }
           break;
         case "exit":
           terminal.writeln(`\r\n[Process exited with code ${message.code}]`);

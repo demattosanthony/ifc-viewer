@@ -3,8 +3,6 @@ import { z } from "zod";
 import type { TerminalSession } from "@ifc-viewer/computer";
 import type { AgentEvent } from "../events";
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 // Unique marker pattern to detect command completion
 const MARKER_PREFIX = "<<CMD_DONE:";
 const MARKER_SUFFIX = ">>";
@@ -31,16 +29,16 @@ Commands run sequentially and share environment/state between calls.`,
           .default(30000)
           .describe("Timeout in milliseconds (default: 30000)"),
       }),
-      execute: async ({ command, timeout }: { command: string; timeout: number }) => {
+      execute: async ({
+        command,
+        timeout,
+      }: {
+        command: string;
+        timeout: number;
+      }) => {
         try {
-          // Focus the terminal panel
+          // Focus the terminal panel (streaming already happened via tool-input-delta)
           emit({ type: "terminal-focus" });
-          await sleep(100);
-
-          // Type the command visually with typewriter effect
-          const typingSpeed = 20; // ms per character
-          emit({ type: "terminal-type", text: command, speed: typingSpeed });
-          await sleep(command.length * typingSpeed + 200);
 
           // Press enter to execute
           emit({ type: "terminal-execute" });
@@ -61,7 +59,10 @@ Commands run sequentially and share environment/state between calls.`,
           // Pattern to detect the echoed command line (contains our marker echo command)
           const isEchoLine = (line: string) => {
             const clean = stripAnsi(line);
-            return clean.includes('echo "<<CMD_DONE:$?>>"') || clean.includes("echo '<<CMD_DONE:$?>>'");
+            return (
+              clean.includes('echo "<<CMD_DONE:$?>>"') ||
+              clean.includes("echo '<<CMD_DONE:$?>>'")
+            );
           };
 
           const outputPromise = new Promise<{
@@ -87,7 +88,9 @@ Commands run sequentially and share environment/state between calls.`,
                 if (hasEchoLine) {
                   skippedEcho = true;
                   // Keep only lines that don't contain the echo command
-                  const filteredLines = lines.filter(line => !isEchoLine(line));
+                  const filteredLines = lines.filter(
+                    (line) => !isEchoLine(line)
+                  );
                   const cleanData = filteredLines.join("\n");
                   if (cleanData && cleanData.trim()) {
                     output += cleanData;
@@ -105,7 +108,9 @@ Commands run sequentially and share environment/state between calls.`,
 
                 // Remove marker line from output
                 const lines = data.split("\n");
-                const cleanLines = lines.filter(line => !MARKER_REGEX.test(line));
+                const cleanLines = lines.filter(
+                  (line) => !MARKER_REGEX.test(line)
+                );
                 const cleanData = cleanLines.join("\n");
                 if (cleanData && cleanData.trim()) {
                   output += cleanData;

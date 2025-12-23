@@ -3,8 +3,6 @@ import { z } from "zod";
 import type { Computer } from "@ifc-viewer/computer";
 import type { AgentEvent } from "../events";
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export function createFileTools(
   computer: Computer,
   emit: (event: AgentEvent) => void
@@ -49,40 +47,10 @@ export function createFileTools(
       }),
       execute: async ({ path, content }: { path: string; content: string }) => {
         try {
-          // Open file in editor
+          // Open file in editor (streaming already happened via tool-input-delta)
           emit({ type: "editor-open", path });
-          await sleep(100);
 
-          // Stream content in chunks for visual effect
-          const chunkSize = 100;
-          const lines = content.split("\n");
-          let currentLine = 0;
-
-          for (const line of lines) {
-            // Show cursor moving to the line
-            emit({
-              type: "editor-cursor",
-              path,
-              line: currentLine,
-              column: 0,
-            });
-
-            // Insert line content in chunks
-            for (let i = 0; i < line.length; i += chunkSize) {
-              const chunk = line.slice(i, i + chunkSize);
-              emit({
-                type: "editor-insert",
-                path,
-                position: { line: currentLine, column: i },
-                text: chunk,
-              });
-              await sleep(5); // Small delay for visual streaming
-            }
-
-            currentLine++;
-          }
-
-          // Replace the content all at once for final state
+          // Replace with final content (ensures consistency after streaming)
           emit({ type: "editor-replace", path, content });
 
           // Actually write the file

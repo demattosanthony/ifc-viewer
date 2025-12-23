@@ -49,6 +49,7 @@ export type {
   TerminalTypeEvent,
   TerminalExecuteEvent,
   TerminalOutputEvent,
+  TerminalAppendEvent,
   FileCreatedEvent,
   FileDeletedEvent,
   ChatMessage,
