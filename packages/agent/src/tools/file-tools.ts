@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { Computer } from "@ifc-viewer/computer";
 import type { AgentEvent } from "../events";
+import { getErrorMessage } from "../utils";
 
 export function createFileTools(
   computer: Computer,
@@ -31,7 +32,7 @@ export function createFileTools(
         } catch (error) {
           return {
             success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: getErrorMessage(error),
             path,
           };
         }
@@ -65,7 +66,7 @@ export function createFileTools(
           emit({ type: "error", message: `Failed to write file: ${path}` });
           return {
             success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: getErrorMessage(error),
             path,
           };
         }
@@ -78,7 +79,9 @@ export function createFileTools(
         path: z
           .string()
           .default(".")
-          .describe("The directory path to list (defaults to current directory)"),
+          .describe(
+            "The directory path to list (defaults to current directory)"
+          ),
       }),
       execute: async ({ path }: { path: string }) => {
         try {
@@ -96,7 +99,7 @@ export function createFileTools(
         } catch (error) {
           return {
             success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: getErrorMessage(error),
             path,
           };
         }
@@ -118,7 +121,7 @@ export function createFileTools(
         } catch (error) {
           return {
             success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: getErrorMessage(error),
             path,
           };
         }
@@ -135,7 +138,13 @@ export function createFileTools(
           .default(false)
           .describe("Whether to recursively delete directories"),
       }),
-      execute: async ({ path, recursive }: { path: string; recursive: boolean }) => {
+      execute: async ({
+        path,
+        recursive,
+      }: {
+        path: string;
+        recursive: boolean;
+      }) => {
         try {
           await computer.files.delete(path, { recursive });
           emit({ type: "file-deleted", path });
@@ -143,7 +152,7 @@ export function createFileTools(
         } catch (error) {
           return {
             success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: getErrorMessage(error),
             path,
           };
         }
@@ -156,7 +165,13 @@ export function createFileTools(
         source: z.string().describe("The current path of the file/directory"),
         destination: z.string().describe("The new path"),
       }),
-      execute: async ({ source, destination }: { source: string; destination: string }) => {
+      execute: async ({
+        source,
+        destination,
+      }: {
+        source: string;
+        destination: string;
+      }) => {
         try {
           await computer.files.move(source, destination);
           emit({ type: "file-deleted", path: source });
@@ -165,7 +180,7 @@ export function createFileTools(
         } catch (error) {
           return {
             success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: getErrorMessage(error),
             source,
             destination,
           };

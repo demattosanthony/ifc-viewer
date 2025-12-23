@@ -142,6 +142,11 @@ export async function onMessage(
             message: error.message,
           });
         }
+        // Always emit finish event so client can reset loading state
+        emit({
+          type: "finish",
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        });
       } finally {
         customData.abortController = undefined;
       }

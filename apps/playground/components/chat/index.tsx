@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { useAgent } from "@/lib/agent-context";
 import {
@@ -14,6 +12,7 @@ import {
   PromptInputAction,
 } from "@/components/ui/prompt-input";
 import { Button } from "@/components/ui/button";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { ChatMessage } from "./message";
 import { PulseDotLoader } from "@/components/ui/loader";
 import { X, Trash2, ArrowUp, Square, MessageSquare } from "lucide-react";
@@ -216,9 +215,17 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       {/* Messages */}
       <ChatContainerRoot className="flex-1">
         <ChatContainerContent className="space-y-4 p-4">
-          {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))}
+          <ErrorBoundary
+            fallback={
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                Failed to render messages. Try clearing the chat.
+              </div>
+            }
+          >
+            {messages.map((message) => (
+              <ChatMessage key={message.id} message={message} />
+            ))}
+          </ErrorBoundary>
           {isAwaitingFirstToken && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <PulseDotLoader />

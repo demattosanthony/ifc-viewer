@@ -80,10 +80,18 @@ interface AgentProviderProps {
   children: ReactNode;
 }
 
+// Connection state enum for cleaner state management
+type ConnectionState = "disconnected" | "connecting" | "connected" | "loading";
+
+// Max reconnection attempts before giving up
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY = 1000;
+const MAX_RECONNECT_DELAY = 30000;
+
 export function AgentProvider({ sessionId, children }: AgentProviderProps) {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [connectionState, setConnectionState] =
+    useState<ConnectionState>("disconnected");
 
   const wsRef = useRef<WebSocket | null>(null);
   const presenceCallbacksRef = useRef<Set<(event: AgentEvent) => void>>(
@@ -92,10 +100,16 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const reconnectAttemptsRef = useRef<number>(0);
   // Track current step for building message parts
   const currentStepRef = useRef<number>(0);
   // Track streaming tool state for tool-input-delta processing
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map());
+
+  // Derived state for backwards compatibility
+  const isConnected =
+    connectionState === "connected" || connectionState === "loading";
+  const isLoading = connectionState === "loading";
 
   // Helper to emit presence events
   const emitPresenceEvent = useCallback((event: AgentEvent) => {
@@ -104,9 +118,11 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
     }
   }, []);
 
-  // Connect to WebSocket
+  // Connect to WebSocket with exponential backoff
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+    setConnectionState("connecting");
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(
@@ -114,19 +130,31 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
     );
 
     ws.onopen = () => {
-      setIsConnected(true);
+      setConnectionState("connected");
+      reconnectAttemptsRef.current = 0; // Reset attempts on successful connection
       console.log("[Agent] WebSocket connected");
     };
 
     ws.onclose = () => {
-      setIsConnected(false);
-      setIsLoading(false);
+      setConnectionState("disconnected");
       console.log("[Agent] WebSocket disconnected");
 
-      // Reconnect after 2 seconds
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connect();
-      }, 2000);
+      // Exponential backoff reconnection
+      if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        const delay = Math.min(
+          BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current),
+          MAX_RECONNECT_DELAY
+        );
+        reconnectAttemptsRef.current++;
+        console.log(
+          `[Agent] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`
+        );
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connect();
+        }, delay);
+      } else {
+        console.error("[Agent] Max reconnection attempts reached");
+      }
     };
 
     ws.onerror = (error) => {
@@ -482,7 +510,7 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
         break;
 
       case "finish":
-        setIsLoading(false);
+        setConnectionState("connected");
         currentStepRef.current = 0; // Reset for next conversation
         streamingToolsRef.current.clear(); // Clear any remaining streaming state
         setMessages((prev) => {
@@ -531,8 +559,9 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
         break;
 
       case "error":
-        setIsLoading(false);
+        setConnectionState("connected");
         currentStepRef.current = 0;
+        streamingToolsRef.current.clear(); // Clear any remaining streaming state
         console.error("[Agent] Error:", event.message);
         break;
     }
@@ -565,7 +594,7 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      setIsLoading(true);
+      setConnectionState("loading");
 
       // Send to WebSocket
       wsRef.current.send(
@@ -586,7 +615,8 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
   const stop = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "stop" }));
-      setIsLoading(false);
+      setConnectionState("connected");
+      streamingToolsRef.current.clear();
     }
   }, []);
 
@@ -615,6 +645,9 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       wsRef.current?.close();
+      // Clean up all state on unmount
+      presenceCallbacksRef.current.clear();
+      streamingToolsRef.current.clear();
     };
   }, [connect]);
 

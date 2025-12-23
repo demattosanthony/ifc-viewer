@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { TerminalSession } from "@ifc-viewer/computer";
 import type { AgentEvent } from "../events";
+import { getErrorMessage } from "../utils";
 
 // Unique marker pattern to detect command completion
 const MARKER_PREFIX = "<<CMD_DONE:";
@@ -12,9 +13,6 @@ export function createShellTools(
   getTerminal: () => Promise<TerminalSession>,
   emit: (event: AgentEvent) => void
 ) {
-  // Track active output listener to avoid duplicates
-  let outputCleanup: (() => void) | null = null;
-
   return {
     executeCommand: tool({
       description: `Execute a shell command in the terminal.
@@ -65,22 +63,23 @@ Commands run sequentially and share environment/state between calls.`,
             );
           };
 
+          // Local cleanup function for this specific command execution
+          let cleanup: (() => void) | null = null;
+
           const outputPromise = new Promise<{
             output: string;
             exitCode: number;
           }>((resolve, reject) => {
             const timeoutId = setTimeout(() => {
+              if (cleanup) {
+                cleanup();
+                cleanup = null;
+              }
               reject(new Error(`Command timed out after ${timeout}ms`));
             }, timeout);
 
-            // Clean up any previous listener
-            if (outputCleanup) {
-              outputCleanup();
-              outputCleanup = null;
-            }
-
-            // Listen for output
-            outputCleanup = terminal.onData((data) => {
+            // Listen for output - cleanup is local to this execution
+            cleanup = terminal.onData((data) => {
               // Filter out echoed command lines containing our marker
               if (!skippedEcho) {
                 const lines = data.split("\n");
@@ -103,7 +102,6 @@ Commands run sequentially and share environment/state between calls.`,
               // Check for completion marker in output
               const match = data.match(MARKER_REGEX);
               if (match && match[1]) {
-                clearTimeout(timeoutId);
                 exitCode = parseInt(match[1], 10);
 
                 // Remove marker line from output
@@ -118,9 +116,10 @@ Commands run sequentially and share environment/state between calls.`,
                 }
 
                 // Clean up listener
-                if (outputCleanup) {
-                  outputCleanup();
-                  outputCleanup = null;
+                clearTimeout(timeoutId);
+                if (cleanup) {
+                  cleanup();
+                  cleanup = null;
                 }
 
                 resolve({ output: output.trim(), exitCode });
@@ -145,8 +144,7 @@ Commands run sequentially and share environment/state between calls.`,
             command,
           };
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
+          const errorMessage = getErrorMessage(error);
           emit({
             type: "terminal-output",
             data: `\x1b[31mError: ${errorMessage}\x1b[0m\n`,

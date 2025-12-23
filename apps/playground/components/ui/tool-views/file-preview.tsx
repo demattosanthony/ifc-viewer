@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { File, Copy, Check } from "lucide-react";
 import { codeToHtml } from "shiki";
 import { getLanguageFromPath, getFileName } from "./types";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 interface FilePreviewProps {
   path: string;
@@ -73,15 +74,9 @@ function CodeBlock({
 }
 
 export function FilePreview({ path, content, isStreaming }: FilePreviewProps) {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const language = useMemo(() => getLanguageFromPath(path), [path]);
   const fileName = useMemo(() => getFileName(path), [path]);
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [content]);
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -95,7 +90,7 @@ export function FilePreview({ path, content, isStreaming }: FilePreviewProps) {
           </span>
         </div>
         <button
-          onClick={handleCopy}
+          onClick={() => copy(content)}
           className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="Copy code"
         >

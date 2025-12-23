@@ -1,13 +1,11 @@
-"use client"
-
-import { useState, useCallback } from "react"
-import { Terminal, Copy, Check, CheckCircle2, XCircle } from "lucide-react"
+import { Terminal, Copy, Check, CheckCircle2, XCircle } from "lucide-react";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 interface CommandPreviewProps {
-  command: string
-  output?: Record<string, unknown>
-  isStreaming: boolean
-  isComplete: boolean
-  error?: string
+  command: string;
+  output?: Record<string, unknown>;
+  isStreaming: boolean;
+  isComplete: boolean;
+  error?: string;
 }
 
 export function CommandPreview({
@@ -17,17 +15,13 @@ export function CommandPreview({
   isComplete,
   error,
 }: CommandPreviewProps) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(command)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [command])
+  const { copied, copy } = useCopyToClipboard();
 
   // Extract output details
-  const result = output as { success?: boolean; output?: string; exitCode?: number } | undefined
-  const hasOutput = result?.output && result.output.trim().length > 0
+  const result = output as
+    | { success?: boolean; output?: string; exitCode?: number }
+    | undefined;
+  const hasOutput = result?.output && result.output.trim().length > 0;
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -52,7 +46,7 @@ export function CommandPreview({
           )}
         </div>
         <button
-          onClick={handleCopy}
+          onClick={() => copy(command)}
           className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="Copy command"
         >
@@ -95,5 +89,5 @@ export function CommandPreview({
         </div>
       )}
     </div>
-  )
+  );
 }

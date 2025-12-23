@@ -14,6 +14,20 @@ interface ChatMessageProps {
 
 type ToolInvocation = NonNullable<AgentMessage["toolInvocations"]>[number];
 
+// Type guard for tool results with success/error pattern
+interface ToolResult {
+  success?: boolean;
+  error?: string;
+}
+
+function isToolResult(value: unknown): value is ToolResult {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    ("success" in value || "error" in value)
+  );
+}
+
 function getToolState(invocation: ToolInvocation): {
   isStreaming: boolean;
   isComplete: boolean;
@@ -26,12 +40,9 @@ function getToolState(invocation: ToolInvocation): {
   let error: string | undefined;
   if (invocation.state === "error") {
     error = invocation.error;
-  } else if (invocation.state === "completed") {
-    const result = invocation.result as
-      | { success?: boolean; error?: string }
-      | undefined;
-    if (result?.success === false) {
-      error = result.error || "Tool execution failed";
+  } else if (invocation.state === "completed" && isToolResult(invocation.result)) {
+    if (invocation.result.success === false) {
+      error = invocation.result.error || "Tool execution failed";
     }
   }
 
@@ -49,10 +60,12 @@ function mapToolInvocationToToolPart(invocation: ToolInvocation): ToolPart {
     case "running":
       state = "input-streaming";
       break;
-    case "completed":
-      const result = invocation.result as { success?: boolean } | undefined;
-      state = result?.success === false ? "output-error" : "output-available";
+    case "completed": {
+      const hasError =
+        isToolResult(invocation.result) && invocation.result.success === false;
+      state = hasError ? "output-error" : "output-available";
       break;
+    }
     case "error":
       state = "output-error";
       break;

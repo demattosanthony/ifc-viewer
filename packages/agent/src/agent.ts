@@ -6,6 +6,7 @@ import { createShellTools } from "./tools/shell-tools";
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt";
 import type { UsageStats } from "./types";
 import type { AgentEvent } from "./events";
+import { getErrorMessage, formatUsageStats } from "./utils";
 
 const anthropic = createAnthropic({
   headers: {
@@ -33,15 +34,15 @@ export class BimAgent {
     this.systemPrompt = config.systemPrompt ?? BIM_IDE_SYSTEM_PROMPT;
   }
 
-  private getTools(emit: (event: AgentEvent) => void) {
+  private createTools(emit: (event: AgentEvent) => void) {
     return {
       ...createFileTools(this.computer, emit),
       ...createShellTools(this.getTerminal, emit),
     };
   }
 
-  private createAgent(emit: (event: AgentEvent) => void) {
-    const tools = this.getTools(emit);
+  private createAgentInstance(emit: (event: AgentEvent) => void) {
+    const tools = this.createTools(emit);
 
     return new ToolLoopAgent({
       model: anthropic(this.model),
@@ -56,7 +57,7 @@ export class BimAgent {
     abortSignal?: AbortSignal
   ): AsyncGenerator<AgentEvent> {
     try {
-      const agent = this.createAgent(emit);
+      const agent = this.createAgentInstance(emit);
 
       const result = await agent.stream({
         messages,
@@ -142,11 +143,7 @@ export class BimAgent {
 
       const finishEvent: AgentEvent = {
         type: "finish",
-        usage: {
-          promptTokens: usage?.inputTokens ?? 0,
-          completionTokens: usage?.outputTokens ?? 0,
-          totalTokens: (usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0),
-        },
+        usage: formatUsageStats(usage),
       };
       emit(finishEvent);
       yield finishEvent;
@@ -158,7 +155,7 @@ export class BimAgent {
 
       const errorEvent: AgentEvent = {
         type: "error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: getErrorMessage(error),
       };
       emit(errorEvent);
       yield errorEvent;
@@ -179,7 +176,7 @@ export class BimAgent {
       result: unknown;
     }>;
   }> {
-    const agent = this.createAgent(emit);
+    const agent = this.createAgentInstance(emit);
     const allToolCalls: Array<{
       id: string;
       name: string;
@@ -210,15 +207,9 @@ export class BimAgent {
       }
     }
 
-    const usage = result.usage;
-
     return {
       text: result.text,
-      usage: {
-        promptTokens: usage?.inputTokens ?? 0,
-        completionTokens: usage?.outputTokens ?? 0,
-        totalTokens: (usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0),
-      },
+      usage: formatUsageStats(result.usage),
       toolCalls: allToolCalls,
     };
   }

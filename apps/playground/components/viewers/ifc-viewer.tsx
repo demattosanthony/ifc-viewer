@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useViewer } from "ifc-viewer";
 import { api } from "@/.bunbox/api-client";
 
@@ -11,6 +11,7 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
   const { loadModel, unloadAllModels, isInitialized } = useViewer();
   const loadedPathRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -18,6 +19,7 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
     if (loadedPathRef.current === filePath) return;
 
     loadingRef.current = true;
+    setError(null);
 
     const load = async () => {
       try {
@@ -45,7 +47,9 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
         await loadModel(buffer, filename);
         loadedPathRef.current = filePath;
       } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
         console.error("Failed to load IFC:", err);
+        setError(`Failed to load model: ${message}`);
       } finally {
         loadingRef.current = false;
       }
@@ -53,6 +57,16 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
 
     load();
   }, [isInitialized, filePath, sessionId, loadModel, unloadAllModels]);
+
+  if (error) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+        <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm max-w-md text-center">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return null;
 }
