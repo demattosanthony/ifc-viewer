@@ -1,8 +1,3 @@
-/**
- * Bunbox configuration
- * All fields are optional and have sensible defaults
- */
-
 import type { BunboxConfig } from "@ademattos/bunbox";
 
 const config: BunboxConfig = {
@@ -22,6 +17,7 @@ const config: BunboxConfig = {
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   },
+  maxBodySize: 1024 * 1024 * 1024 * 100, // 100 GB
 };
 
 export default config;

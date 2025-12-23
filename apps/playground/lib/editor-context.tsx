@@ -28,6 +28,8 @@ interface EditorContextValue {
   setActiveTab: (tabId: string) => void;
   getFileContent: (path: string) => FileContent | undefined;
   setFileContent: (path: string, content: FileContent) => void;
+  setTabDirty: (tabId: string, isDirty: boolean) => void;
+  updateFileContent: (path: string, content: string) => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -128,6 +130,20 @@ export function EditorProvider({ children, initialFile }: EditorProviderProps) {
     setFileContents((prev) => new Map(prev).set(path, content));
   }, []);
 
+  const setTabDirty = useCallback((tabId: string, isDirty: boolean) => {
+    setTabs((prev) =>
+      prev.map((tab) => (tab.id === tabId ? { ...tab, isDirty } : tab))
+    );
+  }, []);
+
+  const updateFileContent = useCallback((path: string, content: string) => {
+    setFileContents((prev) => {
+      const existing = prev.get(path);
+      if (!existing) return prev;
+      return new Map(prev).set(path, { ...existing, content });
+    });
+  }, []);
+
   return (
     <EditorContext.Provider
       value={{
@@ -139,6 +155,8 @@ export function EditorProvider({ children, initialFile }: EditorProviderProps) {
         setActiveTab,
         getFileContent,
         setFileContent,
+        setTabDirty,
+        updateFileContent,
       }}
     >
       {children}

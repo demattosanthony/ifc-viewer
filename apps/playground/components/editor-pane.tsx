@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useEditor } from "@/lib/editor-context";
 import { useViewer } from "ifc-viewer";
 import { api } from "@/.bunbox/api-client";
-import Editor from "@monaco-editor/react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 
 interface EditorPaneProps {
   sessionId: string;
@@ -50,27 +50,106 @@ function LoadingState() {
   );
 }
 
-function CodeEditor({ content, filename }: { content: string; filename: string }) {
+interface CodeEditorProps {
+  sessionId: string;
+  path: string;
+  tabId: string;
+  content: string;
+  filename: string;
+}
+
+function CodeEditor({
+  sessionId,
+  path,
+  tabId,
+  content,
+  filename,
+}: CodeEditorProps) {
+  const { setTabDirty, updateFileContent, getFileContent } = useEditor();
+  const [saving, setSaving] = useState(false);
+  const originalContentRef = useRef(content);
+  const saveRef = useRef<() => Promise<void> | undefined>(undefined);
+
+  // Update original content when file is loaded fresh
+  useEffect(() => {
+    originalContentRef.current = content;
+  }, [path, content]);
+
+  // Keep save function in ref so keyboard shortcut always uses latest
+  useEffect(() => {
+    saveRef.current = async () => {
+      const currentContent = getFileContent(path);
+      if (!currentContent) return;
+
+      setSaving(true);
+      try {
+        await api.sessions.files.content.writeFile({
+          id: sessionId,
+          path,
+          content: currentContent.content,
+          encoding: "text",
+        });
+        originalContentRef.current = currentContent.content;
+        setTabDirty(tabId, false);
+      } catch (err) {
+        console.error("Failed to save file:", err);
+      } finally {
+        setSaving(false);
+      }
+    };
+  }, [sessionId, path, tabId, getFileContent, setTabDirty]);
+
+  const handleEditorMount: OnMount = useCallback((editor, monaco) => {
+    // Add Ctrl+S / Cmd+S keybinding
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      saveRef.current?.();
+    });
+  }, []);
+
+  const handleChange = useCallback(
+    (value: string | undefined) => {
+      if (value === undefined) return;
+      updateFileContent(path, value);
+      const isDirty = value !== originalContentRef.current;
+      setTabDirty(tabId, isDirty);
+    },
+    [path, tabId, updateFileContent, setTabDirty]
+  );
+
   return (
-    <Editor
-      height="100%"
-      language={getLanguage(filename)}
-      value={content}
-      theme="vs-dark"
-      options={{
-        readOnly: true,
-        minimap: { enabled: true },
-        fontSize: 13,
-        lineNumbers: "on",
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        padding: { top: 8 },
-      }}
-    />
+    <div className="h-full relative">
+      <Editor
+        height="100%"
+        language={getLanguage(filename)}
+        value={content}
+        theme="vs-dark"
+        onChange={handleChange}
+        onMount={handleEditorMount}
+        options={{
+          minimap: { enabled: true },
+          fontSize: 13,
+          lineNumbers: "on",
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          padding: { top: 8 },
+        }}
+      />
+      {saving && (
+        <div className="absolute top-2 right-4 px-2 py-1 bg-[#007acc] text-white text-xs rounded">
+          Saving...
+        </div>
+      )}
+    </div>
   );
 }
 
-function IFCViewer({ sessionId, filePath }: { sessionId: string; filePath: string }) {
+function IFCViewer({
+  sessionId,
+  filePath,
+}: {
+  sessionId: string;
+  filePath: string;
+}) {
   const { loadModel, unloadAllModels, isInitialized } = useViewer();
   const loadedPathRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
@@ -86,10 +165,10 @@ function IFCViewer({ sessionId, filePath }: { sessionId: string; filePath: strin
       try {
         await unloadAllModels();
 
-        const data = await api.sessions.files.content.readFile({
+        const data = (await api.sessions.files.content.readFile({
           id: sessionId,
           path: filePath,
-        }) as { type: string; content: string; path: string };
+        })) as { type: string; content: string; path: string };
 
         let buffer: ArrayBuffer;
         if (data.type === "binary") {
@@ -126,22 +205,25 @@ export function EditorPane({ sessionId }: EditorPaneProps) {
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
-  const fetchContent = useCallback(async (path: string) => {
-    if (getFileContent(path)) return;
+  const fetchContent = useCallback(
+    async (path: string) => {
+      if (getFileContent(path)) return;
 
-    setLoading(true);
-    try {
-      const data = await api.sessions.files.content.readFile({
-        id: sessionId,
-        path,
-      }) as { type: "text" | "binary"; content: string; path: string };
-      setFileContent(path, { type: data.type, content: data.content });
-    } catch (err) {
-      console.error("Failed to fetch file:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [sessionId, getFileContent, setFileContent]);
+      setLoading(true);
+      try {
+        const data = (await api.sessions.files.content.readFile({
+          id: sessionId,
+          path,
+        })) as { type: "text" | "binary"; content: string; path: string };
+        setFileContent(path, { type: data.type, content: data.content });
+      } catch (err) {
+        console.error("Failed to fetch file:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sessionId, getFileContent, setFileContent]
+  );
 
   useEffect(() => {
     if (activeTab && activeTab.type === "code") {
@@ -163,5 +245,13 @@ export function EditorPane({ sessionId }: EditorPaneProps) {
     return <LoadingState />;
   }
 
-  return <CodeEditor content={content.content} filename={activeTab.name} />;
+  return (
+    <CodeEditor
+      sessionId={sessionId}
+      path={activeTab.path}
+      tabId={activeTab.id}
+      content={content.content}
+      filename={activeTab.name}
+    />
+  );
 }

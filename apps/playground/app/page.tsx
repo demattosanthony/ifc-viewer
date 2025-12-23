@@ -12,6 +12,7 @@ import { FileBrowser } from "@/components/file-browser";
 import { TabBar } from "@/components/tab-bar";
 import { EditorPane } from "@/components/editor-pane";
 import { EditorProvider, useEditor } from "@/lib/editor-context";
+import { useResizable } from "@/hooks/use-resizable";
 import { api } from "@/.bunbox/api-client";
 
 interface SelectedElement {
@@ -37,8 +38,13 @@ function MainContent({
   const { tabs, activeTabId } = useEditor();
   const [selectedElement, setSelectedElement] =
     useState<SelectedElement | null>(null);
-  const [terminalHeight, setTerminalHeight] = useState(300);
-  const isDraggingRef = useRef(false);
+
+  const { size: terminalHeight, handleResizeStart } = useResizable({
+    initialSize: 300,
+    minSize: 150,
+    maxSize: typeof window !== "undefined" ? window.innerHeight - 200 : 600,
+    direction: "vertical",
+  });
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const isIfcActive = activeTab?.type === "ifc";
@@ -70,41 +76,6 @@ function MainContent({
   const handleClosePanel = useCallback(() => {
     setSelectedElement(null);
   }, []);
-
-  const handleResizeStart = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      isDraggingRef.current = true;
-      const startY = e.clientY;
-      const startHeight = terminalHeight;
-
-      const handleMouseMove = (moveEvent: MouseEvent) => {
-        if (!isDraggingRef.current) return;
-        moveEvent.preventDefault();
-        const delta = startY - moveEvent.clientY;
-        const newHeight = Math.max(
-          150,
-          Math.min(startHeight + delta, window.innerHeight - 200)
-        );
-        setTerminalHeight(newHeight);
-      };
-
-      const handleMouseUp = () => {
-        isDraggingRef.current = false;
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      };
-
-      document.body.style.cursor = "ns-resize";
-      document.body.style.userSelect = "none";
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    },
-    [terminalHeight]
-  );
 
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -141,7 +112,9 @@ function MainContent({
               <div className="absolute inset-0 flex items-center justify-center bg-[#1e1e1e] text-[#858585]">
                 <div className="text-center">
                   <p className="text-sm">No file open</p>
-                  <p className="text-xs mt-1">Select a file from the explorer</p>
+                  <p className="text-xs mt-1">
+                    Select a file from the explorer
+                  </p>
                 </div>
               </div>
             )}
@@ -156,7 +129,7 @@ function MainContent({
                 onMouseDown={handleResizeStart}
                 className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize z-20 group"
               >
-                <div className="absolute inset-x-0 top-0 h-1 bg-[#2d2d2d] group-hover:bg-[#007acc] transition-colors" />
+                <div className="absolute inset-x-0 top-0 h-0.5 group-hover:h-1 bg-[#2d2d2d] group-hover:bg-[#007acc] transition-colors" />
               </div>
               <div className="h-full">
                 <Terminal sessionId={sessionId} onClose={onToggleTerminal} />

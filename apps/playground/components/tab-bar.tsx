@@ -1,5 +1,6 @@
 import { useEditor, type Tab } from "@/lib/editor-context";
-import { X, FileCode, FileBox } from "lucide-react";
+import { FileIcon } from "@/lib/file-icons";
+import { X, FileBox } from "lucide-react";
 
 function SidebarIcon({ active }: { active: boolean }) {
   return (
@@ -40,33 +41,7 @@ function TabIcon({ type, name }: { type: Tab["type"]; name: string }) {
     return <FileBox className="w-4 h-4 text-[#6b9f78] shrink-0" />;
   }
 
-  const ext = name.split(".").pop()?.toLowerCase();
-  let color = "#858585";
-
-  switch (ext) {
-    case "py":
-      color = "#3572A5";
-      break;
-    case "js":
-    case "jsx":
-      color = "#f7df1e";
-      break;
-    case "ts":
-    case "tsx":
-      color = "#3178c6";
-      break;
-    case "json":
-      color = "#cbcb41";
-      break;
-    case "html":
-      color = "#e34c26";
-      break;
-    case "css":
-      color = "#563d7c";
-      break;
-  }
-
-  return <FileCode className="w-4 h-4 shrink-0" style={{ color }} />;
+  return <FileIcon filename={name} className="w-4 h-4 shrink-0" />;
 }
 
 interface TabBarProps {
@@ -97,7 +72,12 @@ export function TabBar({ showSidebar, showTerminal, onToggleSidebar, onToggleTer
               }`}
             >
               <TabIcon type={tab.type} name={tab.name} />
-              <span className="text-[13px] select-none whitespace-nowrap">{tab.name}</span>
+              <span className="text-[13px] select-none whitespace-nowrap flex items-center gap-1">
+                {tab.name}
+                {tab.isDirty && (
+                  <span className="w-2 h-2 rounded-full bg-[#cccccc]" title="Unsaved changes" />
+                )}
+              </span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
 import { useViewer, type CameraMode } from "ifc-viewer";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,6 @@ import {
   HandGrab,
   Rotate3D,
   PersonStanding,
-  Upload,
   Layers,
   Check,
   X,
@@ -25,112 +24,6 @@ const CAMERA_MODES = [
   { mode: "Plan" as CameraMode, label: "Pan", icon: HandGrab },
   { mode: "FirstPerson" as CameraMode, label: "Walk", icon: PersonStanding },
 ] as const;
-
-// ============================================================================
-// Loading Overlay - Apple-inspired minimal design
-// ============================================================================
-
-interface LoadingOverlayProps {
-  progress: number;
-}
-
-function LoadingOverlay({ progress }: LoadingOverlayProps) {
-  const percentage = Math.round(progress * 100);
-  const circumference = 2 * Math.PI * 20;
-  const strokeDashoffset = circumference - progress * circumference;
-
-  return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-neutral-950">
-      <div className="flex flex-col items-center gap-6">
-        {/* Circular progress indicator */}
-        <div className="relative w-14 h-14">
-          {/* Background ring */}
-          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 44 44">
-            <circle
-              cx="22"
-              cy="22"
-              r="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-neutral-800"
-            />
-            <circle
-              cx="22"
-              cy="22"
-              r="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              className="text-white transition-all duration-300 ease-out"
-              style={{
-                strokeDasharray: circumference,
-                strokeDashoffset: strokeDashoffset,
-              }}
-            />
-          </svg>
-          {/* Percentage in center */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-light text-neutral-400 tabular-nums">
-              {percentage}
-            </span>
-          </div>
-        </div>
-
-        {/* Status text */}
-        <p className="text-sm font-light text-neutral-500 tracking-wide">
-          Loading
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// File Upload Button
-// ============================================================================
-
-interface FileUploadButtonProps {
-  onFileSelect: (file: File) => void;
-  disabled?: boolean;
-}
-
-function FileUploadButton({ onFileSelect, disabled }: FileUploadButtonProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
-      // Reset input so the same file can be selected again
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  };
-
-  return (
-    <>
-      <Button
-        onClick={() => inputRef.current?.click()}
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        className="gap-2"
-      >
-        <Upload className="size-4" />
-        <span className="hidden sm:inline">Upload IFC</span>
-      </Button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".ifc"
-        onChange={handleChange}
-        className="hidden"
-        aria-hidden="true"
-      />
-    </>
-  );
-}
 
 // ============================================================================
 // Camera Mode Selector
@@ -334,27 +227,7 @@ function ToolbarDivider() {
 // ============================================================================
 
 export function ViewerToolBar() {
-  const { loadModel, isInitialized, unloadAllModels, camera, planViews } =
-    useViewer();
-  const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-
-  // File upload handler
-  const handleFileUpload = async (file: File) => {
-    setIsLoading(true);
-    setProgress(0);
-
-    try {
-      await unloadAllModels();
-      const buffer = await file.arrayBuffer();
-      await loadModel(buffer, file.name, setProgress);
-    } catch (error) {
-      console.error("Failed to load model:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { camera, planViews } = useViewer();
 
   // Camera mode handler
   const handleCameraModeChange = (mode: CameraMode) => {
@@ -370,28 +243,22 @@ export function ViewerToolBar() {
     }
   };
 
-  // Show loading overlay
-  if (isLoading) {
-    return <LoadingOverlay progress={progress} />;
-  }
-
   return (
     <ToolbarContainer>
-      <FileUploadButton onFileSelect={handleFileUpload} disabled={isLoading} />
-
-      <ToolbarDivider />
-
       <CameraModeSelector
         currentMode={camera?.mode}
         onModeChange={handleCameraModeChange}
       />
 
       {planViews && planViews.plans.length > 0 && (
-        <PlanViewSelector
-          plans={planViews.plans}
-          activePlanId={planViews.activePlanId}
-          onPlanSelect={handlePlanSelect}
-        />
+        <>
+          <ToolbarDivider />
+          <PlanViewSelector
+            plans={planViews.plans}
+            activePlanId={planViews.activePlanId}
+            onPlanSelect={handlePlanSelect}
+          />
+        </>
       )}
     </ToolbarContainer>
   );
