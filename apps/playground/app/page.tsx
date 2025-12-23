@@ -216,13 +216,11 @@ function MainContent({
           )}
         </div>
 
-        {/* Right sidebar - Element Properties Panel (only show when no chat) */}
-        {!showChat && (
-          <ElementPropertiesPanel
-            element={selectedElement?.data ?? null}
-            onClose={handleClosePanel}
-          />
-        )}
+        {/* Element Properties Panel - shows when element selected */}
+        <ElementPropertiesPanel
+          element={selectedElement?.data ?? null}
+          onClose={handleClosePanel}
+        />
 
         {/* Chat Panel */}
         {showChat && (

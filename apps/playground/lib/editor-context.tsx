@@ -5,18 +5,16 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { getViewerType, type ViewerType, type FileContent } from "./viewers";
+
+export type { ViewerType, FileContent };
 
 export interface Tab {
   id: string;
   path: string;
   name: string;
-  type: "ifc" | "code";
+  type: ViewerType;
   isDirty?: boolean;
-}
-
-interface FileContent {
-  type: "text" | "binary";
-  content: string;
 }
 
 interface EditorContextValue {
@@ -33,10 +31,6 @@ interface EditorContextValue {
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
-
-function getFileType(name: string): "ifc" | "code" {
-  return name.toLowerCase().endsWith(".ifc") ? "ifc" : "code";
-}
 
 function getFileName(path: string): string {
   return path.split("/").pop() || path;
@@ -60,7 +54,7 @@ export function EditorProvider({ children, initialFile }: EditorProviderProps) {
         id: generateTabId(initialFile),
         path: initialFile,
         name,
-        type: getFileType(name),
+        type: getViewerType(name),
       },
     ];
   });
@@ -87,7 +81,7 @@ export function EditorProvider({ children, initialFile }: EditorProviderProps) {
         id: generateTabId(path),
         path,
         name,
-        type: getFileType(name),
+        type: getViewerType(name),
       };
 
       setTabs((prev) => [...prev, newTab]);

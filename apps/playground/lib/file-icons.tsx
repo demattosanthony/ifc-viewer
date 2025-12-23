@@ -1,4 +1,4 @@
-import { FileCode, FileJson, FileText, FileBox, File } from "lucide-react";
+import { FileCode, FileJson, FileText, FileBox, File, Globe, FileType } from "lucide-react";
 
 export const FILE_EXTENSION_COLORS: Record<string, string> = {
   py: "#3572A5",
@@ -13,6 +13,7 @@ export const FILE_EXTENSION_COLORS: Record<string, string> = {
   htm: "#e34c26",
   css: "#563d7c",
   scss: "#563d7c",
+  pdf: "#b30b00",
 };
 
 export function getFileExtension(filename: string): string {
@@ -39,11 +40,14 @@ export function FileIcon({ filename, className = "w-4 h-4" }: FileIconProps) {
     case "jsx":
     case "ts":
     case "tsx":
-    case "html":
-    case "htm":
     case "css":
     case "scss":
       return <FileCode className={className} style={{ color }} />;
+    case "html":
+    case "htm":
+      return <Globe className={className} style={{ color }} />;
+    case "pdf":
+      return <FileType className={className} style={{ color }} />;
     case "json":
       return <FileJson className={className} style={{ color }} />;
     case "md":

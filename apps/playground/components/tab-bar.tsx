@@ -1,10 +1,17 @@
 import { useEditor, type Tab } from "@/lib/editor-context";
 import { FileIcon } from "@/lib/file-icons";
-import { X, FileBox } from "lucide-react";
+import { X, FileBox, Globe, FileType } from "lucide-react";
 
 function SidebarIcon({ active }: { active: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1"
+    >
       <rect x="1.5" y="1.5" width="13" height="13" rx="1" />
       <rect
         x="1.5"
@@ -21,7 +28,14 @@ function SidebarIcon({ active }: { active: boolean }) {
 
 function RightSidebarIcon({ active }: { active: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1"
+    >
       <rect x="1.5" y="1.5" width="13" height="13" rx="1" />
       <rect
         x="10.5"
@@ -38,7 +52,14 @@ function RightSidebarIcon({ active }: { active: boolean }) {
 
 function TerminalIcon({ active }: { active: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1"
+    >
       <rect x="1.5" y="1.5" width="13" height="13" rx="1" />
       <rect
         x="1.5"
@@ -54,11 +75,17 @@ function TerminalIcon({ active }: { active: boolean }) {
 }
 
 function TabIcon({ type, name }: { type: Tab["type"]; name: string }) {
-  if (type === "ifc") {
-    return <FileBox className="w-4 h-4 text-[#6b9f78] shrink-0" />;
+  switch (type) {
+    case "ifc":
+      return <FileBox className="w-4 h-4 text-[#6b9f78] shrink-0" />;
+    case "html":
+      return <Globe className="w-4 h-4 text-[#e34c26] shrink-0" />;
+    case "pdf":
+      return <FileType className="w-4 h-4 text-[#b30b00] shrink-0" />;
+    case "code":
+    default:
+      return <FileIcon filename={name} className="w-4 h-4 shrink-0" />;
   }
-
-  return <FileIcon filename={name} className="w-4 h-4 shrink-0" />;
 }
 
 interface TabBarProps {
@@ -70,7 +97,14 @@ interface TabBarProps {
   onToggleChat: () => void;
 }
 
-export function TabBar({ showSidebar, showTerminal, showChat, onToggleSidebar, onToggleTerminal, onToggleChat }: TabBarProps) {
+export function TabBar({
+  showSidebar,
+  showTerminal,
+  showChat,
+  onToggleSidebar,
+  onToggleTerminal,
+  onToggleChat,
+}: TabBarProps) {
   const { tabs, activeTabId, setActiveTab, closeTab } = useEditor();
 
   return (
@@ -94,7 +128,10 @@ export function TabBar({ showSidebar, showTerminal, showChat, onToggleSidebar, o
               <span className="text-[13px] select-none whitespace-nowrap flex items-center gap-1">
                 {tab.name}
                 {tab.isDirty && (
-                  <span className="w-2 h-2 rounded-full bg-[#cccccc]" title="Unsaved changes" />
+                  <span
+                    className="w-2 h-2 rounded-full bg-[#cccccc]"
+                    title="Unsaved changes"
+                  />
                 )}
               </span>
               <button
