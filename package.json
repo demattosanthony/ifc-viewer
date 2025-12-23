@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "dev:playground": "bun --filter=ifc-viewer/playground run dev",
-    "build:ifc-viewer": "bun --filter=ifc-viewer run build"
+    "build:ifc-viewer": "bun --filter=ifc-viewer run build",
+    "typecheck": "bun --filter=* run typecheck"
   },
   "workspaces": [
     "apps/*",

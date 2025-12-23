@@ -1,7 +1,14 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { Minus } from "lucide-react";
+
+export interface TerminalHandle {
+  typeText: (text: string, speed?: number) => void;
+  execute: () => void;
+  writeOutput: (data: string) => void;
+  focus: () => void;
+}
 
 interface TerminalProps {
   sessionId: string;
@@ -15,17 +22,71 @@ interface TerminalMessage {
   code?: number;
 }
 
-export default function Terminal({ sessionId, onClose }: TerminalProps) {
+const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
+  { sessionId, onClose },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<XTerm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sendResize = useCallback(() => {
     const term = terminalRef.current;
     const ws = wsRef.current;
     if (!term || !ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+    ws.send(
+      JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows })
+    );
   }, []);
+
+  // Expose methods for AI agent control
+  useImperativeHandle(ref, () => ({
+    typeText: (text: string, speed = 30) => {
+      const term = terminalRef.current;
+      if (!term) return;
+
+      // Clear any existing typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Show AI indicator and type directly to display (visual only, no execution)
+      term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
+
+      // Type characters one at a time for visual effect
+      let index = 0;
+      const typeChar = () => {
+        if (index < text.length) {
+          const char = text[index];
+          if (char !== undefined) {
+            term.write(char);
+          }
+          index++;
+          typingTimeoutRef.current = setTimeout(typeChar, speed);
+        }
+      };
+      typeChar();
+    },
+    execute: () => {
+      const term = terminalRef.current;
+      if (!term) return;
+      // Just show a newline - execution happens separately via agent's shell
+      term.write("\r\n");
+    },
+    writeOutput: (data: string) => {
+      const term = terminalRef.current;
+      if (term) {
+        term.write(data);
+      }
+    },
+    focus: () => {
+      const term = terminalRef.current;
+      if (term) {
+        term.focus();
+      }
+    },
+  }), []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -77,7 +138,9 @@ export default function Terminal({ sessionId, onClose }: TerminalProps) {
 
     // WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/terminal?sessionId=${sessionId}`);
+    const ws = new WebSocket(
+      `${protocol}//${window.location.host}/ws/terminal?sessionId=${sessionId}`
+    );
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -113,6 +176,9 @@ export default function Terminal({ sessionId, onClose }: TerminalProps) {
       terminal.dispose();
       terminalRef.current = null;
       wsRef.current = null;
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
   }, [sessionId, sendResize]);
 
@@ -136,4 +202,6 @@ export default function Terminal({ sessionId, onClose }: TerminalProps) {
       <div ref={containerRef} className="flex-1 min-h-0" />
     </div>
   );
-}
+});
+
+export default Terminal;

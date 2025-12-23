@@ -10,6 +10,7 @@ export interface Session {
   id: string;
   computer: Computer;
   terminals: Map<string, TerminalSession>;
+  agentTerminal?: TerminalSession;
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
@@ -26,8 +27,8 @@ class SessionManager {
       .slice(2, 15)}`;
 
     const computer = await createComputer({
-      provider: local({ cleanup: true }),
-      config: { workingDirectory: `/tmp/ifc-viewer-playground/${sessionId}` },
+      provider: local({ cleanup: false }),
+      config: { workingDirectory: `/tmp/ifc-viewer-playground-0.1` },
     });
 
     const [samplePy, sampleIfc] = await Promise.all([
@@ -40,11 +41,7 @@ class SessionManager {
       computer.files.write("sample.ifc", sampleIfc),
       computer.files.write(
         "README.md",
-        "Welcome to the IFC Viewer Playground! This is a sample README file."
-      ),
-      computer.files.write(
-        "/folder/file.txt",
-        "This is a sample file in a folder."
+        "Welcome to the IFC Viewer Playground! This is a browser-based IDE for BIM modeling."
       ),
     ]);
 
@@ -87,14 +84,28 @@ class SessionManager {
     session.terminals.delete(terminalId);
   }
 
+  async getAgentTerminal(sessionId: string): Promise<TerminalSession> {
+    const session = this.getSession(sessionId);
+    if (!session) throw new Error(`Session ${sessionId} not found`);
+
+    if (!session.agentTerminal) {
+      session.agentTerminal = await session.computer.shell.startTerminal();
+    }
+    return session.agentTerminal;
+  }
+
   async disposeSession(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
     clearTimeout(session.timeoutId);
-    await Promise.all(
-      Array.from(session.terminals.values()).map((t) => t.kill())
-    );
+
+    const terminalsToKill = Array.from(session.terminals.values());
+    if (session.agentTerminal) {
+      terminalsToKill.push(session.agentTerminal);
+    }
+    await Promise.all(terminalsToKill.map((t) => t.kill()));
+
     await session.computer.dispose();
     this.sessions.delete(sessionId);
   }

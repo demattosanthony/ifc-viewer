@@ -1,0 +1,208 @@
+import { tool } from "ai";
+import { z } from "zod";
+import type { Computer } from "@ifc-viewer/computer";
+import type { AgentEvent } from "../events";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export function createFileTools(
+  computer: Computer,
+  emit: (event: AgentEvent) => void
+) {
+  return {
+    readFile: tool({
+      description: "Read the contents of a file at the specified path",
+      inputSchema: z.object({
+        path: z.string().describe("The path to the file to read"),
+      }),
+      execute: async ({ path }: { path: string }) => {
+        try {
+          // Open file in editor for visibility
+          emit({ type: "editor-open", path });
+
+          const result = await computer.files.read(path);
+          if (result.type === "binary") {
+            return {
+              success: true,
+              content: "[Binary file - cannot display as text]",
+              type: "binary",
+              path,
+            };
+          }
+          return { success: true, content: result.content, type: "text", path };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+            path,
+          };
+        }
+      },
+    }),
+
+    writeFile: tool({
+      description:
+        "Write content to a file at the specified path. Creates the file if it doesn't exist, or overwrites if it does.",
+      inputSchema: z.object({
+        path: z.string().describe("The path where the file should be written"),
+        content: z.string().describe("The content to write to the file"),
+      }),
+      execute: async ({ path, content }: { path: string; content: string }) => {
+        try {
+          // Open file in editor
+          emit({ type: "editor-open", path });
+          await sleep(100);
+
+          // Stream content in chunks for visual effect
+          const chunkSize = 100;
+          const lines = content.split("\n");
+          let currentLine = 0;
+
+          for (const line of lines) {
+            // Show cursor moving to the line
+            emit({
+              type: "editor-cursor",
+              path,
+              line: currentLine,
+              column: 0,
+            });
+
+            // Insert line content in chunks
+            for (let i = 0; i < line.length; i += chunkSize) {
+              const chunk = line.slice(i, i + chunkSize);
+              emit({
+                type: "editor-insert",
+                path,
+                position: { line: currentLine, column: i },
+                text: chunk,
+              });
+              await sleep(5); // Small delay for visual streaming
+            }
+
+            currentLine++;
+          }
+
+          // Replace the content all at once for final state
+          emit({ type: "editor-replace", path, content });
+
+          // Actually write the file
+          await computer.files.write(path, content);
+
+          // Show save indicator
+          emit({ type: "editor-save", path });
+          emit({ type: "file-created", path });
+
+          return { success: true, path, bytesWritten: content.length };
+        } catch (error) {
+          emit({ type: "error", message: `Failed to write file: ${path}` });
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+            path,
+          };
+        }
+      },
+    }),
+
+    listFiles: tool({
+      description: "List files and directories at the specified path",
+      inputSchema: z.object({
+        path: z
+          .string()
+          .default(".")
+          .describe("The directory path to list (defaults to current directory)"),
+      }),
+      execute: async ({ path }: { path: string }) => {
+        try {
+          const entries = await computer.files.list(path);
+          return {
+            success: true,
+            path,
+            entries: entries.map((e) => ({
+              name: e.name,
+              path: e.path,
+              type: e.type,
+              size: e.size,
+            })),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+            path,
+          };
+        }
+      },
+    }),
+
+    createDirectory: tool({
+      description: "Create a new directory at the specified path",
+      inputSchema: z.object({
+        path: z
+          .string()
+          .describe("The path where the directory should be created"),
+      }),
+      execute: async ({ path }: { path: string }) => {
+        try {
+          await computer.files.mkdir(path, { recursive: true });
+          emit({ type: "file-created", path });
+          return { success: true, path };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+            path,
+          };
+        }
+      },
+    }),
+
+    deleteFile: tool({
+      description:
+        "Delete a file or directory at the specified path. Use with caution.",
+      inputSchema: z.object({
+        path: z.string().describe("The path to delete"),
+        recursive: z
+          .boolean()
+          .default(false)
+          .describe("Whether to recursively delete directories"),
+      }),
+      execute: async ({ path, recursive }: { path: string; recursive: boolean }) => {
+        try {
+          await computer.files.delete(path, { recursive });
+          emit({ type: "file-deleted", path });
+          return { success: true, path };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+            path,
+          };
+        }
+      },
+    }),
+
+    moveFile: tool({
+      description: "Move or rename a file or directory",
+      inputSchema: z.object({
+        source: z.string().describe("The current path of the file/directory"),
+        destination: z.string().describe("The new path"),
+      }),
+      execute: async ({ source, destination }: { source: string; destination: string }) => {
+        try {
+          await computer.files.move(source, destination);
+          emit({ type: "file-deleted", path: source });
+          emit({ type: "file-created", path: destination });
+          return { success: true, source, destination };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+            source,
+            destination,
+          };
+        }
+      },
+    }),
+  };
+}

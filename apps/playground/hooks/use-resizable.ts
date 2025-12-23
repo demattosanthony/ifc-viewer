@@ -1,12 +1,20 @@
 import { useState, useCallback, useRef } from "react";
 
 type Direction = "horizontal" | "vertical";
+type Side = "left" | "right" | "top" | "bottom";
 
 interface UseResizableOptions {
   initialSize: number;
   minSize: number;
   maxSize: number;
   direction: Direction;
+  /** Which side the panel is on. Affects drag direction calculation.
+   * - "left": drag right to grow (default for horizontal)
+   * - "right": drag left to grow
+   * - "top": drag down to grow
+   * - "bottom": drag up to grow (default for vertical)
+   */
+  side?: Side;
   /** For horizontal: collapse when dragged below threshold. For vertical: no collapse behavior */
   collapseThreshold?: number;
   onCollapse?: () => void;
@@ -27,6 +35,7 @@ export function useResizable({
   minSize,
   maxSize,
   direction,
+  side,
   collapseThreshold,
   onCollapse,
   onExpand,
@@ -64,12 +73,17 @@ export function useResizable({
 
         const currentPos =
           direction === "horizontal" ? moveEvent.clientX : moveEvent.clientY;
-        // For horizontal (sidebar): positive delta = grow right
-        // For vertical (terminal): negative delta = grow up (since we drag from top edge)
-        const delta =
-          direction === "horizontal"
-            ? currentPos - startPos
-            : startPos - currentPos;
+
+        // Calculate delta based on panel side
+        // - left panel: drag right to grow (positive delta)
+        // - right panel: drag left to grow (negative delta inverted)
+        // - bottom panel: drag up to grow (negative delta inverted)
+        // - top panel: drag down to grow (positive delta)
+        const rawDelta = currentPos - startPos;
+        const effectiveSide = side ?? (direction === "horizontal" ? "left" : "bottom");
+        const delta = (effectiveSide === "right" || effectiveSide === "bottom")
+          ? -rawDelta
+          : rawDelta;
 
         const newSize = startSize + delta;
 
@@ -100,7 +114,7 @@ export function useResizable({
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [size, direction, minSize, maxSize, collapseThreshold, onCollapse]
+    [size, direction, side, minSize, maxSize, collapseThreshold, onCollapse]
   );
 
   return {

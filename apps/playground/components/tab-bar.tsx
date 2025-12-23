@@ -19,6 +19,23 @@ function SidebarIcon({ active }: { active: boolean }) {
   );
 }
 
+function RightSidebarIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1">
+      <rect x="1.5" y="1.5" width="13" height="13" rx="1" />
+      <rect
+        x="10.5"
+        y="1.5"
+        width="4"
+        height="13"
+        rx="1"
+        fill={active ? "currentColor" : "none"}
+      />
+      <line x1="10.5" y1="1.5" x2="10.5" y2="14.5" />
+    </svg>
+  );
+}
+
 function TerminalIcon({ active }: { active: boolean }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1">
@@ -47,11 +64,13 @@ function TabIcon({ type, name }: { type: Tab["type"]; name: string }) {
 interface TabBarProps {
   showSidebar: boolean;
   showTerminal: boolean;
+  showChat: boolean;
   onToggleSidebar: () => void;
   onToggleTerminal: () => void;
+  onToggleChat: () => void;
 }
 
-export function TabBar({ showSidebar, showTerminal, onToggleSidebar, onToggleTerminal }: TabBarProps) {
+export function TabBar({ showSidebar, showTerminal, showChat, onToggleSidebar, onToggleTerminal, onToggleChat }: TabBarProps) {
   const { tabs, activeTabId, setActiveTab, closeTab } = useEditor();
 
   return (
@@ -109,6 +128,13 @@ export function TabBar({ showSidebar, showTerminal, onToggleSidebar, onToggleTer
           title="Toggle Terminal"
         >
           <TerminalIcon active={showTerminal} />
+        </button>
+        <button
+          onClick={onToggleChat}
+          className="p-1.5 rounded text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d] transition-colors"
+          title="Toggle Chat"
+        >
+          <RightSidebarIcon active={showChat} />
         </button>
       </div>
     </div>
