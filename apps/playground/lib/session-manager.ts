@@ -3,12 +3,15 @@ import {
   local,
   type Computer,
   type TerminalSession,
+  type StorageProvider,
+  LocalStorageProvider,
 } from "@ifc-viewer/computer";
 import { resolve } from "path";
 
 export interface Session {
   id: string;
   computer: Computer;
+  storage: StorageProvider;
   terminals: Map<string, TerminalSession>;
   agentTerminal?: TerminalSession;
   timeoutId: ReturnType<typeof setTimeout>;
@@ -26,23 +29,36 @@ class SessionManager {
       .toString(36)
       .slice(2, 15)}`;
 
+    const workingDirectory = `/tmp/ifc-viewer-playground/${sessionId}`;
+
+    // Create computer for shell and filesystem operations
     const computer = await createComputer({
       provider: local({ cleanup: false }),
       config: { workingDirectory: `/tmp/ifc-viewer-playground-0.1` },
     });
 
+    // Create storage provider pointing to the same directory
+    // This enables streaming, presigned URLs, and future S3 migration
+    const storage = new LocalStorageProvider({
+      baseDir: workingDirectory,
+      urlMode: "data", // Enable data URLs for local development
+    });
+
+    // Load sample files
     const [samplePy, sampleIfc] = await Promise.all([
       Bun.file(SAMPLE_PY_PATH).text(),
       Bun.file(SAMPLE_IFC_PATH).text(),
     ]);
 
+    // Write sample files using storage provider
     await Promise.all([
-      computer.files.write("print_info.py", samplePy),
-      computer.files.write("sample.ifc", sampleIfc),
-      computer.files.write(
+      storage.put("print_info.py", samplePy),
+      storage.put("sample.ifc", sampleIfc),
+      storage.put(
         "README.md",
-        "Welcome to the IFC Viewer Playground! This is a browser-based IDE for BIM modeling."
+        "Welcome to the IFC Viewer Playground! This is a sample README file."
       ),
+      storage.put("folder/file.txt", "This is a sample file in a folder."),
     ]);
 
     const timeoutId = setTimeout(
@@ -53,6 +69,7 @@ class SessionManager {
     const session: Session = {
       id: sessionId,
       computer,
+      storage,
       terminals: new Map(),
       timeoutId,
     };
@@ -106,6 +123,7 @@ class SessionManager {
     }
     await Promise.all(terminalsToKill.map((t) => t.kill()));
 
+    await session.storage.dispose?.();
     await session.computer.dispose();
     this.sessions.delete(sessionId);
   }
