@@ -2,10 +2,10 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import {
   createStorageProvider,
   createStorageProviderFromEnv,
-} from "../../src/storage/create";
-import { LocalStorageProvider } from "../../src/storage/providers/local";
-import { MemoryStorageProvider } from "../../src/storage/providers/memory";
-import { S3StorageProvider } from "../../src/storage/providers/s3";
+} from "../src/create";
+import { LocalStorageProvider } from "../src/providers/local";
+import { MemoryStorageProvider } from "../src/providers/memory";
+import { S3StorageProvider } from "../src/providers/s3";
 import { rm, mkdir } from "node:fs/promises";
 
 describe("createStorageProvider", () => {

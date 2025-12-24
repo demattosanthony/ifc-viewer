@@ -4,7 +4,7 @@ import {
   toBytes,
   streamToBytes,
   inferContentType,
-} from "../../src/storage/base";
+} from "../src/base";
 
 describe("BaseStorageObject", () => {
   test("stores data and metadata", () => {

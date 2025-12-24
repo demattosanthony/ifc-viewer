@@ -1,5 +1,5 @@
 {
-  "name": "@ifc-viewer/computer",
+  "name": "@ifc-viewer/storage",
   "version": "0.0.1",
   "type": "module",
   "main": "./dist/index.js",
@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "bun run scripts/build.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "clean": "rm -rf dist"
@@ -17,11 +17,6 @@
       "types": "./dist/index.d.ts",
       "development": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./local": {
-      "types": "./dist/providers/local/index.d.ts",
-      "development": "./src/providers/local/index.ts",
-      "default": "./dist/providers/local/index.js"
     }
   },
   "files": [

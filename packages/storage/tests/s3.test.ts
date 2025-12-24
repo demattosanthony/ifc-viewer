@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { S3StorageProvider } from "../../src/storage/providers/s3";
+import { S3StorageProvider } from "../src/providers/s3";
 
 /**
  * S3 Storage Provider Tests

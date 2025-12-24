@@ -1,24 +1,16 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { LocalStorageProvider } from "../../src/storage/providers/local";
-import { rm, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { describe, test, expect, beforeEach } from "bun:test";
+import { MemoryStorageProvider } from "../src/providers/memory";
 
-describe("LocalStorageProvider", () => {
-  const testDir = "/tmp/storage-test-" + Date.now();
-  let storage: LocalStorageProvider;
+describe("MemoryStorageProvider", () => {
+  let storage: MemoryStorageProvider;
 
-  beforeEach(async () => {
-    await mkdir(testDir, { recursive: true });
-    storage = new LocalStorageProvider({ baseDir: testDir });
-  });
-
-  afterEach(async () => {
-    await rm(testDir, { recursive: true, force: true });
+  beforeEach(() => {
+    storage = new MemoryStorageProvider();
   });
 
   describe("type", () => {
-    test("returns 'local'", () => {
-      expect(storage.type).toBe("local");
+    test("returns 'memory'", () => {
+      expect(storage.type).toBe("memory");
     });
   });
 
@@ -42,11 +34,25 @@ describe("LocalStorageProvider", () => {
       expect(obj!.data).toEqual(data);
     });
 
-    test("creates parent directories automatically", async () => {
-      await storage.put("nested/deep/path/file.txt", "nested content");
+    test("stores and retrieves an ArrayBuffer", async () => {
+      const buffer = new ArrayBuffer(4);
+      new Uint8Array(buffer).set([10, 20, 30, 40]);
+      await storage.put("buffer.bin", buffer);
 
-      const obj = await storage.get("nested/deep/path/file.txt");
-      expect(obj!.text()).toBe("nested content");
+      const obj = await storage.get("buffer.bin");
+
+      expect(obj).not.toBeNull();
+      expect(Array.from(obj!.data)).toEqual([10, 20, 30, 40]);
+    });
+
+    test("stores and retrieves a Blob", async () => {
+      const blob = new Blob(["blob content"], { type: "text/plain" });
+      await storage.put("blob.txt", blob);
+
+      const obj = await storage.get("blob.txt");
+
+      expect(obj).not.toBeNull();
+      expect(obj!.text()).toBe("blob content");
     });
 
     test("returns null for non-existent key", async () => {
@@ -55,10 +61,10 @@ describe("LocalStorageProvider", () => {
     });
 
     test("overwrites existing key", async () => {
-      await storage.put("key.txt", "first");
-      await storage.put("key.txt", "second");
+      await storage.put("key", "first");
+      await storage.put("key", "second");
 
-      const obj = await storage.get("key.txt");
+      const obj = await storage.get("key");
       expect(obj!.text()).toBe("second");
     });
 
@@ -68,12 +74,6 @@ describe("LocalStorageProvider", () => {
       const obj = await storage.get("leading/slash.txt");
       expect(obj).not.toBeNull();
       expect(obj!.text()).toBe("content");
-    });
-
-    test("creates actual files on disk", async () => {
-      await storage.put("disk-file.txt", "on disk");
-
-      expect(existsSync(`${testDir}/disk-file.txt`)).toBe(true);
     });
   });
 
@@ -108,25 +108,28 @@ describe("LocalStorageProvider", () => {
     });
 
     test("metadata contains correct values", async () => {
-      await storage.put("meta.txt", "metadata test");
+      await storage.put("meta.txt", "metadata test", {
+        contentType: "text/plain",
+        metadata: { custom: "value" },
+      });
 
       const obj = await storage.get("meta.txt");
 
       expect(obj!.metadata.key).toBe("meta.txt");
       expect(obj!.metadata.size).toBe(13);
       expect(obj!.metadata.contentType).toBe("text/plain");
+      expect(obj!.metadata.customMetadata).toEqual({ custom: "value" });
       expect(obj!.metadata.lastModified).toBeInstanceOf(Date);
     });
   });
 
   describe("delete", () => {
-    test("removes a file", async () => {
+    test("removes an object", async () => {
       await storage.put("to-delete.txt", "goodbye");
       await storage.delete("to-delete.txt");
 
       const obj = await storage.get("to-delete.txt");
       expect(obj).toBeNull();
-      expect(existsSync(`${testDir}/to-delete.txt`)).toBe(false);
     });
 
     test("does not throw for non-existent key", async () => {
@@ -153,24 +156,8 @@ describe("LocalStorageProvider", () => {
       expect(stream).not.toBeNull();
 
       const reader = stream!.getReader();
-      const chunks: Uint8Array[] = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-      }
-
-      const text = new TextDecoder().decode(
-        chunks.reduce((acc, chunk) => {
-          const result = new Uint8Array(acc.length + chunk.length);
-          result.set(acc);
-          result.set(chunk, acc.length);
-          return result;
-        }, new Uint8Array(0))
-      );
-
-      expect(text).toBe("streamed data");
+      const { value } = await reader.read();
+      expect(new TextDecoder().decode(value)).toBe("streamed data");
     });
 
     test("returns null for non-existent key", async () => {
@@ -194,44 +181,50 @@ describe("LocalStorageProvider", () => {
       const obj = await storage.get("from-stream.txt");
       expect(obj!.text()).toBe("stream input");
     });
+
+    test("handles multi-chunk stream", async () => {
+      const chunks = ["chunk1", "chunk2", "chunk3"];
+      const stream = new ReadableStream({
+        start(controller) {
+          for (const chunk of chunks) {
+            controller.enqueue(new TextEncoder().encode(chunk));
+          }
+          controller.close();
+        },
+      });
+
+      await storage.putStream("multi-chunk.txt", stream);
+
+      const obj = await storage.get("multi-chunk.txt");
+      expect(obj!.text()).toBe("chunk1chunk2chunk3");
+    });
   });
 
   describe("getUrl", () => {
-    test("returns null when urlMode is 'none' (default)", async () => {
-      await storage.put("url.txt", "content");
+    test("returns data URL for existing key", async () => {
+      await storage.put("url.txt", "url content");
 
       const url = await storage.getUrl("url.txt");
-      expect(url).toBeNull();
-    });
-
-    test("returns data URL when urlMode is 'data'", async () => {
-      const dataStorage = new LocalStorageProvider({
-        baseDir: testDir,
-        urlMode: "data",
-      });
-
-      await dataStorage.put("url.txt", "url content");
-
-      const url = await dataStorage.getUrl("url.txt");
 
       expect(url).not.toBeNull();
       expect(url).toMatch(/^data:/);
       expect(url).toContain("base64");
-
-      // Verify content
-      const base64 = url!.split(",")[1]!;
-      const decoded = Buffer.from(base64, "base64").toString();
-      expect(decoded).toBe("url content");
     });
 
-    test("returns null for non-existent key with data mode", async () => {
-      const dataStorage = new LocalStorageProvider({
-        baseDir: testDir,
-        urlMode: "data",
-      });
-
-      const url = await dataStorage.getUrl("non-existent");
+    test("returns null for non-existent key", async () => {
+      const url = await storage.getUrl("non-existent");
       expect(url).toBeNull();
+    });
+
+    test("data URL decodes to original content", async () => {
+      const content = "Hello, World!";
+      await storage.put("decode.txt", content);
+
+      const url = await storage.getUrl("decode.txt");
+      const base64 = url!.split(",")[1]!;
+      const decoded = Buffer.from(base64, "base64").toString();
+
+      expect(decoded).toBe(content);
     });
   });
 
@@ -251,7 +244,7 @@ describe("LocalStorageProvider", () => {
       await storage.put("package.json", "package");
     });
 
-    test("lists all files from root", async () => {
+    test("lists all objects with empty prefix", async () => {
       const entries = [];
       for await (const entry of storage.list("")) {
         entries.push(entry);
@@ -264,9 +257,9 @@ describe("LocalStorageProvider", () => {
       expect(keys).toContain("package.json");
     });
 
-    test("lists files in subdirectory", async () => {
+    test("filters by prefix", async () => {
       const entries = [];
-      for await (const entry of storage.list("docs")) {
+      for await (const entry of storage.list("docs/")) {
         entries.push(entry);
       }
 
@@ -285,9 +278,21 @@ describe("LocalStorageProvider", () => {
       expect(entries).toHaveLength(2);
     });
 
+    test("respects startAfter option", async () => {
+      const entries = [];
+      for await (const entry of storage.list("", { startAfter: "docs/readme.md" })) {
+        entries.push(entry);
+      }
+
+      // Should skip docs/guide.md, docs/readme.md and start after docs/readme.md
+      const keys = entries.map((e) => e.key);
+      expect(keys).not.toContain("docs/guide.md");
+      expect(keys).not.toContain("docs/readme.md");
+    });
+
     test("entries have correct metadata", async () => {
       const entries = [];
-      for await (const entry of storage.list("package.json")) {
+      for await (const entry of storage.list("package")) {
         entries.push(entry);
       }
 
@@ -298,33 +303,41 @@ describe("LocalStorageProvider", () => {
     });
   });
 
-  describe("path security", () => {
-    test("prevents path traversal with ..", async () => {
-      await expect(
-        storage.put("/../../../etc/passwd", "hacked")
-      ).rejects.toThrow("Invalid key");
+  describe("dispose", () => {
+    test("clears all stored objects", async () => {
+      await storage.put("a", "a");
+      await storage.put("b", "b");
+
+      expect(storage.size).toBe(2);
+
+      await storage.dispose();
+
+      expect(storage.size).toBe(0);
+    });
+  });
+
+  describe("size and clear", () => {
+    test("size returns count of stored objects", async () => {
+      expect(storage.size).toBe(0);
+
+      await storage.put("one", "1");
+      expect(storage.size).toBe(1);
+
+      await storage.put("two", "2");
+      expect(storage.size).toBe(2);
+
+      await storage.delete("one");
+      expect(storage.size).toBe(1);
     });
 
-    test("prevents path traversal on get", async () => {
-      await expect(storage.get("/../../../etc/passwd")).rejects.toThrow(
-        "Invalid key"
-      );
-    });
+    test("clear removes all objects", async () => {
+      await storage.put("a", "a");
+      await storage.put("b", "b");
 
-    test("prevents path traversal from nested path", async () => {
-      // Path traversal from nested location fails
-      await expect(
-        storage.put("foo/../../bar", "hacked")
-      ).rejects.toThrow("Invalid key");
-    });
+      storage.clear();
 
-    test("allows URL-encoded characters as literal filenames", async () => {
-      // URL-encoded characters are treated as literal characters, not decoded
-      // This creates a file with literal "%2F" in the name
-      await storage.put("safe%2Ffile.txt", "content");
-
-      const obj = await storage.get("safe%2Ffile.txt");
-      expect(obj!.text()).toBe("content");
+      expect(storage.size).toBe(0);
+      expect(await storage.get("a")).toBeNull();
     });
   });
 
@@ -332,41 +345,25 @@ describe("LocalStorageProvider", () => {
     test("infers content type from extension", async () => {
       await storage.put("image.png", new Uint8Array([1, 2, 3]));
       await storage.put("script.js", "console.log()");
+      await storage.put("styles.css", "body {}");
       await storage.put("model.ifc", "IFC content");
 
       const png = await storage.get("image.png");
       const js = await storage.get("script.js");
+      const css = await storage.get("styles.css");
       const ifc = await storage.get("model.ifc");
 
       expect(png!.metadata.contentType).toBe("image/png");
       expect(js!.metadata.contentType).toBe("text/javascript");
+      expect(css!.metadata.contentType).toBe("text/css");
       expect(ifc!.metadata.contentType).toBe("application/x-step");
     });
-  });
 
-  describe("large files", () => {
-    test("handles large binary files", async () => {
-      // 1MB of random data
-      const size = 1024 * 1024;
-      const data = new Uint8Array(size);
-      for (let i = 0; i < size; i++) {
-        data[i] = i % 256;
-      }
+    test("uses provided content type over inference", async () => {
+      await storage.put("data.txt", "binary", { contentType: "application/octet-stream" });
 
-      await storage.put("large.bin", data);
-
-      const obj = await storage.get("large.bin");
-      expect(obj!.data.length).toBe(size);
-      expect(obj!.data[0]).toBe(0);
-      expect(obj!.data[255]).toBe(255);
-      expect(obj!.data[256]).toBe(0);
-    });
-  });
-
-  describe("dispose", () => {
-    test("completes without error", async () => {
-      await storage.put("file.txt", "content");
-      await expect(storage.dispose()).resolves.toBeUndefined();
+      const obj = await storage.get("data.txt");
+      expect(obj!.metadata.contentType).toBe("application/octet-stream");
     });
   });
 });

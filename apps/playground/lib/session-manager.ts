@@ -3,9 +3,11 @@ import {
   local,
   type Computer,
   type TerminalSession,
-  type StorageProvider,
-  LocalStorageProvider,
 } from "@ifc-viewer/computer";
+import {
+  LocalStorageProvider,
+  type StorageProvider,
+} from "@ifc-viewer/storage";
 import { resolve } from "path";
 
 export interface Session {
