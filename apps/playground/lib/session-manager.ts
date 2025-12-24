@@ -29,12 +29,12 @@ class SessionManager {
       .toString(36)
       .slice(2, 15)}`;
 
-    const workingDirectory = `/tmp/ifc-viewer-playground/${sessionId}`;
+    const workingDirectory = `/tmp/ifc-viewer-playground-0.1`;
 
     // Create computer for shell and filesystem operations
     const computer = await createComputer({
       provider: local({ cleanup: false }),
-      config: { workingDirectory: `/tmp/ifc-viewer-playground-0.1` },
+      config: { workingDirectory },
     });
 
     // Create storage provider pointing to the same directory

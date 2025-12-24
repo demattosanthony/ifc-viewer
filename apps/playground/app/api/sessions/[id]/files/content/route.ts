@@ -1,5 +1,6 @@
 import { sessionManager } from "@/lib/session-manager";
 import { route } from "@ademattos/bunbox";
+import { inferContentType } from "@ifc-viewer/computer";
 import { z } from "zod";
 
 // Binary file extensions that should be read as binary
