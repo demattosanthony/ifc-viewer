@@ -1,7 +1,16 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { Minus } from "lucide-react";
+
+export interface TerminalHandle {
+  typeText: (text: string, speed?: number) => void;
+  appendText: (text: string) => void; // For streaming - appends without prefix
+  startStreamingCommand: () => void; // Start a new streaming command line
+  execute: () => void;
+  writeOutput: (data: string) => void;
+  focus: () => void;
+}
 
 interface TerminalProps {
   sessionId: string;
@@ -15,17 +24,113 @@ interface TerminalMessage {
   code?: number;
 }
 
-export default function Terminal({ sessionId, onClose }: TerminalProps) {
+// Filter out command completion markers from display
+const MARKER_REGEX = /<<CMD_DONE:(-?\d+)>>/g;
+const ECHO_MARKER_REGEX = /; echo ["']<<CMD_DONE:\$\?>>["']/g;
+
+function filterTerminalOutput(data: string): string {
+  // Remove the marker output and the echo command from display
+  return data
+    .replace(ECHO_MARKER_REGEX, "")  // Remove "; echo '<<CMD_DONE:$?>>'" from command line
+    .replace(MARKER_REGEX, "");       // Remove "<<CMD_DONE:0>>" from output
+}
+
+const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
+  { sessionId, onClose },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<XTerm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isStreamingRef = useRef<boolean>(false); // Track if we're in streaming mode
 
   const sendResize = useCallback(() => {
     const term = terminalRef.current;
     const ws = wsRef.current;
     if (!term || !ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+    ws.send(
+      JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows })
+    );
   }, []);
+
+  // Expose methods for AI agent control
+  useImperativeHandle(ref, () => ({
+    typeText: (text: string, speed = 30) => {
+      const term = terminalRef.current;
+      if (!term) return;
+
+      // Clear any existing typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Show AI indicator and type directly to display (visual only, no execution)
+      term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
+      isStreamingRef.current = false; // Not in streaming mode
+
+      // Type characters one at a time for visual effect
+      let index = 0;
+      const typeChar = () => {
+        if (index < text.length) {
+          const char = text[index];
+          if (char !== undefined) {
+            term.write(char);
+          }
+          index++;
+          typingTimeoutRef.current = setTimeout(typeChar, speed);
+        }
+      };
+      typeChar();
+    },
+    startStreamingCommand: () => {
+      const term = terminalRef.current;
+      if (!term) return;
+
+      // Clear any existing typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+
+      // Show AI indicator for streaming command
+      term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
+      isStreamingRef.current = true;
+    },
+    appendText: (text: string) => {
+      const term = terminalRef.current;
+      if (!term) return;
+
+      // Start streaming if not already
+      if (!isStreamingRef.current) {
+        term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
+        isStreamingRef.current = true;
+      }
+
+      // Write text directly without delay
+      term.write(text);
+    },
+    execute: () => {
+      const term = terminalRef.current;
+      if (!term) return;
+      // Just show a newline - execution happens separately via agent's shell
+      term.write("\r\n");
+      isStreamingRef.current = false; // End streaming mode
+    },
+    writeOutput: (data: string) => {
+      const term = terminalRef.current;
+      if (term) {
+        const filtered = filterTerminalOutput(data);
+        if (filtered) term.write(filtered);
+      }
+    },
+    focus: () => {
+      const term = terminalRef.current;
+      if (term) {
+        term.focus();
+      }
+    },
+  }), []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -77,7 +182,9 @@ export default function Terminal({ sessionId, onClose }: TerminalProps) {
 
     // WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/terminal?sessionId=${sessionId}`);
+    const ws = new WebSocket(
+      `${protocol}//${window.location.host}/ws/terminal?sessionId=${sessionId}`
+    );
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -91,7 +198,10 @@ export default function Terminal({ sessionId, onClose }: TerminalProps) {
           sendResize();
           break;
         case "output":
-          if (message.data) terminal.write(message.data);
+          if (message.data) {
+            const filtered = filterTerminalOutput(message.data);
+            if (filtered) terminal.write(filtered);
+          }
           break;
         case "exit":
           terminal.writeln(`\r\n[Process exited with code ${message.code}]`);
@@ -113,6 +223,9 @@ export default function Terminal({ sessionId, onClose }: TerminalProps) {
       terminal.dispose();
       terminalRef.current = null;
       wsRef.current = null;
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
   }, [sessionId, sendResize]);
 
@@ -136,4 +249,6 @@ export default function Terminal({ sessionId, onClose }: TerminalProps) {
       <div ref={containerRef} className="flex-1 min-h-0" />
     </div>
   );
-}
+});
+
+export default Terminal;

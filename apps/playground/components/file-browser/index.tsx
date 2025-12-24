@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import { api } from "@/.bunbox/api-client";
 import { useEditor } from "@/lib/editor-context";
 import { useResizable } from "@/hooks/use-resizable";
@@ -21,17 +21,24 @@ interface FileBrowserProps {
   visible?: boolean;
 }
 
+export interface FileBrowserHandle {
+  refreshPath: (path: string) => void;
+}
+
 const MIN_WIDTH = 160;
 const MAX_WIDTH = 400;
-const DEFAULT_WIDTH = 240;
+const DEFAULT_WIDTH = 275;
 const COLLAPSED_WIDTH = 48;
 
-export function FileBrowser({ sessionId, visible = true }: FileBrowserProps) {
+export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
+  function FileBrowser({ sessionId, visible = true }, ref) {
   const { openFile, closeTab, tabs } = useEditor();
   const [fileTree, setFileTree] = useState<Map<string, FileEntry[]>>(new Map());
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["."]));
   const [loading, setLoading] = useState<Set<string>>(new Set());
-  const [newItemType, setNewItemType] = useState<"file" | "folder" | null>(null);
+  const [newItemType, setNewItemType] = useState<"file" | "folder" | null>(
+    null
+  );
   const [newItemParent, setNewItemParent] = useState<string>(".");
   const [newItemName, setNewItemName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +85,17 @@ export function FileBrowser({ sessionId, visible = true }: FileBrowserProps) {
     },
     [fetchFiles]
   );
+
+  // Expose refresh method to parent via ref
+  useImperativeHandle(ref, () => ({
+    refreshPath: (path: string) => {
+      // Get parent directory to refresh
+      const parentPath = path.includes("/")
+        ? path.substring(0, path.lastIndexOf("/")) || "."
+        : ".";
+      refreshFolder(parentPath);
+    },
+  }), [refreshFolder]);
 
   const {
     deleteTarget,
@@ -220,7 +238,7 @@ export function FileBrowser({ sessionId, visible = true }: FileBrowserProps) {
 
   return (
     <div className="relative flex" style={{ width }}>
-      <div className="flex-1 bg-[#181818] border-r border-[#2d2d2d] flex flex-col min-w-0">
+      <div className="flex-1 bg-background border-r border-[#2d2d2d] flex flex-col min-w-0">
         <div className="flex items-center justify-between px-2 h-[35px] border-b border-[#2d2d2d]">
           <span className="text-[11px] font-medium text-[#bbbbbb] uppercase tracking-wider">
             Explorer
@@ -264,7 +282,9 @@ export function FileBrowser({ sessionId, visible = true }: FileBrowserProps) {
 
         <div className="flex-1 overflow-auto py-1">
           {isRootLoading && !rootFiles ? (
-            <div className="px-4 py-1 text-[#858585] text-[13px]">Loading...</div>
+            <div className="px-4 py-1 text-[#858585] text-[13px]">
+              Loading...
+            </div>
           ) : rootFiles?.length === 0 ? (
             <div className="px-4 py-1 text-[#858585] text-[13px]">Empty</div>
           ) : (
@@ -285,4 +305,4 @@ export function FileBrowser({ sessionId, visible = true }: FileBrowserProps) {
       />
     </div>
   );
-}
+});

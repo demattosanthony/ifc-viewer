@@ -307,12 +307,12 @@ export function ElementPropertiesPanel({
     <div
       className={cn(
         "w-72 shrink-0",
-        "bg-[#252526] border-l border-[#3c3c3c]",
+        "bg-background border-l border-border",
         "flex flex-col overflow-hidden"
       )}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 p-3 border-b border-[#3c3c3c]">
+      <div className="flex items-start justify-between gap-2 p-3 border-b border-border">
         <div className="min-w-0">
           <h2 className="font-medium text-sm text-[#cccccc] truncate">
             {basicInfo?.name?.split(":")[0] || "Element"}
@@ -374,7 +374,7 @@ export function ElementPropertiesPanel({
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 border-t border-[#3c3c3c] bg-[#1e1e1e]">
+      <div className="px-3 py-2 border-t border-border">
         <p className="text-[10px] text-[#858585] text-center">
           Click elsewhere to deselect
         </p>

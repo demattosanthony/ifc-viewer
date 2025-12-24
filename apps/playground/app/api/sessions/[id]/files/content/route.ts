@@ -2,6 +2,40 @@ import { sessionManager } from "@/lib/session-manager";
 import { route } from "@ademattos/bunbox";
 import { z } from "zod";
 
+// Binary file extensions that should be read as binary
+const BINARY_EXTENSIONS = new Set([
+  "ifc",
+  "pdf",
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "ico",
+  "svg",
+  "woff",
+  "woff2",
+  "ttf",
+  "eot",
+  "otf",
+  "zip",
+  "tar",
+  "gz",
+  "rar",
+  "7z",
+  "exe",
+  "dll",
+  "so",
+  "dylib",
+  "bin",
+  "dat",
+]);
+
+function isBinaryFile(path: string): boolean {
+  const ext = path.split(".").pop()?.toLowerCase() || "";
+  return BINARY_EXTENSIONS.has(ext);
+}
+
 export const readFile = route
   .get()
   .params(z.object({ id: z.string() }))
@@ -13,7 +47,10 @@ export const readFile = route
     }
 
     try {
-      const result = await session.computer.files.read(ctx.query.path);
+      const isBinary = isBinaryFile(ctx.query.path);
+      const result = await session.computer.files.read(ctx.query.path, {
+        encoding: isBinary ? "binary" : undefined,
+      });
 
       if (result.type === "binary") {
         return ctx.json({
