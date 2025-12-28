@@ -15,6 +15,7 @@
         "@ademattos/bunbox": "0.3.11",
         "@ifc-viewer/agent": "workspace:*",
         "@ifc-viewer/computer": "workspace:*",
+        "@ifc-viewer/storage": "workspace:*",
         "@monaco-editor/react": "^4.7.0",
         "@radix-ui/react-alert-dialog": "^1.1.15",
         "@radix-ui/react-avatar": "^1.1.11",
@@ -98,6 +99,16 @@
       },
       "peerDependencies": {
         "react": "^18.3.0 || ^19.0.0",
+        "typescript": "^5",
+      },
+    },
+    "packages/storage": {
+      "name": "@ifc-viewer/storage",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
         "typescript": "^5",
       },
     },
@@ -262,6 +273,8 @@
     "@ifc-viewer/agent": ["@ifc-viewer/agent@workspace:packages/agent"],
 
     "@ifc-viewer/computer": ["@ifc-viewer/computer@workspace:packages/computer"],
+
+    "@ifc-viewer/storage": ["@ifc-viewer/storage@workspace:packages/storage"],
 
     "@isaacs/balanced-match": ["@isaacs/balanced-match@4.0.1", "", {}, "sha512-yzMTt9lEb8Gv7zRioUilSglI0c0smZ9k5D65677DLWLtWJaXIS3CqcGyUFByYKlnUj6TkjLVs54fBl6+TiGQDQ=="],
 

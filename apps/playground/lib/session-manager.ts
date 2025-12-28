@@ -60,7 +60,6 @@ class SessionManager {
         "README.md",
         "Welcome to the IFC Viewer Playground! This is a sample README file."
       ),
-      storage.put("folder/file.txt", "This is a sample file in a folder."),
     ]);
 
     const timeoutId = setTimeout(
