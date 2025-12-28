@@ -9,11 +9,12 @@
  * Note: Data is lost when the process exits.
  */
 
-import { BaseStorageObject, inferContentType, toBytes } from "../base";
+import { BaseStorageObject, inferContentType, streamToBytes, toBytes } from "../base";
 import type {
   ListOptions,
   PutOptions,
   StorageEntry,
+  StorageInput,
   StorageMetadata,
   StorageObject,
   StorageProvider,
@@ -53,11 +54,11 @@ export class MemoryStorageProvider implements StorageProvider {
 
   async put(
     key: string,
-    data: unknown,
+    data: StorageInput,
     options?: PutOptions
   ): Promise<StorageResult> {
     const normalizedKey = this.normalizeKey(key);
-    const bytes = await toBytes(data as Parameters<typeof toBytes>[0]);
+    const bytes = await toBytes(data);
 
     const metadata: StorageMetadata = {
       key: normalizedKey,
@@ -98,25 +99,7 @@ export class MemoryStorageProvider implements StorageProvider {
     stream: ReadableStream<Uint8Array>,
     options?: PutOptions
   ): Promise<StorageResult> {
-    // Collect stream into bytes
-    const reader = stream.getReader();
-    const chunks: Uint8Array[] = [];
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-
-    // Combine chunks
-    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    const bytes = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-
+    const bytes = await streamToBytes(stream);
     return this.put(key, bytes, options);
   }
 

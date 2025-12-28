@@ -17,6 +17,7 @@ import type {
   ListOptions,
   PutOptions,
   StorageEntry,
+  StorageInput,
   StorageMetadata,
   StorageObject,
   StorageProvider,
@@ -98,13 +99,13 @@ export class LocalStorageProvider implements StorageProvider {
 
   async put(
     key: string,
-    data: unknown,
+    data: StorageInput,
     options?: PutOptions
   ): Promise<StorageResult> {
     const path = this.resolvePath(key);
     await this.ensureDir(path);
 
-    const bytes = await toBytes(data as Parameters<typeof toBytes>[0]);
+    const bytes = await toBytes(data);
     await Bun.write(path, bytes);
 
     return {

@@ -16,6 +16,7 @@ import type {
   ListOptions,
   PutOptions,
   StorageEntry,
+  StorageInput,
   StorageMetadata,
   StorageObject,
   StorageProvider,
@@ -99,11 +100,11 @@ export class S3StorageProvider implements StorageProvider {
 
   async put(
     key: string,
-    data: unknown,
+    data: StorageInput,
     options?: PutOptions
   ): Promise<StorageResult> {
     const s3Key = this.buildKey(key);
-    const bytes = await toBytes(data as Parameters<typeof toBytes>[0]);
+    const bytes = await toBytes(data);
 
     const file = this.client.file(s3Key);
     await file.write(bytes, {
@@ -132,17 +133,8 @@ export class S3StorageProvider implements StorageProvider {
 
   async exists(key: string): Promise<boolean> {
     const s3Key = this.buildKey(key);
-
-    try {
-      const file = this.client.file(s3Key);
-      await file.bytes();
-      return true;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        return false;
-      }
-      throw error;
-    }
+    const file = this.client.file(s3Key);
+    return file.exists();
   }
 
   async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {

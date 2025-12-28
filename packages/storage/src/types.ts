@@ -204,9 +204,13 @@ export interface StorageProvider {
   /**
    * Generate a URL for downloading an object.
    * For S3, returns a presigned URL. For local, may return a data: URL.
+   *
+   * Note: For S3, URLs are generated without verifying the object exists.
+   * The URL will return 404 if the object is missing when accessed.
+   *
    * @param key - The object's key/path
    * @param options - URL generation options
-   * @returns A download URL, or null if not supported/not found
+   * @returns A download URL, or null if not supported
    */
   getUrl(key: string, options?: UrlOptions): Promise<string | null>;
 
