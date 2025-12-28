@@ -4,11 +4,16 @@ import {
   type Computer,
   type TerminalSession,
 } from "@ifc-viewer/computer";
+import {
+  LocalStorageProvider,
+  type StorageProvider,
+} from "@ifc-viewer/storage";
 import { resolve } from "path";
 
 export interface Session {
   id: string;
   computer: Computer;
+  storage: StorageProvider;
   terminals: Map<string, TerminalSession>;
   agentTerminal?: TerminalSession;
   timeoutId: ReturnType<typeof setTimeout>;
@@ -17,6 +22,8 @@ export interface Session {
 const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 const SAMPLE_PY_PATH = resolve(import.meta.dir, "../public/print_info.py");
 const SAMPLE_IFC_PATH = resolve(import.meta.dir, "../public/sample.ifc");
+const WORKING_DIRECTORY =
+  process.env.PLAYGROUND_WORKING_DIR ?? "/tmp/ifc-viewer-playground";
 
 class SessionManager {
   private sessions = new Map<string, Session>();
@@ -26,22 +33,34 @@ class SessionManager {
       .toString(36)
       .slice(2, 15)}`;
 
+    const workingDirectory = WORKING_DIRECTORY;
+
+    // Create computer for shell and filesystem operations
     const computer = await createComputer({
       provider: local({ cleanup: false }),
-      config: { workingDirectory: `/tmp/ifc-viewer-playground-0.1` },
+      config: { workingDirectory },
     });
 
+    // Create storage provider pointing to the same directory
+    // This enables streaming, presigned URLs, and future S3 migration
+    const storage = new LocalStorageProvider({
+      baseDir: workingDirectory,
+      urlMode: "data", // Enable data URLs for local development
+    });
+
+    // Load sample files
     const [samplePy, sampleIfc] = await Promise.all([
       Bun.file(SAMPLE_PY_PATH).text(),
       Bun.file(SAMPLE_IFC_PATH).text(),
     ]);
 
+    // Write sample files using storage provider
     await Promise.all([
-      computer.files.write("print_info.py", samplePy),
-      computer.files.write("sample.ifc", sampleIfc),
-      computer.files.write(
+      storage.put("print_info.py", samplePy),
+      storage.put("sample.ifc", sampleIfc),
+      storage.put(
         "README.md",
-        "Welcome to the IFC Viewer Playground! This is a browser-based IDE for BIM modeling."
+        "Welcome to the IFC Viewer Playground! This is a sample README file."
       ),
     ]);
 
@@ -53,6 +72,7 @@ class SessionManager {
     const session: Session = {
       id: sessionId,
       computer,
+      storage,
       terminals: new Map(),
       timeoutId,
     };
@@ -106,6 +126,7 @@ class SessionManager {
     }
     await Promise.all(terminalsToKill.map((t) => t.kill()));
 
+    await session.storage.dispose?.();
     await session.computer.dispose();
     this.sessions.delete(sessionId);
   }

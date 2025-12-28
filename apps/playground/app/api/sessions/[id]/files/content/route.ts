@@ -1,6 +1,7 @@
 import { sessionManager } from "@/lib/session-manager";
 import { route } from "@ademattos/bunbox";
 import { z } from "zod";
+import { inferContentType } from "@ifc-viewer/storage";
 
 // Binary file extensions that should be read as binary
 const BINARY_EXTENSIONS = new Set([
@@ -47,22 +48,24 @@ export const readFile = route
     }
 
     try {
-      const isBinary = isBinaryFile(ctx.query.path);
-      const result = await session.computer.files.read(ctx.query.path, {
-        encoding: isBinary ? "binary" : undefined,
-      });
+      const obj = await session.storage.get(ctx.query.path);
+      if (!obj) {
+        return ctx.json({ error: "File not found" }, 404);
+      }
 
-      if (result.type === "binary") {
+      // Return binary files as base64
+      if (isBinaryFile(ctx.query.path)) {
         return ctx.json({
           type: "binary",
-          content: Buffer.from(result.content).toString("base64"),
+          content: Buffer.from(obj.data).toString("base64"),
           path: ctx.query.path,
         });
       }
 
+      // Return text files as-is
       return {
         type: "text",
-        content: result.content,
+        content: obj.text(),
         path: ctx.query.path,
       };
     } catch (err) {
@@ -88,12 +91,17 @@ export const writeFile = route
 
     try {
       const { path, content, encoding } = ctx.body;
-      const fileContent =
+
+      // Convert base64 to bytes, or use text directly
+      const data =
         encoding === "base64"
           ? new Uint8Array(Buffer.from(content, "base64"))
           : content;
 
-      await session.computer.files.write(path, fileContent);
+      await session.storage.put(path, data, {
+        contentType: inferContentType(path),
+      });
+
       return { success: true, path };
     } catch (err) {
       return ctx.json({ error: "Failed to write file" }, 500);
