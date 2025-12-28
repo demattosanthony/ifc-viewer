@@ -12,7 +12,7 @@ export class ModelManager {
   private components: OBC.Components;
   private world: OBC.World;
   private camera: OBC.OrthoPerspectiveCamera;
-  private workerUrl: string;
+  private workerUrl?: string;
   private fragmentsInitialized = false;
   private onModelLoaded?: ModelLoadedCallback;
   private onModelUnloaded?: ModelUnloadedCallback;
@@ -21,7 +21,7 @@ export class ModelManager {
     components: OBC.Components,
     world: OBC.World,
     camera: OBC.OrthoPerspectiveCamera,
-    workerUrl: string,
+    workerUrl?: string,
     callbacks?: {
       onModelLoaded?: ModelLoadedCallback;
       onModelUnloaded?: ModelUnloadedCallback;
@@ -33,6 +33,19 @@ export class ModelManager {
     this.workerUrl = workerUrl;
     this.onModelLoaded = callbacks?.onModelLoaded;
     this.onModelUnloaded = callbacks?.onModelUnloaded;
+  }
+
+  /**
+   * Resolves the worker URL - uses provided URL or falls back to bundled worker
+   */
+  private async resolveWorkerUrl(): Promise<string> {
+    if (this.workerUrl) {
+      return this.workerUrl;
+    }
+
+    // Dynamically import the bundled worker utility
+    const { getFragmentsWorkerUrl } = await import("../../worker");
+    return getFragmentsWorkerUrl();
   }
 
   getModel(modelId: string): FragmentsModel | null {
@@ -103,7 +116,8 @@ export class ModelManager {
       ifcLoader.onIfcImporterInitialized.add(importerHandler);
 
       if (!this.fragmentsInitialized) {
-        fragments.init(this.workerUrl);
+        const resolvedWorkerUrl = await this.resolveWorkerUrl();
+        fragments.init(resolvedWorkerUrl);
         this.fragmentsInitialized = true;
 
         // Update fragments when camera stops moving

@@ -3,6 +3,9 @@ export { Viewer } from "./react/viewer";
 export { ViewerProvider, useViewer } from "./react/context";
 export { useViewerEvents } from "./react/hooks";
 
+// Worker utility - re-exported for convenience
+export { getFragmentsWorkerUrl } from "./worker";
+
 // Types - re-export from react/types which includes shared types
 export type {
   // Shared types

@@ -15,7 +15,6 @@ export default function RootLayout({
 }) {
   return (
     <ViewerProvider
-      workerUrl="/worker.mjs"
       config={{
         gridEnabled: false,
         statsEnabled: true,

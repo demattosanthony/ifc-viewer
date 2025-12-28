@@ -88,7 +88,11 @@ export interface ViewerContextValue extends ViewerState, ViewerActions {
 export interface ViewerProviderProps {
   children: React.ReactNode;
   config?: ViewerConfig;
-  workerUrl: string;
+  /**
+   * Optional URL to the fragments worker.
+   * If not provided, the bundled worker will be used automatically.
+   */
+  workerUrl?: string;
 }
 
 export interface ViewerConfig {

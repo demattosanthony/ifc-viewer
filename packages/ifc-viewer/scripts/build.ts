@@ -1,8 +1,12 @@
-import { rm } from "node:fs/promises";
+import { rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const rootDir = import.meta.dir.replace("/scripts", "");
 const distDir = join(rootDir, "dist");
+const workerSourcePath = join(
+  rootDir,
+  "node_modules/@thatopen/fragments/dist/Worker/worker.mjs"
+);
 
 // Clean dist directory
 console.log("Cleaning dist directory...");
@@ -74,6 +78,52 @@ const tscProcess = Bun.spawn(["bunx", "tsc", "-p", "tsconfig.build.json"], {
 const tscExitCode = await tscProcess.exited;
 if (tscExitCode !== 0) {
   console.error("TypeScript declaration generation failed");
+  process.exit(1);
+}
+
+// Generate worker utility with inlined worker code
+console.log("Generating worker utility...");
+try {
+  const workerCode = await readFile(workerSourcePath, "utf-8");
+
+  // Create the worker utility that exports a function to get the worker URL
+  const workerUtility = `// Auto-generated - Do not edit
+// This file contains the inlined worker from @thatopen/fragments
+
+const workerCode = ${JSON.stringify(workerCode)};
+
+let cachedWorkerUrl: string | null = null;
+
+/**
+ * Returns a Blob URL for the fragments worker.
+ * The URL is cached after first creation.
+ */
+export function getFragmentsWorkerUrl(): string {
+  if (cachedWorkerUrl) {
+    return cachedWorkerUrl;
+  }
+
+  const blob = new Blob([workerCode], { type: "application/javascript" });
+  cachedWorkerUrl = URL.createObjectURL(blob);
+  return cachedWorkerUrl;
+}
+`;
+
+  await writeFile(join(distDir, "worker.js"), workerUtility);
+
+  // Also generate TypeScript declaration
+  const workerDeclaration = `// Auto-generated - Do not edit
+/**
+ * Returns a Blob URL for the fragments worker.
+ * The URL is cached after first creation.
+ */
+export declare function getFragmentsWorkerUrl(): string;
+`;
+  await writeFile(join(distDir, "worker.d.ts"), workerDeclaration);
+
+  console.log("Worker utility generated successfully!");
+} catch (error) {
+  console.error("Failed to generate worker utility:", error);
   process.exit(1);
 }
 

@@ -21,6 +21,11 @@
       "types": "./dist/core/index.d.ts",
       "development": "./src/core/index.ts",
       "default": "./dist/core/index.js"
+    },
+    "./worker": {
+      "types": "./dist/worker/index.d.ts",
+      "development": "./src/worker/index.ts",
+      "default": "./dist/worker.js"
     }
   },
   "files": [
