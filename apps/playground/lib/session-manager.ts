@@ -22,7 +22,8 @@ export interface Session {
 const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 const SAMPLE_PY_PATH = resolve(import.meta.dir, "../public/print_info.py");
 const SAMPLE_IFC_PATH = resolve(import.meta.dir, "../public/sample.ifc");
-const WORKING_DIRECTORY = process.env.PLAYGROUND_WORKING_DIR ?? "/tmp/ifc-viewer-playground";
+const WORKING_DIRECTORY =
+  process.env.PLAYGROUND_WORKING_DIR ?? "/tmp/ifc-viewer-playground";
 
 class SessionManager {
   private sessions = new Map<string, Session>();

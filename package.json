@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev:playground": "bun --filter=ifc-viewer/playground run dev",
-    "build:all": "bun --filter=@ifc-viewer/computer run build && bun --filter=@ifc-viewer/agent run build && bun --filter=ifc-viewer run build && bun --filter=ifc-viewer/playground run build",
+    "build:all": "bun --filter=@ifc-viewer/computer run build && bun --filter=@ifc-viewer/storage run build && bun --filter=@ifc-viewer/agent run build && bun --filter=ifc-viewer run build && bun --filter=ifc-viewer/playground run build",
     "build:ifc-viewer": "bun --filter=ifc-viewer run build",
     "typecheck": "bun --filter=* run typecheck"
   },
