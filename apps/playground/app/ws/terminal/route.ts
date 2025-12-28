@@ -1,4 +1,4 @@
-import { sessionManager } from "@/lib/session-manager";
+import { sessionManager } from "@/shared/utils/session-manager";
 import type { ServerWebSocket, WebSocketContext } from "@ademattos/bunbox";
 
 interface CustomData {

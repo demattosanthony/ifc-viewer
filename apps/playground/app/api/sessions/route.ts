@@ -1,4 +1,4 @@
-import { sessionManager } from "@/lib/session-manager";
+import { sessionManager } from "@/shared/utils/session-manager";
 import { route } from "@ademattos/bunbox";
 
 export const createSession = route.post().handle(async (ctx) => {

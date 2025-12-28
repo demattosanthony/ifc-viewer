@@ -1,4 +1,4 @@
-import { sessionManager } from "@/lib/session-manager";
+import { sessionManager } from "@/shared/utils/session-manager";
 import { route } from "@ademattos/bunbox";
 import { z } from "zod";
 import { inferContentType } from "@ifc-viewer/storage";

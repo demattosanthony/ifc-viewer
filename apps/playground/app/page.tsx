@@ -5,16 +5,16 @@ import {
   Viewer,
   type ElementSelectedEvent,
 } from "ifc-viewer";
-import { ViewerToolBar } from "@/components/viewer-toolbar";
-import { ElementPropertiesPanel } from "@/components/element-properties-panel";
-import Terminal, { type TerminalHandle } from "@/components/terminal";
-import { FileBrowser, type FileBrowserHandle } from "@/components/file-browser";
-import { TabBar } from "@/components/tab-bar";
-import { EditorPane } from "@/components/editor-pane";
-import { EditorProvider, useEditor } from "@/lib/editor-context";
-import { AgentProvider, useAgent } from "@/lib/agent-context";
-import { ChatPanel } from "@/components/chat";
-import { useResizable } from "@/hooks/use-resizable";
+import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
+import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
+import Terminal, { type TerminalHandle } from "@/features/terminal/components/terminal";
+import { FileBrowser, type FileBrowserHandle } from "@/features/file-browser/components/file-browser";
+import { TabBar } from "@/features/editor/components/tab-bar";
+import { EditorPane } from "@/features/editor/components/editor-pane";
+import { EditorProvider, useEditor } from "@/features/editor/context";
+import { AgentProvider, useAgent } from "@/features/agent/context";
+import { ChatPanel } from "@/features/agent/components/chat-panel";
+import { useResizable } from "@/features/editor/hooks/use-resizable";
 import { api } from "@/.bunbox/api-client";
 import type { AgentEvent } from "@ifc-viewer/agent";
 
