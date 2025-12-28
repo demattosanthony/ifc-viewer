@@ -227,31 +227,55 @@ export class S3StorageProvider implements StorageProvider {
     };
   }
 
-  async *list(prefix: string, options?: ListOptions): AsyncIterable<StorageEntry> {
-    // Note: Bun's S3 client doesn't have a native list API yet
-    // This is a placeholder that would use the underlying S3 ListObjectsV2 API
-    // For now, we'll throw an informative error
+  async *list(
+    prefix: string,
+    options?: ListOptions
+  ): AsyncIterable<StorageEntry> {
+    const s3Prefix = this.buildKey(prefix);
+    let startAfter = options?.startAfter
+      ? this.buildKey(options.startAfter)
+      : undefined;
 
-    // In a real implementation, you would use the AWS SDK or make direct S3 API calls:
-    // const command = new ListObjectsV2Command({
-    //   Bucket: this.config.bucket,
-    //   Prefix: this.buildKey(prefix),
-    //   MaxKeys: options?.maxKeys,
-    //   StartAfter: options?.startAfter ? this.buildKey(options.startAfter) : undefined,
-    // });
+    // Keep fetching pages until we've yielded all results
+    while (true) {
+      const result = await this.client.list({
+        prefix: s3Prefix,
+        maxKeys: options?.maxKeys,
+        startAfter,
+      });
 
-    throw new Error(
-      "S3StorageProvider.list() is not yet implemented. " +
-        "Bun's S3 client does not currently support ListObjectsV2. " +
-        "Consider using @aws-sdk/client-s3 for listing operations."
-    );
+      const contents = result.contents ?? [];
 
-    // When implemented, it would yield entries like:
-    // yield {
-    //   key: this.stripPrefix(object.Key!),
-    //   size: object.Size!,
-    //   lastModified: object.LastModified,
-    // };
+      // Yield each object in the current page
+      for (const object of contents) {
+        if (object.key) {
+          yield {
+            key: this.stripPrefix(object.key),
+            size: object.size ?? 0,
+            lastModified: object.lastModified
+              ? new Date(object.lastModified)
+              : undefined,
+          };
+        }
+      }
+
+      // If there are no more results, stop
+      if (!result.isTruncated || contents.length === 0) {
+        break;
+      }
+
+      // Set up for the next page using the last key
+      const lastKey = contents[contents.length - 1]?.key;
+      if (!lastKey) {
+        break;
+      }
+      startAfter = lastKey;
+
+      // If maxKeys was specified, we only want one page
+      if (options?.maxKeys) {
+        break;
+      }
+    }
   }
 
   async dispose(): Promise<void> {

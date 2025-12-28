@@ -76,18 +76,16 @@ describe("S3StorageProvider", () => {
   });
 
   describe("list", () => {
-    test("throws informative error (not implemented)", async () => {
+    test("list method exists and is callable", () => {
       const storage = new S3StorageProvider({
         bucket: "test-bucket",
         accessKeyId: "key",
         secretAccessKey: "secret",
       });
 
-      const iterator = storage.list("prefix")[Symbol.asyncIterator]();
-
-      await expect(iterator.next()).rejects.toThrow(
-        "S3StorageProvider.list() is not yet implemented"
-      );
+      // Verify list returns an async iterable
+      const result = storage.list("prefix");
+      expect(result[Symbol.asyncIterator]).toBeDefined();
     });
   });
 
@@ -237,5 +235,71 @@ describe.skipIf(!hasS3Credentials)("S3StorageProvider Integration", () => {
     expect(text).toBe("streamed content");
 
     await storage.delete("streamed.txt");
+  });
+
+  test("list returns objects with prefix", async () => {
+    if (!storage) return;
+
+    // Create some test files
+    await storage.put("list-test/file1.txt", "content 1");
+    await storage.put("list-test/file2.txt", "content 2");
+    await storage.put("list-test/nested/file3.txt", "content 3");
+
+    // List with prefix
+    const entries: Array<{ key: string; size: number }> = [];
+    for await (const entry of storage.list("list-test/")) {
+      entries.push({ key: entry.key, size: entry.size });
+    }
+
+    expect(entries.length).toBe(3);
+
+    // Check that entries have expected properties
+    const keys = entries.map((e) => e.key).sort();
+    expect(keys).toContain("list-test/file1.txt");
+    expect(keys).toContain("list-test/file2.txt");
+    expect(keys).toContain("list-test/nested/file3.txt");
+
+    // All entries should have size > 0
+    for (const entry of entries) {
+      expect(entry.size).toBeGreaterThan(0);
+    }
+
+    // Clean up
+    await storage.delete("list-test/file1.txt");
+    await storage.delete("list-test/file2.txt");
+    await storage.delete("list-test/nested/file3.txt");
+  });
+
+  test("list with maxKeys limits results", async () => {
+    if (!storage) return;
+
+    // Create test files
+    await storage.put("limit-test/a.txt", "a");
+    await storage.put("limit-test/b.txt", "b");
+    await storage.put("limit-test/c.txt", "c");
+
+    // List with maxKeys = 2
+    const entries: Array<{ key: string }> = [];
+    for await (const entry of storage.list("limit-test/", { maxKeys: 2 })) {
+      entries.push({ key: entry.key });
+    }
+
+    expect(entries.length).toBe(2);
+
+    // Clean up
+    await storage.delete("limit-test/a.txt");
+    await storage.delete("limit-test/b.txt");
+    await storage.delete("limit-test/c.txt");
+  });
+
+  test("list returns empty for non-existent prefix", async () => {
+    if (!storage) return;
+
+    const entries: Array<{ key: string }> = [];
+    for await (const entry of storage.list("non-existent-prefix/")) {
+      entries.push({ key: entry.key });
+    }
+
+    expect(entries.length).toBe(0);
   });
 });
