@@ -8,7 +8,8 @@
     "build": "bun --filter=@ifc-viewer/api run build && bun --filter=@ifc-viewer/web run build",
     "typecheck": "bun --filter=* run typecheck",
     "generate:sdk": "bun --filter=@ifc-viewer/sdk run generate",
-    "fetch:openapi": "bun --filter=@ifc-viewer/sdk run fetch-spec"
+    "fetch:openapi": "bun --filter=@ifc-viewer/sdk run fetch-spec",
+    "ui:add": "bunx shadcn@latest add --cwd apps/web"
   },
   "workspaces": [
     "apps/*",

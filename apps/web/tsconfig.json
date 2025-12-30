@@ -21,7 +21,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@ifc-viewer/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": ["src"]
