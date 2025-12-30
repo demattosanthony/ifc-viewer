@@ -47,7 +47,7 @@ export function useFileOperations({
           try {
             await writeFileMutation.mutateAsync({
               path: { id: sessionId },
-              body: { path: filePath, content: base64 },
+              body: { path: filePath, content: base64, isBinary: true },
             });
             onRefresh(targetPath);
           } catch (err) {

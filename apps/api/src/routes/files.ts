@@ -48,16 +48,14 @@ export function filesRoutes(ctx: AppContext) {
         }
 
         try {
-          const content = await computer.files.read(query.path);
+          const result = await computer.files.read(query.path);
           return {
             path: query.path,
-            type: content.type,
+            type: result.type,
             content:
-              content.type === "text"
-                ? content.content
-                : Buffer.from(
-                    content.content as unknown as Uint8Array
-                  ).toString("base64"),
+              result.type === "text"
+                ? result.content
+                : Buffer.from(result.content).toString("base64"),
           };
         } catch {
           set.status = 404;

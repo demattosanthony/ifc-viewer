@@ -3,7 +3,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@ifc-viewer/ui/components";
-import { cn } from "../../../../../../packages/ui/src/lib/utils";
+import { cn } from "@ifc-viewer/ui/lib";
 import {
   CheckCircle2,
   ChevronRight,
