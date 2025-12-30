@@ -32,20 +32,21 @@ ifc-viewer/
 
 ## Key Technical Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| API Framework | **Elysia** | Bun-native, first-class OpenAPI via @elysiajs/swagger |
-| Client SDK | **Eden Treaty** | Auto-generated type-safe client from Elysia types |
-| Frontend | **Vite + React** | Fast HMR, battle-tested plugin ecosystem |
-| Agent Streaming | **SSE** | One-way, simpler, auto-reconnect, HTTP/2 compatible |
-| Terminal | **WebSocket** | Bidirectional required for user input + output |
-| Database | **Memory → Postgres** | Start with memory provider, interface ready for Postgres |
+| Decision        | Choice                | Rationale                                                |
+| --------------- | --------------------- | -------------------------------------------------------- |
+| API Framework   | **Elysia**            | Bun-native, first-class OpenAPI via @elysiajs/swagger    |
+| Client SDK      | **Eden Treaty**       | Auto-generated type-safe client from Elysia types        |
+| Frontend        | **Vite + React**      | Fast HMR, battle-tested plugin ecosystem                 |
+| Agent Streaming | **SSE**               | One-way, simpler, auto-reconnect, HTTP/2 compatible      |
+| Terminal        | **WebSocket**         | Bidirectional required for user input + output           |
+| Database        | **Memory → Postgres** | Start with memory provider, interface ready for Postgres |
 
 ---
 
 ## Phase 0: Preparation
 
 ### What to Preserve
+
 - `packages/storage/` - Keep entirely, minimal refactor needed
 - `packages/ifc-viewer/` - Keep entirely, just rename package to `@ifc-viewer/viewer`
 - `packages/agent/src/` - Keep agent logic, refactor to use Sandbox interface
@@ -54,6 +55,7 @@ ifc-viewer/
 - `apps/playground/features/` - Migrate to `apps/web/src/features/`
 
 ### What to Delete (at end of migration)
+
 - `apps/playground/` - After migration complete
 - `apps/playground/.bunbox/` - Auto-generated bunbox files
 - `apps/playground/bunbox.config.ts`
@@ -61,6 +63,7 @@ ifc-viewer/
 ### Dependencies to Add
 
 **apps/api (new):**
+
 ```json
 {
   "dependencies": {
@@ -72,6 +75,7 @@ ifc-viewer/
 ```
 
 **apps/web (new):**
+
 ```json
 {
   "dependencies": {
@@ -141,13 +145,13 @@ export interface SessionWithResources extends Session {
 export interface FileNode {
   name: string;
   path: string;
-  type: 'file' | 'directory' | 'symlink';
+  type: "file" | "directory" | "symlink";
   size: number;
   modifiedAt: Date;
 }
 
 export interface FileContent {
-  type: 'text' | 'binary';
+  type: "text" | "binary";
   content: string; // base64 for binary
   path: string;
   size: number;
@@ -180,24 +184,25 @@ export class DomainError extends Error {
     public readonly statusCode: number = 500
   ) {
     super(message);
-    this.name = 'DomainError';
+    this.name = "DomainError";
   }
 }
 
 export class SessionNotFoundError extends DomainError {
   constructor(sessionId: string) {
-    super(`Session ${sessionId} not found`, 'SESSION_NOT_FOUND', 404);
+    super(`Session ${sessionId} not found`, "SESSION_NOT_FOUND", 404);
   }
 }
 
 export class FileNotFoundError extends DomainError {
   constructor(path: string) {
-    super(`File not found: ${path}`, 'FILE_NOT_FOUND', 404);
+    super(`File not found: ${path}`, "FILE_NOT_FOUND", 404);
   }
 }
 ```
 
 ### Migration Steps
+
 1. Create `packages/core/` directory structure
 2. Define entity interfaces extracted from current `session-manager.ts`
 3. Define repository interfaces
@@ -205,6 +210,7 @@ export class FileNotFoundError extends DomainError {
 5. Export all types from index
 
 ### Validation
+
 - [ ] `bun run typecheck` passes in packages/core
 - [ ] Types can be imported in other packages
 - [ ] No external dependencies (check package.json)
@@ -239,12 +245,15 @@ export interface DatabaseProvider {
   dispose(): Promise<void>;
 }
 
-export type DatabaseConfig =
-  | { type: 'memory'; workingDirectory: string; onSessionExpire?: (id: string) => Promise<void> }
-  // Future: | { type: 'postgres'; connectionString: string }
+export type DatabaseConfig = {
+  type: "memory";
+  workingDirectory: string;
+  onSessionExpire?: (id: string) => Promise<void>;
+};
+// Future: | { type: 'postgres'; connectionString: string }
 
 export function createDatabase(config: DatabaseConfig): DatabaseProvider {
-  if (config.type === 'memory') {
+  if (config.type === "memory") {
     const sessions = new MemorySessionRepository({
       defaultWorkingDirectory: config.workingDirectory,
       onExpire: config.onSessionExpire,
@@ -261,6 +270,7 @@ export function createDatabase(config: DatabaseConfig): DatabaseProvider {
 ```
 
 ### Migration Steps
+
 1. Create `packages/database/` directory
 2. Extract session storage logic from `apps/playground/shared/utils/session-manager.ts`
 3. Implement `SessionRepository` interface with memory provider
@@ -268,6 +278,7 @@ export function createDatabase(config: DatabaseConfig): DatabaseProvider {
 5. Include timeout/expiry logic from current session-manager
 
 ### Validation
+
 - [ ] Unit tests for `MemorySessionRepository`
 - [ ] Session creation, lookup, deletion, expiry work
 - [ ] Terminal tracking methods work correctly
@@ -332,11 +343,12 @@ export interface SandboxProvider {
 export interface SandboxConfig {
   workingDirectory: string;
   environment?: Record<string, string>;
-  storageUrlMode?: 'data' | 'file' | 'presigned';
+  storageUrlMode?: "data" | "file" | "presigned";
 }
 ```
 
 ### Migration Steps
+
 1. Rename `packages/computer/` to `packages/compute/`
 2. Update `package.json` name to `@ifc-viewer/compute`
 3. Add `Sandbox` interface
@@ -346,6 +358,7 @@ export interface SandboxConfig {
 7. Update all imports in other packages (`@ifc-viewer/computer` → `@ifc-viewer/compute`)
 
 ### Validation
+
 - [ ] Existing computer tests still pass
 - [ ] New sandbox can be created and disposed
 - [ ] Terminal creation/disposal works through sandbox
@@ -425,7 +438,9 @@ export interface UseWebSocketOptions<TReceive, TSend> {
   reconnect?: boolean;
 }
 
-export function useWebSocket<TReceive, TSend>(options: UseWebSocketOptions<TReceive, TSend>): {
+export function useWebSocket<TReceive, TSend>(
+  options: UseWebSocketOptions<TReceive, TSend>
+): {
   isConnected: boolean;
   send: (data: TSend) => void;
   close: () => void;
@@ -433,6 +448,7 @@ export function useWebSocket<TReceive, TSend>(options: UseWebSocketOptions<TRece
 ```
 
 ### Migration Steps
+
 1. Create `packages/realtime/` directory
 2. Create SSE server utilities for Elysia
 3. Create terminal event types
@@ -441,6 +457,7 @@ export function useWebSocket<TReceive, TSend>(options: UseWebSocketOptions<TRece
 6. Ensure proper TypeScript configuration
 
 ### Validation
+
 - [ ] SSE stream can be created and sends events
 - [ ] useSSE hook connects and receives events
 - [ ] useWebSocket hook connects, sends, and receives
@@ -472,39 +489,41 @@ apps/api/
 
 ### Route Structure
 
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/api/sessions` | POST | Create session |
-| `/api/sessions` | GET | List sessions |
-| `/api/sessions/:id` | GET | Get session |
-| `/api/sessions/:id` | DELETE | Delete session |
-| `/api/sessions/:id/files` | GET | List files |
-| `/api/sessions/:id/files/content` | GET | Read file |
-| `/api/sessions/:id/files/content` | POST | Write file |
-| `/api/sessions/:id/files` | DELETE | Delete file |
-| `/api/sessions/:id/files/directory` | POST | Create directory |
-| `/api/sessions/:id/agent/chat` | POST | Agent chat (SSE response) |
-| `/ws/terminal` | WS | Terminal WebSocket |
+| Route                               | Method | Description               |
+| ----------------------------------- | ------ | ------------------------- |
+| `/api/sessions`                     | POST   | Create session            |
+| `/api/sessions`                     | GET    | List sessions             |
+| `/api/sessions/:id`                 | GET    | Get session               |
+| `/api/sessions/:id`                 | DELETE | Delete session            |
+| `/api/sessions/:id/files`           | GET    | List files                |
+| `/api/sessions/:id/files/content`   | GET    | Read file                 |
+| `/api/sessions/:id/files/content`   | POST   | Write file                |
+| `/api/sessions/:id/files`           | DELETE | Delete file               |
+| `/api/sessions/:id/files/directory` | POST   | Create directory          |
+| `/api/sessions/:id/agent/chat`      | POST   | Agent chat (SSE response) |
+| `/ws/terminal`                      | WS     | Terminal WebSocket        |
 
 ### Key Implementation
 
 ```typescript
 // index.ts
-import { Elysia } from 'elysia';
-import { swagger } from '@elysiajs/swagger';
-import { cors } from '@elysiajs/cors';
+import { Elysia } from "elysia";
+import { swagger } from "@elysiajs/swagger";
+import { cors } from "@elysiajs/cors";
 
 const app = new Elysia()
   .use(cors())
-  .use(swagger({
-    documentation: {
-      info: {
-        title: 'IFC Viewer API',
-        version: '1.0.0',
+  .use(
+    swagger({
+      documentation: {
+        info: {
+          title: "IFC Viewer API",
+          version: "1.0.0",
+        },
       },
-    },
-  }))
-  .decorate('ctx', ctx)
+    })
+  )
+  .decorate("ctx", ctx)
   .use(sessionsRoutes)
   .use(filesRoutes)
   .use(agentRoutes)
@@ -527,6 +546,7 @@ export interface AppContext {
 ```
 
 ### Migration Steps
+
 1. Create `apps/api/` directory
 2. Set up Elysia with swagger and cors plugins
 3. Create context with database and sandbox management
@@ -538,6 +558,7 @@ export interface AppContext {
 9. Export `App` type for SDK generation
 
 ### Validation
+
 - [ ] `bun run dev` starts the API server on port 3000
 - [ ] Swagger UI accessible at `/swagger`
 - [ ] Session CRUD works
@@ -566,12 +587,12 @@ packages/sdk/
 
 ```typescript
 // index.ts
-import { treaty } from '@elysiajs/eden';
-import type { App } from '@ifc-viewer/api';
+import { treaty } from "@elysiajs/eden";
+import type { App } from "@ifc-viewer/api";
 
 export type { App };
 
-export function createClient(baseUrl: string = '') {
+export function createClient(baseUrl: string = "") {
   return treaty<App>(baseUrl);
 }
 
@@ -580,8 +601,8 @@ export type ApiClient = ReturnType<typeof createClient>;
 
 ```typescript
 // hooks.ts
-import { useMemo } from 'react';
-import { createClient, type ApiClient } from './index';
+import { useMemo } from "react";
+import { createClient, type ApiClient } from "./index";
 
 export function useApiClient(baseUrl?: string): ApiClient {
   return useMemo(() => createClient(baseUrl), [baseUrl]);
@@ -591,7 +612,7 @@ export function useApiClient(baseUrl?: string): ApiClient {
 ### Usage Example
 
 ```typescript
-import { useApiClient } from '@ifc-viewer/sdk';
+import { useApiClient } from "@ifc-viewer/sdk";
 
 function MyComponent() {
   const api = useApiClient();
@@ -607,6 +628,7 @@ function MyComponent() {
 ```
 
 ### Migration Steps
+
 1. Create `packages/sdk/` directory
 2. Set up Eden treaty with API types
 3. Create factory function for client creation
@@ -614,6 +636,7 @@ function MyComponent() {
 5. Export relevant types from core
 
 ### Validation
+
 - [ ] SDK types match API routes
 - [ ] Client can be created and used
 - [ ] IntelliSense works for all endpoints
@@ -659,6 +682,7 @@ packages/ui/
 ```
 
 ### Migration Steps
+
 1. Create `packages/ui/` directory
 2. Copy all files from `apps/playground/shared/ui/`
 3. Update imports to be relative within package
@@ -666,6 +690,7 @@ packages/ui/
 5. Update apps/web to import from `@ifc-viewer/ui`
 
 ### Validation
+
 - [ ] All UI components export correctly
 - [ ] Components render in apps/web
 - [ ] No duplicate UI code between packages
@@ -724,26 +749,26 @@ apps/web/
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { resolve } from "path";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
+      "@": resolve(__dirname, "./src"),
     },
   },
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
+      "/api": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
-      '/ws': {
-        target: 'ws://localhost:3000',
+      "/ws": {
+        target: "ws://localhost:3000",
         ws: true,
       },
     },
@@ -754,15 +779,18 @@ export default defineConfig({
 ### Key Changes from Playground
 
 1. **Agent Context**: Convert from WebSocket to SSE
+
    - Replace WebSocket connection with `useSSE` hook
    - Use SDK client for initial HTTP requests
    - Keep same message state management
 
 2. **Terminal**: Use `useWebSocket` hook from realtime package
+
    - Keep xterm.js integration identical
    - Use typed events from `@ifc-viewer/realtime`
 
 3. **File Browser**: Use SDK client
+
    - Replace fetch calls with `api.api.sessions[sessionId].files.*`
    - Benefit from type-safe responses
 
@@ -771,6 +799,7 @@ export default defineConfig({
    - Just update import paths
 
 ### Migration Steps
+
 1. Create `apps/web/` directory with Vite setup
 2. Create `vite.config.ts` with proxy configuration
 3. Create `index.html` entry point
@@ -784,6 +813,7 @@ export default defineConfig({
 6. Test each feature as migrated
 
 ### Validation
+
 - [ ] `bun run dev` starts Vite dev server on port 5173
 - [ ] Session creation works via SDK
 - [ ] File browser shows files and allows CRUD
@@ -811,12 +841,14 @@ export default defineConfig({
 3. Update all imports in `apps/web/`
 
 ### Migration Steps
+
 1. Rename `packages/ifc-viewer/` to `packages/viewer/`
 2. Update `package.json` name to `@ifc-viewer/viewer`
 3. Search and replace imports: `ifc-viewer` → `@ifc-viewer/viewer`
 4. Update workspace references
 
 ### Validation
+
 - [ ] Package builds successfully
 - [ ] Viewer works in apps/web
 
@@ -827,6 +859,7 @@ export default defineConfig({
 **Goal**: Remove deprecated code and finalize structure.
 
 ### Delete
+
 - `apps/playground/` - Entire directory
 - Root bunbox configurations (if any)
 
@@ -846,10 +879,7 @@ export default defineConfig({
     "typecheck": "bun --filter '*' run typecheck",
     "test": "bun --filter '*' run test"
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  "workspaces": ["apps/*", "packages/*"]
 }
 ```
 
@@ -889,6 +919,7 @@ ifc-viewer/
 ```
 
 ### Cleanup Steps
+
 1. Verify all functionality works in new apps
 2. Delete `apps/playground/` entirely
 3. Remove bunbox from root devDependencies
@@ -898,6 +929,7 @@ ifc-viewer/
 7. Update README.md with new structure
 
 ### Final Validation
+
 - [ ] `bun install` completes without errors
 - [ ] `bun run dev` starts both API and web
 - [ ] `bun run build` builds all packages and apps
@@ -915,41 +947,41 @@ ifc-viewer/
 
 ### Critical Files to Reference
 
-| Current Location | Purpose | Migration Target |
-|-----------------|---------|------------------|
-| `apps/playground/shared/utils/session-manager.ts` | Session logic | `packages/database/src/providers/memory/` |
-| `packages/computer/src/types.ts` | Computer interfaces | `packages/compute/src/types.ts` |
-| `apps/playground/app/ws/agent/route.ts` | Agent WebSocket | `apps/api/src/routes/agent.ts` (SSE) |
-| `apps/playground/features/agent/context.tsx` | Agent React context | `apps/web/src/features/agent/context.tsx` |
-| `packages/agent/src/events.ts` | Event types | `packages/realtime/src/events/` |
-| `apps/playground/shared/ui/*` | UI components | `packages/ui/src/` |
+| Current Location                                  | Purpose             | Migration Target                          |
+| ------------------------------------------------- | ------------------- | ----------------------------------------- |
+| `apps/playground/shared/utils/session-manager.ts` | Session logic       | `packages/database/src/providers/memory/` |
+| `packages/computer/src/types.ts`                  | Computer interfaces | `packages/compute/src/types.ts`           |
+| `apps/playground/app/ws/agent/route.ts`           | Agent WebSocket     | `apps/api/src/routes/agent.ts` (SSE)      |
+| `apps/playground/features/agent/context.tsx`      | Agent React context | `apps/web/src/features/agent/context.tsx` |
+| `packages/agent/src/events.ts`                    | Event types         | `packages/realtime/src/events/`           |
+| `apps/playground/shared/ui/*`                     | UI components       | `packages/ui/src/`                        |
 
 ### Import Path Changes
 
-| Old Import | New Import |
-|-----------|------------|
+| Old Import             | New Import            |
+| ---------------------- | --------------------- |
 | `@ifc-viewer/computer` | `@ifc-viewer/compute` |
-| `ifc-viewer` | `@ifc-viewer/viewer` |
-| `../../shared/ui/*` | `@ifc-viewer/ui` |
-| Direct fetch calls | `@ifc-viewer/sdk` |
+| `ifc-viewer`           | `@ifc-viewer/viewer`  |
+| `../../shared/ui/*`    | `@ifc-viewer/ui`      |
+| Direct fetch calls     | `@ifc-viewer/sdk`     |
 
 ---
 
 ## Timeline Estimate
 
-| Phase | Description | Complexity |
-|-------|-------------|------------|
-| 0 | Preparation | Low |
-| 1 | @ifc-viewer/core | Low |
-| 2 | @ifc-viewer/database | Medium |
-| 3 | @ifc-viewer/compute | Medium |
-| 4 | @ifc-viewer/realtime | Medium |
-| 5 | apps/api | High |
-| 6 | @ifc-viewer/sdk | Low |
-| 7 | @ifc-viewer/ui | Low |
-| 8 | apps/web | High |
-| 9 | Rename viewer | Low |
-| 10 | Cleanup | Low |
+| Phase | Description          | Complexity |
+| ----- | -------------------- | ---------- |
+| 0     | Preparation          | Low        |
+| 1     | @ifc-viewer/core     | Low        |
+| 2     | @ifc-viewer/database | Medium     |
+| 3     | @ifc-viewer/compute  | Medium     |
+| 4     | @ifc-viewer/realtime | Medium     |
+| 5     | apps/api             | High       |
+| 6     | @ifc-viewer/sdk      | Low        |
+| 7     | @ifc-viewer/ui       | Low        |
+| 8     | apps/web             | High       |
+| 9     | Rename viewer        | Low        |
+| 10    | Cleanup              | Low        |
 
 Phases 1-4 can potentially be parallelized as they don't depend on each other.
 Phases 5-8 must be sequential as they depend on previous work.

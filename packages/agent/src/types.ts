@@ -1,4 +1,4 @@
-import type { Computer } from "@ifc-viewer/computer";
+import type { Computer } from "@ifc-viewer/compute";
 import type { AgentEvent } from "./events";
 
 export interface AgentConfig {

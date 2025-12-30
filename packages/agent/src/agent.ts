@@ -1,6 +1,6 @@
 import { ToolLoopAgent, type ModelMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import type { Computer, TerminalSession } from "@ifc-viewer/computer";
+import type { Computer, TerminalSession } from "@ifc-viewer/compute";
 import { createFileTools } from "./tools/file-tools";
 import { createShellTools } from "./tools/shell-tools";
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt";

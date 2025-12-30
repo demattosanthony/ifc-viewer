@@ -1,0 +1,36 @@
+// Re-export agent events for convenience
+export type {
+  AgentEvent,
+  ClientMessage,
+  ReadyEvent,
+  TextDeltaEvent,
+  StartStepEvent,
+  FinishStepEvent,
+  FinishEvent,
+  ErrorEvent,
+  ToolInputStartEvent,
+  ToolInputDeltaEvent,
+  ToolInputEndEvent,
+  ToolCallEvent,
+  ToolResultEvent,
+  NeedsApprovalEvent,
+  EditorOpenEvent,
+  EditorCursorEvent,
+  EditorInsertEvent,
+  EditorDeleteEvent,
+  EditorSaveEvent,
+  EditorReplaceEvent,
+  TerminalFocusEvent,
+  TerminalTypeEvent,
+  TerminalExecuteEvent,
+  TerminalAppendEvent,
+  FileCreatedEvent,
+  FileDeletedEvent,
+  ChatMessage,
+  StopMessage,
+  ApproveToolMessage,
+  RejectToolMessage,
+} from "@ifc-viewer/agent";
+
+// Terminal-specific events
+export * from "./terminal-events";

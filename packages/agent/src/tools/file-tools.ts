@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import type { Computer } from "@ifc-viewer/computer";
+import type { Computer } from "@ifc-viewer/compute";
 import type { AgentEvent } from "../events";
 import { getErrorMessage } from "../utils";
 

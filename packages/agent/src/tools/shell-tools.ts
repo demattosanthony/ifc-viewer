@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import type { TerminalSession } from "@ifc-viewer/computer";
+import type { TerminalSession } from "@ifc-viewer/compute";
 import type { AgentEvent } from "../events";
 import { getErrorMessage } from "../utils";
 

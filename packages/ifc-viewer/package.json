@@ -1,5 +1,5 @@
 {
-  "name": "ifc-viewer",
+  "name": "@ifc-viewer/viewer",
   "version": "0.0.1",
   "type": "module",
   "main": "./dist/index.js",

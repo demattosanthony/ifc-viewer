@@ -18,7 +18,7 @@ const mainResult = await Bun.build({
   splitting: true,
   sourcemap: "external",
   naming: "[dir]/[name].[ext]",
-  external: ["@ifc-viewer/computer"],
+  external: ["@ifc-viewer/compute"],
 });
 
 if (!mainResult.success) {

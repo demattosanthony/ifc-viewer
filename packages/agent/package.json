@@ -32,7 +32,7 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "@ifc-viewer/computer": "workspace:*",
+    "@ifc-viewer/compute": "workspace:*",
     "typescript": "^5"
   }
 }
