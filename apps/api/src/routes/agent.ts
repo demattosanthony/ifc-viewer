@@ -20,11 +20,7 @@ export function agentRoutes(ctx: AppContext) {
     .post(
       "/chat",
       async ({ params, body, set }) => {
-        const sandbox = ctx.getSandbox(params.id);
-        if (!sandbox) {
-          set.status = 404;
-          return { error: "Session not found" };
-        }
+        const computer = ctx.getComputer(params.id);
 
         // Create or get conversation state
         let conversation = activeConversations.get(params.id);
@@ -53,8 +49,8 @@ export function agentRoutes(ctx: AppContext) {
 
         // Create the agent
         const agent = createAgent({
-          computer: sandbox.computer,
-          getTerminal: () => sandbox.getOrCreateAgentTerminal(),
+          computer,
+          getTerminal: () => computer.getOrCreateAgentTerminal(),
         });
 
         // Capture conversation reference for closure

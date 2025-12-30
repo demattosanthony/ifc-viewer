@@ -21,7 +21,8 @@ export class OrientationGizmo
   private bubbleSizeSecondary = 6;
   private lineWidth = 1.5;
   private fontSize = "11px";
-  private fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  private fontFamily =
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   private fontWeight = "600";
   private fontColor = "#ffffff";
   private colors = {

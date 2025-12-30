@@ -1,12 +1,8 @@
-import { createComputer, local } from "../src";
+import { createLocalComputer } from "../src";
 
-const computer = await createComputer({
-  provider: local({
-    cleanup: false,
-  }),
-  config: {
-    workingDirectory: `${Bun.env.HOME}/ifc-workspace`,
-  },
+const computer = await createLocalComputer({
+  workingDirectory: `${Bun.env.HOME}/ifc-workspace`,
+  cleanup: false,
 });
 
 const ifcFile = Bun.file(
@@ -16,9 +12,9 @@ const ifcContent = await ifcFile.arrayBuffer();
 
 await computer.files.write("sample.ifc", new Uint8Array(ifcContent));
 
-const terminal = await computer.shell.startTerminal();
+const terminal = await computer.createTerminal();
 
-terminal.onData((data) => {
+terminal.onData((data: string) => {
   process.stdout.write(data);
 });
 

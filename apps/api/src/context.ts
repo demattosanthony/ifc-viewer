@@ -1,8 +1,8 @@
 import { createDatabase, type DatabaseProvider } from "@ifc-viewer/database";
 import {
-  createLocalSandbox,
-  type Sandbox,
-  type SandboxConfig,
+  createLocalComputer,
+  type Computer,
+  type ComputerConfig,
 } from "@ifc-viewer/compute";
 import { mkdir, readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
@@ -15,20 +15,11 @@ export interface AppContext {
   /** Database provider for session management */
   db: DatabaseProvider;
 
-  /** Active sandboxes mapped by session ID */
-  sandboxes: Map<string, Sandbox>;
+  /** Shared computer instance for all sessions */
+  computer: Computer;
 
-  /** Get a sandbox for a session */
-  getSandbox(sessionId: string): Sandbox | undefined;
-
-  /** Create a sandbox for a session */
-  createSandbox(
-    sessionId: string,
-    config?: Partial<SandboxConfig>
-  ): Promise<Sandbox>;
-
-  /** Dispose a sandbox */
-  disposeSandbox(sessionId: string): Promise<void>;
+  /** Get the computer (same for all sessions in dev mode) */
+  getComputer(sessionId: string): Computer;
 
   /** Dispose all resources */
   dispose(): Promise<void>;
@@ -38,13 +29,13 @@ export interface AppContext {
  * Configuration for creating the app context
  */
 export interface AppContextConfig {
-  /** Base working directory for sandboxes */
+  /** Working directory for the computer */
   workingDirectory?: string;
   /** Default session TTL in milliseconds */
   sessionTtlMs?: number;
 }
 
-// Sample files to include in new sessions (static content)
+// Sample files to include in the workspace
 const SAMPLE_FILES = {
   "README.md":
     "Welcome to the IFC Viewer Playground! This is a sample README file.",
@@ -63,6 +54,9 @@ const SAMPLE_PY_SCRIPT_PATH = resolve(
 
 /**
  * Create the application context
+ *
+ * For local development, all sessions share the same computer/workspace.
+ * This means changes persist across sessions.
  */
 export async function createAppContext(
   config: AppContextConfig = {}
@@ -70,106 +64,88 @@ export async function createAppContext(
   const workingDirectory =
     config.workingDirectory ??
     process.env.PLAYGROUND_WORKING_DIR ??
-    "/tmp/ifc-viewer-playground";
+    resolve(process.cwd(), "workspace");
 
   // Ensure working directory exists
   await mkdir(workingDirectory, { recursive: true });
 
-  const sandboxes = new Map<string, Sandbox>();
+  // Create a single shared computer for all sessions
+  const computer = await createLocalComputer({
+    workingDirectory,
+    cleanup: false, // Don't cleanup - persist changes
+  });
 
-  // Create database with session expiry handling
+  // Write sample files if they don't exist
+  await writeSampleFiles(computer);
+
+  // Create database for session tracking (TTL handling)
   const db = createDatabase({
     type: "memory",
     workingDirectory,
     defaultTtlMs: config.sessionTtlMs ?? 5 * 60 * 1000, // 5 minutes
     events: {
       onSessionExpired: async (sessionId) => {
-        console.log(
-          `[Context] Session ${sessionId} expired, cleaning up sandbox`
-        );
-        const sandbox = sandboxes.get(sessionId);
-        if (sandbox) {
-          await sandbox.dispose();
-          sandboxes.delete(sessionId);
-        }
+        console.log(`[Context] Session ${sessionId} expired`);
+        // In shared mode, we don't dispose anything on session expiry
+        // The computer persists and is shared across all sessions
       },
     },
   });
 
   const context: AppContext = {
     db,
-    sandboxes,
+    computer,
 
-    getSandbox(sessionId: string) {
-      return sandboxes.get(sessionId);
-    },
-
-    async createSandbox(
-      sessionId: string,
-      sandboxConfig?: Partial<SandboxConfig>
-    ) {
-      // Check if sandbox already exists
-      const existing = sandboxes.get(sessionId);
-      if (existing) {
-        return existing;
-      }
-
-      // Create sandbox working directory
-      const sandboxWorkDir = resolve(workingDirectory, sessionId);
-      await mkdir(sandboxWorkDir, { recursive: true });
-
-      // Create the sandbox
-      const sandbox = await createLocalSandbox({
-        workingDirectory: sandboxWorkDir,
-        environment: sandboxConfig?.environment,
-        storageUrlMode: sandboxConfig?.storageUrlMode ?? "data",
-      });
-
-      // Write sample files
-      for (const [filename, content] of Object.entries(SAMPLE_FILES)) {
-        await sandbox.storage.put(filename, content);
-      }
-
-      // Load sample IFC file
-      try {
-        const ifcContent = await readFile(SAMPLE_IFC_PATH, "utf-8");
-        await sandbox.storage.put("sample.ifc", ifcContent);
-      } catch (err) {
-        console.warn("[Context] Could not load sample.ifc:", err);
-      }
-
-      // Load sample Python script
-      try {
-        const pyContent = await readFile(SAMPLE_PY_SCRIPT_PATH, "utf-8");
-        await sandbox.storage.put("print_info.py", pyContent);
-      } catch (err) {
-        console.warn("[Context] Could not load print_info.py:", err);
-      }
-
-      sandboxes.set(sessionId, sandbox);
-      return sandbox;
-    },
-
-    async disposeSandbox(sessionId: string) {
-      const sandbox = sandboxes.get(sessionId);
-      if (sandbox) {
-        await sandbox.dispose();
-        sandboxes.delete(sessionId);
-      }
+    getComputer(_sessionId: string) {
+      // All sessions share the same computer in local dev mode
+      return computer;
     },
 
     async dispose() {
-      // Dispose all sandboxes
-      const disposePromises = Array.from(sandboxes.values()).map((s) =>
-        s.dispose()
-      );
-      await Promise.all(disposePromises);
-      sandboxes.clear();
-
-      // Dispose database
+      await computer.dispose();
       await db.dispose();
     },
   };
 
   return context;
+}
+
+/**
+ * Write sample files to the workspace if they don't exist
+ */
+async function writeSampleFiles(computer: Computer): Promise<void> {
+  // Write static sample files
+  for (const [filename, content] of Object.entries(SAMPLE_FILES)) {
+    try {
+      await computer.files.stat(filename);
+      // File exists, skip
+    } catch {
+      // File doesn't exist, create it
+      await computer.files.write(filename, content);
+    }
+  }
+
+  // Load sample IFC file if it doesn't exist
+  try {
+    await computer.files.stat("sample.ifc");
+  } catch {
+    try {
+      const ifcContent = await readFile(SAMPLE_IFC_PATH, "utf-8");
+      await computer.files.write("sample.ifc", ifcContent);
+    } catch (err) {
+      console.warn("[Context] Could not load sample.ifc:", err);
+    }
+  }
+
+  // Load sample Python script if it doesn't exist
+  try {
+    await computer.files.stat("print_info.py");
+  } catch {
+    try {
+      const pyContent = await readFile(SAMPLE_PY_SCRIPT_PATH, "utf-8");
+      await computer.files.write("print_info.py", pyContent);
+    } catch (err) {
+      console.warn("[Context] Could not load print_info.py:", err);
+    }
+  }
 }

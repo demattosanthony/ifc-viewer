@@ -3,6 +3,10 @@ import type { AppContext } from "../context";
 
 /**
  * Session management routes
+ *
+ * In local dev mode, all sessions share the same computer/workspace.
+ * The session ID is still used for tracking but the underlying
+ * computer instance is shared.
  */
 export function sessionsRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/api/sessions" })
@@ -11,9 +15,6 @@ export function sessionsRoutes(ctx: AppContext) {
       async () => {
         // Create session in database
         const session = await ctx.db.sessions.create({});
-
-        // Create sandbox for the session
-        await ctx.createSandbox(session.id);
 
         return {
           id: session.id,
@@ -68,7 +69,7 @@ export function sessionsRoutes(ctx: AppContext) {
 
         return {
           id: session.id,
-          workingDirectory: session.workingDirectory,
+          workingDirectory: ctx.computer.workingDirectory,
           createdAt: session.createdAt.toISOString(),
           expiresAt: session.expiresAt.toISOString(),
         };
@@ -92,10 +93,8 @@ export function sessionsRoutes(ctx: AppContext) {
           return { error: "Session not found" };
         }
 
-        // Dispose sandbox
-        await ctx.disposeSandbox(params.id);
-
         // Delete from database
+        // In shared mode, we don't dispose the computer
         await ctx.db.sessions.delete(params.id);
 
         return { success: true };

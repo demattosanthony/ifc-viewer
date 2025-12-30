@@ -9,14 +9,9 @@ export function filesRoutes(ctx: AppContext) {
     .get(
       "/",
       async ({ params, query, set }) => {
-        const sandbox = ctx.getSandbox(params.id);
-        if (!sandbox) {
-          set.status = 404;
-          return { error: "Session not found" };
-        }
-
+        const computer = ctx.getComputer(params.id);
         const path = query.path ?? ".";
-        const files = await sandbox.computer.files.list(path);
+        const files = await computer.files.list(path);
 
         return {
           files: files.map((f) => ({
@@ -45,11 +40,7 @@ export function filesRoutes(ctx: AppContext) {
     .get(
       "/content",
       async ({ params, query, set }) => {
-        const sandbox = ctx.getSandbox(params.id);
-        if (!sandbox) {
-          set.status = 404;
-          return { error: "Session not found" };
-        }
+        const computer = ctx.getComputer(params.id);
 
         if (!query.path) {
           set.status = 400;
@@ -57,14 +48,16 @@ export function filesRoutes(ctx: AppContext) {
         }
 
         try {
-          const content = await sandbox.computer.files.read(query.path);
+          const content = await computer.files.read(query.path);
           return {
             path: query.path,
             type: content.type,
             content:
               content.type === "text"
                 ? content.content
-                : Buffer.from(content.content as unknown as Uint8Array).toString("base64"),
+                : Buffer.from(
+                    content.content as unknown as Uint8Array
+                  ).toString("base64"),
           };
         } catch {
           set.status = 404;
@@ -87,18 +80,14 @@ export function filesRoutes(ctx: AppContext) {
     .post(
       "/content",
       async ({ params, body, set }) => {
-        const sandbox = ctx.getSandbox(params.id);
-        if (!sandbox) {
-          set.status = 404;
-          return { error: "Session not found" };
-        }
+        const computer = ctx.getComputer(params.id);
 
         try {
           const content = body.isBinary
             ? new Uint8Array(Buffer.from(body.content, "base64"))
             : body.content;
 
-          await sandbox.computer.files.write(body.path, content);
+          await computer.files.write(body.path, content);
 
           return { success: true, path: body.path };
         } catch {
@@ -124,11 +113,7 @@ export function filesRoutes(ctx: AppContext) {
     .delete(
       "/",
       async ({ params, query, set }) => {
-        const sandbox = ctx.getSandbox(params.id);
-        if (!sandbox) {
-          set.status = 404;
-          return { error: "Session not found" };
-        }
+        const computer = ctx.getComputer(params.id);
 
         if (!query.path) {
           set.status = 400;
@@ -136,7 +121,7 @@ export function filesRoutes(ctx: AppContext) {
         }
 
         try {
-          await sandbox.computer.files.delete(query.path, { recursive: true });
+          await computer.files.delete(query.path, { recursive: true });
           return { success: true, path: query.path };
         } catch {
           set.status = 500;
@@ -159,14 +144,10 @@ export function filesRoutes(ctx: AppContext) {
     .post(
       "/directory",
       async ({ params, body, set }) => {
-        const sandbox = ctx.getSandbox(params.id);
-        if (!sandbox) {
-          set.status = 404;
-          return { error: "Session not found" };
-        }
+        const computer = ctx.getComputer(params.id);
 
         try {
-          await sandbox.computer.files.mkdir(body.path, { recursive: true });
+          await computer.files.mkdir(body.path, { recursive: true });
           return { success: true, path: body.path };
         } catch {
           set.status = 500;

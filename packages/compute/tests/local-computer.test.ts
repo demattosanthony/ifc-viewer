@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { createComputer, local } from "../src";
+import { createLocalComputer } from "../src";
 import type { Computer } from "../src/types";
 import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
@@ -9,9 +9,9 @@ describe("LocalComputer", () => {
   const testWorkspace = "/tmp/bim-test-workspace";
 
   beforeEach(async () => {
-    computer = await createComputer({
-      provider: local({ cleanup: true }),
-      config: { workingDirectory: testWorkspace },
+    computer = await createLocalComputer({
+      workingDirectory: testWorkspace,
+      cleanup: true,
     });
   });
 
@@ -29,6 +29,10 @@ describe("LocalComputer", () => {
       const entries = await readdir(testWorkspace);
       expect(entries).not.toContain("tmp");
       expect(entries).not.toContain("Users");
+    });
+
+    test("exposes working directory", () => {
+      expect(computer.workingDirectory).toBe(testWorkspace);
     });
   });
 
@@ -287,18 +291,85 @@ describe("LocalComputer", () => {
   });
 });
 
-describe("LocalComputer without explicit workingDirectory", () => {
-  test("auto-generates workspace directory", async () => {
-    const computer = await createComputer({
-      provider: local({ cleanup: true }),
+describe("LocalComputer terminal management", () => {
+  let computer: Computer;
+  const testWorkspace = "/tmp/bim-terminal-mgmt-test";
+
+  beforeEach(async () => {
+    computer = await createLocalComputer({
+      workingDirectory: testWorkspace,
+      cleanup: true,
+    });
+  });
+
+  afterEach(async () => {
+    await computer.dispose();
+  });
+
+  describe("createTerminal", () => {
+    test("creates a terminal and tracks it", async () => {
+      const terminal = await computer.createTerminal();
+
+      expect(terminal.id).toMatch(/^terminal-\d+-[a-z0-9]+$/);
+      expect(computer.getTerminal(terminal.id)).toBe(terminal);
+      expect(computer.getAllTerminals()).toContain(terminal);
+
+      await terminal.kill();
     });
 
-    await computer.files.write("/auto.txt", "auto-generated workspace");
-    const content = await computer.files.read("/auto.txt");
+    test("creates multiple terminals", async () => {
+      const term1 = await computer.createTerminal();
+      const term2 = await computer.createTerminal();
 
-    expect(content.content).toBe("auto-generated workspace");
+      expect(term1.id).not.toBe(term2.id);
+      expect(computer.getAllTerminals().length).toBe(2);
 
-    await computer.dispose();
+      await term1.kill();
+      await term2.kill();
+    });
+  });
+
+  describe("disposeTerminal", () => {
+    test("disposes and removes terminal", async () => {
+      const terminal = await computer.createTerminal();
+      const id = terminal.id;
+
+      await computer.disposeTerminal(id);
+
+      expect(computer.getTerminal(id)).toBeUndefined();
+      expect(computer.getAllTerminals().length).toBe(0);
+    });
+  });
+
+  describe("agent terminal", () => {
+    test("creates agent terminal on first call", async () => {
+      expect(computer.hasAgentTerminal()).toBe(false);
+
+      const terminal = await computer.getOrCreateAgentTerminal();
+
+      expect(computer.hasAgentTerminal()).toBe(true);
+      expect(terminal.id).toBeDefined();
+
+      await terminal.kill();
+    });
+
+    test("returns same agent terminal on subsequent calls", async () => {
+      const term1 = await computer.getOrCreateAgentTerminal();
+      const term2 = await computer.getOrCreateAgentTerminal();
+
+      expect(term1).toBe(term2);
+
+      await term1.kill();
+    });
+
+    test("clears agent terminal reference when disposed", async () => {
+      const terminal = await computer.getOrCreateAgentTerminal();
+      const id = terminal.id;
+
+      await computer.disposeTerminal(id);
+
+      expect(computer.hasAgentTerminal()).toBe(false);
+    });
   });
 });
 
@@ -307,9 +378,9 @@ describe("LocalShell", () => {
   const testWorkspace = "/tmp/bim-shell-test-workspace";
 
   beforeEach(async () => {
-    computer = await createComputer({
-      provider: local({ cleanup: true }),
-      config: { workingDirectory: testWorkspace },
+    computer = await createLocalComputer({
+      workingDirectory: testWorkspace,
+      cleanup: true,
     });
   });
 
@@ -561,17 +632,14 @@ describe("LocalShell", () => {
 
       await session.kill();
     });
-
   });
 
   describe("environment inheritance", () => {
     test("inherits default environment from computer config", async () => {
-      const computerWithEnv = await createComputer({
-        provider: local({ cleanup: true }),
-        config: {
-          workingDirectory: "/tmp/bim-env-test",
-          environment: { DEFAULT_VAR: "default_value_456" },
-        },
+      const computerWithEnv = await createLocalComputer({
+        workingDirectory: "/tmp/bim-env-test",
+        environment: { DEFAULT_VAR: "default_value_456" },
+        cleanup: true,
       });
 
       const session = await computerWithEnv.shell.startTerminal();
@@ -589,12 +657,10 @@ describe("LocalShell", () => {
     });
 
     test("terminal env overrides default env", async () => {
-      const computerWithEnv = await createComputer({
-        provider: local({ cleanup: true }),
-        config: {
-          workingDirectory: "/tmp/bim-env-override-test",
-          environment: { OVERRIDE_VAR: "original" },
-        },
+      const computerWithEnv = await createLocalComputer({
+        workingDirectory: "/tmp/bim-env-override-test",
+        environment: { OVERRIDE_VAR: "original" },
+        cleanup: true,
       });
 
       const session = await computerWithEnv.shell.startTerminal({

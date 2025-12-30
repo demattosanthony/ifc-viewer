@@ -5,9 +5,7 @@
     "dev": "bun --filter=@ifc-viewer/api run start & bun --filter=@ifc-viewer/web run dev",
     "dev:api": "bun --filter=@ifc-viewer/api run start",
     "dev:web": "bun --filter=@ifc-viewer/web run dev",
-    "build": "bun run build:packages && bun run build:apps",
-    "build:packages": "bun --filter=@ifc-viewer/core run build && bun --filter=@ifc-viewer/compute run build && bun --filter=@ifc-viewer/viewer run build && bun --filter=@ifc-viewer/agent run build",
-    "build:apps": "bun --filter=@ifc-viewer/api run build && bun --filter=@ifc-viewer/web run build",
+    "build": "bun --filter=@ifc-viewer/api run build && bun --filter=@ifc-viewer/web run build",
     "typecheck": "bun --filter=* run typecheck"
   },
   "workspaces": [

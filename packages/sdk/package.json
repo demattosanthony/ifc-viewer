@@ -4,16 +4,12 @@
   "private": true,
   "description": "Type-safe SDK for IFC Viewer API using Eden treaty",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+    ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "bun run scripts/build.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

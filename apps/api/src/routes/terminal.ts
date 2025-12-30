@@ -24,22 +24,11 @@ export function terminalRoutes(ctx: AppContext) {
     async open(ws) {
       const data = ws.data as TerminalWSData;
       const sessionId = data.query.sessionId;
-
-      const sandbox = ctx.getSandbox(sessionId);
-      if (!sandbox) {
-        ws.send(
-          JSON.stringify({
-            type: "error",
-            message: "Session not found",
-          } satisfies TerminalServerEvent)
-        );
-        ws.close();
-        return;
-      }
+      const computer = ctx.getComputer(sessionId);
 
       try {
         // Create a new terminal
-        const terminal = await sandbox.createTerminal();
+        const terminal = await computer.createTerminal();
 
         // Store terminal ID in ws data for later use
         data.terminalId = terminal.id;
@@ -82,7 +71,9 @@ export function terminalRoutes(ctx: AppContext) {
           JSON.stringify({
             type: "error",
             message:
-              error instanceof Error ? error.message : "Failed to create terminal",
+              error instanceof Error
+                ? error.message
+                : "Failed to create terminal",
           } satisfies TerminalServerEvent)
         );
         ws.close();
@@ -104,18 +95,9 @@ export function terminalRoutes(ctx: AppContext) {
         return;
       }
 
-      const sandbox = ctx.getSandbox(sessionId);
-      if (!sandbox) {
-        ws.send(
-          JSON.stringify({
-            type: "error",
-            message: "Session not found",
-          } satisfies TerminalServerEvent)
-        );
-        return;
-      }
+      const computer = ctx.getComputer(sessionId);
+      const terminal = computer.getTerminal(terminalId);
 
-      const terminal = sandbox.getTerminal(terminalId);
       if (!terminal) {
         ws.send(
           JSON.stringify({
@@ -129,7 +111,11 @@ export function terminalRoutes(ctx: AppContext) {
       try {
         // Elysia WebSocket may already parse JSON messages, so check if it's already an object
         let message: TerminalClientMessage;
-        if (typeof rawMessage === "object" && rawMessage !== null && !Buffer.isBuffer(rawMessage)) {
+        if (
+          typeof rawMessage === "object" &&
+          rawMessage !== null &&
+          !Buffer.isBuffer(rawMessage)
+        ) {
           message = rawMessage as TerminalClientMessage;
         } else {
           const messageStr =
@@ -162,10 +148,8 @@ export function terminalRoutes(ctx: AppContext) {
 
       // Dispose terminal
       if (terminalId) {
-        const sandbox = ctx.getSandbox(sessionId);
-        if (sandbox) {
-          await sandbox.disposeTerminal(terminalId);
-        }
+        const computer = ctx.getComputer(sessionId);
+        await computer.disposeTerminal(terminalId);
       }
     },
   });

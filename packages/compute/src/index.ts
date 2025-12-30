@@ -1,9 +1,5 @@
-// Core exports
-export * from "./create";
+// Core types
 export * from "./types";
 
-// Sandbox abstraction
-export * from "./sandbox";
-
-// Local provider (includes both Computer and Sandbox)
+// Local provider
 export * from "./providers/local";
