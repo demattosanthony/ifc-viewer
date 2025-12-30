@@ -1,5 +1,10 @@
 import { useState, useCallback } from "react";
-import { api } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
+import {
+  postApiSessionsByIdFilesContentMutation,
+  postApiSessionsByIdFilesDirectoryMutation,
+  deleteApiSessionsByIdFilesMutation,
+} from "@ifc-viewer/sdk/hooks";
 
 interface UseFileOperationsOptions {
   sessionId: string;
@@ -17,6 +22,18 @@ export function useFileOperations({
 }: UseFileOperationsOptions) {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
+  const writeFileMutation = useMutation({
+    ...postApiSessionsByIdFilesContentMutation(),
+  });
+
+  const createDirectoryMutation = useMutation({
+    ...postApiSessionsByIdFilesDirectoryMutation(),
+  });
+
+  const deleteFileMutation = useMutation({
+    ...deleteApiSessionsByIdFilesMutation(),
+  });
+
   const uploadFiles = useCallback(
     async (files: FileList, targetPath: string = ".") => {
       for (const file of Array.from(files)) {
@@ -28,10 +45,9 @@ export function useFileOperations({
             targetPath === "." ? file.name : `${targetPath}/${file.name}`;
 
           try {
-            await api.sessions.files.content.writeFile({
-              id: sessionId,
-              path: filePath,
-              content: base64,
+            await writeFileMutation.mutateAsync({
+              path: { id: sessionId },
+              body: { path: filePath, content: base64 },
             });
             onRefresh(targetPath);
           } catch (err) {
@@ -41,7 +57,7 @@ export function useFileOperations({
         reader.readAsDataURL(file);
       }
     },
-    [sessionId, onRefresh]
+    [sessionId, onRefresh, writeFileMutation]
   );
 
   const createItem = useCallback(
@@ -57,15 +73,14 @@ export function useFileOperations({
 
       try {
         if (type === "folder") {
-          await api.sessions.files.createDirectory({
-            id: sessionId,
-            path: newPath,
+          await createDirectoryMutation.mutateAsync({
+            path: { id: sessionId },
+            body: { path: newPath },
           });
         } else {
-          await api.sessions.files.content.writeFile({
-            id: sessionId,
-            path: newPath,
-            content: "",
+          await writeFileMutation.mutateAsync({
+            path: { id: sessionId },
+            body: { path: newPath, content: "" },
           });
         }
         onRefresh(parentPath);
@@ -75,15 +90,15 @@ export function useFileOperations({
         return false;
       }
     },
-    [sessionId, onRefresh]
+    [sessionId, onRefresh, writeFileMutation, createDirectoryMutation]
   );
 
   const deleteItem = useCallback(
     async (path: string, onTabClose?: () => void): Promise<boolean> => {
       try {
-        await api.sessions.files.deleteFile({
-          id: sessionId,
-          path,
+        await deleteFileMutation.mutateAsync({
+          path: { id: sessionId },
+          query: { path },
         });
 
         onTabClose?.();
@@ -98,7 +113,7 @@ export function useFileOperations({
         return false;
       }
     },
-    [sessionId, onRefresh]
+    [sessionId, onRefresh, deleteFileMutation]
   );
 
   const initiateDelete = useCallback(
@@ -128,5 +143,9 @@ export function useFileOperations({
     initiateDelete,
     confirmDelete,
     cancelDelete,
+    isUploading: writeFileMutation.isPending,
+    isCreating:
+      writeFileMutation.isPending || createDirectoryMutation.isPending,
+    isDeleting: deleteFileMutation.isPending,
   };
 }

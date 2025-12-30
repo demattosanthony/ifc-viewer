@@ -1,6 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getApiSessionsByIdFilesContent } from "@ifc-viewer/sdk";
+import { getApiSessionsByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../context";
-import { api } from "@/lib/api";
 import { CodeEditor } from "./viewers/code-editor";
 import { IFCViewer } from "./viewers/ifc-viewer";
 import { HtmlViewer } from "./viewers/html-viewer";
@@ -8,6 +10,12 @@ import { PdfViewer } from "./viewers/pdf-viewer";
 
 interface EditorPaneProps {
   sessionId: string;
+}
+
+interface FileContentResponse {
+  type: "text" | "binary";
+  content: string;
+  path: string;
 }
 
 function EmptyState() {
@@ -31,36 +39,37 @@ function LoadingState() {
 
 export function EditorPane({ sessionId }: EditorPaneProps) {
   const { tabs, activeTabId, getFileContent, setFileContent } = useEditor();
-  const [loading, setLoading] = useState(false);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
+  const shouldFetchContent =
+    activeTab && activeTab.type !== "ifc" && !getFileContent(activeTab.path);
 
-  const fetchContent = useCallback(
-    async (path: string) => {
-      if (getFileContent(path)) return;
-
-      setLoading(true);
-      try {
-        const data = (await api.sessions.files.content.readFile({
-          id: sessionId,
-          path,
-        })) as { type: "text" | "binary"; content: string; path: string };
-        setFileContent(path, { type: data.type, content: data.content });
-      } catch (err) {
-        console.error("Failed to fetch file:", err);
-      } finally {
-        setLoading(false);
-      }
+  // Query for file content (non-IFC files only)
+  const contentQuery = useQuery({
+    queryKey: getApiSessionsByIdFilesContentQueryKey({
+      path: { id: sessionId },
+      query: { path: activeTab?.path ?? "" },
+    }),
+    queryFn: async () => {
+      const { data } = await getApiSessionsByIdFilesContent({
+        path: { id: sessionId },
+        query: { path: activeTab!.path },
+      });
+      return data as FileContentResponse;
     },
-    [sessionId, getFileContent, setFileContent]
-  );
+    enabled: !!shouldFetchContent,
+    staleTime: 30000,
+  });
 
-  // Fetch content for non-IFC files (IFC handles its own loading)
+  // Update editor context when content is fetched
   useEffect(() => {
-    if (activeTab && activeTab.type !== "ifc") {
-      fetchContent(activeTab.path);
+    if (contentQuery.data && activeTab) {
+      setFileContent(activeTab.path, {
+        type: contentQuery.data.type,
+        content: contentQuery.data.content,
+      });
     }
-  }, [activeTab, fetchContent]);
+  }, [contentQuery.data, activeTab, setFileContent]);
 
   if (!activeTab) {
     return <EmptyState />;
@@ -73,7 +82,7 @@ export function EditorPane({ sessionId }: EditorPaneProps) {
 
   const content = getFileContent(activeTab.path);
 
-  if (loading || !content) {
+  if (contentQuery.isLoading || !content) {
     return <LoadingState />;
   }
 

@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { postApiSessionsByIdFilesContentMutation } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../../context";
-import { api } from "@/lib/api";
 import Editor, { type OnMount } from "@monaco-editor/react";
 
 function getLanguage(filename: string): string {
@@ -42,9 +43,22 @@ export function CodeEditor({
   filename,
 }: CodeEditorProps) {
   const { setTabDirty, updateFileContent, getFileContent } = useEditor();
-  const [saving, setSaving] = useState(false);
   const originalContentRef = useRef(content);
   const saveRef = useRef<() => Promise<void> | undefined>(undefined);
+
+  const saveMutation = useMutation({
+    ...postApiSessionsByIdFilesContentMutation(),
+    onSuccess: () => {
+      const currentContent = getFileContent(path);
+      if (currentContent) {
+        originalContentRef.current = currentContent.content;
+      }
+      setTabDirty(tabId, false);
+    },
+    onError: (err) => {
+      console.error("Failed to save file:", err);
+    },
+  });
 
   // Update original content when file is loaded fresh
   useEffect(() => {
@@ -57,22 +71,12 @@ export function CodeEditor({
       const currentContent = getFileContent(path);
       if (!currentContent) return;
 
-      setSaving(true);
-      try {
-        await api.sessions.files.content.writeFile({
-          id: sessionId,
-          path,
-          content: currentContent.content,
-        });
-        originalContentRef.current = currentContent.content;
-        setTabDirty(tabId, false);
-      } catch (err) {
-        console.error("Failed to save file:", err);
-      } finally {
-        setSaving(false);
-      }
+      saveMutation.mutate({
+        path: { id: sessionId },
+        body: { path, content: currentContent.content },
+      });
     };
-  }, [sessionId, path, tabId, getFileContent, setTabDirty]);
+  }, [sessionId, path, getFileContent, saveMutation]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     // Add Ctrl+S / Cmd+S keybinding
@@ -109,7 +113,7 @@ export function CodeEditor({
           padding: { top: 8 },
         }}
       />
-      {saving && (
+      {saveMutation.isPending && (
         <div className="absolute top-2 right-4 px-2 py-1 bg-[#007acc] text-white text-xs rounded">
           Saving...
         </div>

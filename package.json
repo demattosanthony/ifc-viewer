@@ -6,7 +6,9 @@
     "dev:api": "bun --filter=@ifc-viewer/api run start",
     "dev:web": "bun --filter=@ifc-viewer/web run dev",
     "build": "bun --filter=@ifc-viewer/api run build && bun --filter=@ifc-viewer/web run build",
-    "typecheck": "bun --filter=* run typecheck"
+    "typecheck": "bun --filter=* run typecheck",
+    "generate:sdk": "bun --filter=@ifc-viewer/sdk run generate",
+    "fetch:openapi": "bun --filter=@ifc-viewer/sdk run fetch-spec"
   },
   "workspaces": [
     "apps/*",

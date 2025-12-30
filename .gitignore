@@ -35,3 +35,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Local development workspace (shared across sessions)
 workspace
+
+# Generated SDK code
+packages/sdk/src/generated/

@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useViewer } from "@ifc-viewer/viewer";
-import { api } from "@/lib/api";
+import { getApiSessionsByIdFilesContent } from "@ifc-viewer/sdk";
+import { getApiSessionsByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
 
 export interface IFCViewerProps {
   sessionId: string;
   filePath: string;
+}
+
+interface FileContentResponse {
+  type: string;
+  content: string;
+  path: string;
 }
 
 export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
@@ -13,10 +21,29 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
   const loadingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Query for IFC file content
+  const contentQuery = useQuery({
+    queryKey: getApiSessionsByIdFilesContentQueryKey({
+      path: { id: sessionId },
+      query: { path: filePath },
+    }),
+    queryFn: async () => {
+      const { data } = await getApiSessionsByIdFilesContent({
+        path: { id: sessionId },
+        query: { path: filePath },
+      });
+      return data as FileContentResponse;
+    },
+    enabled: isInitialized && loadedPathRef.current !== filePath,
+    staleTime: Infinity, // IFC files are large, don't refetch
+  });
+
+  // Load the model when content is available
   useEffect(() => {
     if (!isInitialized) return;
     if (loadingRef.current) return;
     if (loadedPathRef.current === filePath) return;
+    if (!contentQuery.data) return;
 
     loadingRef.current = true;
     setError(null);
@@ -25,12 +52,9 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
       try {
         await unloadAllModels();
 
-        const data = (await api.sessions.files.content.readFile({
-          id: sessionId,
-          path: filePath,
-        })) as { type: string; content: string; path: string };
-
+        const data = contentQuery.data;
         let buffer: ArrayBuffer;
+
         if (data.type === "binary") {
           const binary = atob(data.content);
           buffer = new ArrayBuffer(binary.length);
@@ -56,7 +80,18 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
     };
 
     load();
-  }, [isInitialized, filePath, sessionId, loadModel, unloadAllModels]);
+  }, [isInitialized, filePath, contentQuery.data, loadModel, unloadAllModels]);
+
+  // Handle query errors
+  useEffect(() => {
+    if (contentQuery.error) {
+      const message =
+        contentQuery.error instanceof Error
+          ? contentQuery.error.message
+          : "Unknown error";
+      setError(`Failed to load model: ${message}`);
+    }
+  }, [contentQuery.error]);
 
   if (error) {
     return (

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   useViewer,
   useViewerEvents,
@@ -6,6 +7,7 @@ import {
   ViewerProvider,
   type ElementSelectedEvent,
 } from "@ifc-viewer/viewer";
+import { postApiSessionsMutation } from "@ifc-viewer/sdk/hooks";
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
 import Terminal, {
@@ -21,7 +23,6 @@ import { EditorProvider, useEditor } from "@/features/editor/context";
 import { AgentProvider, useAgent } from "@/features/agent/context";
 import { ChatPanel } from "@/features/agent/components/chat-panel";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
-import { api } from "@/lib/api";
 import type { AgentEvent } from "@ifc-viewer/agent";
 import "@xterm/xterm/css/xterm.css";
 
@@ -255,22 +256,23 @@ function Home() {
   const terminalRef = useRef<TerminalHandle | null>(null);
   const fileBrowserRef = useRef<FileBrowserHandle | null>(null);
 
+  const createSessionMutation = useMutation({
+    ...postApiSessionsMutation(),
+    onSuccess: (data) => {
+      setSessionId(data.id);
+      sessionIdRef.current = data.id;
+    },
+    onError: (error) => {
+      console.error("Failed to create session:", error);
+    },
+  });
+
   const handleShowTerminal = useCallback(() => {
     setShowTerminal(true);
   }, []);
 
   useEffect(() => {
-    async function createSession() {
-      try {
-        const session = await api.sessions.createSession();
-        setSessionId(session.id);
-        sessionIdRef.current = session.id;
-      } catch (error) {
-        console.error("Failed to create session:", error);
-      }
-    }
-
-    createSession();
+    createSessionMutation.mutate({});
 
     const cleanup = () => {
       if (sessionIdRef.current) {
@@ -285,6 +287,7 @@ function Home() {
       window.removeEventListener("pagehide", cleanup);
       window.removeEventListener("beforeunload", cleanup);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!sessionId) {
