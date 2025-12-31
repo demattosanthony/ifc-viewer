@@ -40,4 +40,4 @@ workspace
 packages/sdk/src/generated/
 
 # Data directory
-data
+.data

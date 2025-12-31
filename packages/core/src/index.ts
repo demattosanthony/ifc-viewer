@@ -1,39 +1,18 @@
 /**
  * @ifc-viewer/core
  *
- * Domain entities, interfaces, and client for the IFC Viewer platform.
+ * Domain entities, repository interfaces, and errors for the IFC Viewer platform.
  *
- * ## Architecture
+ * ## Domain Model
  *
- * - **Entities**: Core domain objects (Session, Conversation, FileNode)
- * - **Repositories**: Data access interfaces
- * - **Errors**: Domain-specific error types
- * - **Client**: Unified facade for all operations
+ * Project (persistent) -> Workspace (ephemeral) -> Conversation -> Message
  *
- * ## Usage
- *
- * ```typescript
- * import { createClient } from "@ifc-viewer/core";
- *
- * const client = createClient({
- *   sessionRepository: db.sessions,
- *   conversationRepository: db.conversations,
- *   defaultWorkingDirectory: "/tmp/ifc-viewer",
- * });
- *
- * const session = await client.sessions.create();
- * const conversation = await client.conversations.start(session.id);
- * ```
+ * - Project: Persistent git repository for BIM files
+ * - Workspace: Ephemeral compute environment where projects are loaded
+ * - Conversation: AI chat session within a workspace
+ * - Message: Individual chat message in a conversation
  */
 
-// Entities
 export * from "./entities";
-
-// Repositories
 export * from "./repositories";
-
-// Errors
 export * from "./errors";
-
-// Client
-export * from "./client";

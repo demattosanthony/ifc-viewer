@@ -1,21 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useViewer } from "@ifc-viewer/viewer";
-import { getApiSessionsByIdFilesContent } from "@ifc-viewer/sdk";
-import { getApiSessionsByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
+import { getApiWorkspacesByIdFilesContent } from "@ifc-viewer/sdk";
+import { getApiWorkspacesByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
 
 export interface IFCViewerProps {
-  sessionId: string;
+  workspaceId: string;
   filePath: string;
 }
 
-interface FileContentResponse {
-  type: string;
-  content: string;
-  path: string;
-}
-
-export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
+export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
   const { loadModel, unloadAllModels, isInitialized } = useViewer();
   const loadedPathRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
@@ -23,16 +17,16 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
 
   // Query for IFC file content
   const contentQuery = useQuery({
-    queryKey: getApiSessionsByIdFilesContentQueryKey({
-      path: { id: sessionId },
+    queryKey: getApiWorkspacesByIdFilesContentQueryKey({
+      path: { id: workspaceId },
       query: { path: filePath },
     }),
     queryFn: async () => {
-      const { data } = await getApiSessionsByIdFilesContent({
-        path: { id: sessionId },
+      const { data } = await getApiWorkspacesByIdFilesContent({
+        path: { id: workspaceId },
         query: { path: filePath },
       });
-      return data as FileContentResponse;
+      return data ?? undefined;
     },
     enabled: isInitialized && loadedPathRef.current !== filePath,
     staleTime: Infinity, // IFC files are large, don't refetch
@@ -55,8 +49,8 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
         const data = contentQuery.data;
         let buffer: ArrayBuffer;
 
-        if (data.type === "binary") {
-          const binary = atob(data.content);
+        if (data?.type === "binary") {
+          const binary = atob(data?.content ?? "");
           buffer = new ArrayBuffer(binary.length);
           const view = new Uint8Array(buffer);
           for (let i = 0; i < binary.length; i++) {
@@ -64,7 +58,7 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
           }
         } else {
           const encoder = new TextEncoder();
-          buffer = encoder.encode(data.content).buffer;
+          buffer = encoder.encode(data?.content ?? "").buffer;
         }
 
         const filename = filePath.split("/").pop() || "model.ifc";

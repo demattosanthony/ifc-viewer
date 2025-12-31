@@ -70,11 +70,11 @@ interface AgentContextValue {
 const AgentContext = createContext<AgentContextValue | null>(null);
 
 interface AgentProviderProps {
-  sessionId: string;
+  workspaceId: string;
   children: ReactNode;
 }
 
-export function AgentProvider({ sessionId, children }: AgentProviderProps) {
+export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -490,7 +490,7 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
       fetchSSE<AgentEvent>({
         url: `${
           import.meta.env.VITE_API_URL
-        }/api/sessions/${sessionId}/agent/chat`,
+        }/api/workspaces/${workspaceId}/agent/chat`,
         body: {
           content,
           history: messages.map((m) => ({
@@ -512,7 +512,7 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
         eventName: "message",
       });
     },
-    [sessionId, messages, handleAgentEvent]
+    [workspaceId, messages, handleAgentEvent]
   );
 
   const stop = useCallback(async () => {
@@ -522,7 +522,7 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
     }
 
     try {
-      await fetch(`/api/sessions/${sessionId}/agent/stop`, {
+      await fetch(`/api/workspaces/${workspaceId}/agent/stop`, {
         method: "POST",
       });
     } catch (error) {
@@ -531,19 +531,19 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
 
     setIsLoading(false);
     streamingToolsRef.current.clear();
-  }, [sessionId]);
+  }, [workspaceId]);
 
   const clearMessages = useCallback(async () => {
     setMessages([]);
 
     try {
-      await fetch(`/api/sessions/${sessionId}/agent/history`, {
+      await fetch(`/api/workspaces/${workspaceId}/agent/history`, {
         method: "DELETE",
       });
     } catch (error) {
       console.error("[Agent] Failed to clear history:", error);
     }
-  }, [sessionId]);
+  }, [workspaceId]);
 
   const onPresenceEvent = useCallback(
     (callback: (event: AgentEvent) => void) => {

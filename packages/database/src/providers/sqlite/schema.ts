@@ -1,28 +1,31 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
-export const sessions = sqliteTable("sessions", {
-  id: text("id").primaryKey(),
-  workingDirectory: text("working_directory").notNull(),
+export const projects = sqliteTable("projects", {
+  id: text("id").primaryKey(), // Slug (e.g., "sample-project")
+  description: text("description"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-  metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
 
-export const sessionTerminals = sqliteTable("session_terminals", {
-  sessionId: text("session_id")
+export const workspaces = sqliteTable("workspaces", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id")
     .notNull()
-    .references(() => sessions.id, { onDelete: "cascade" }),
-  terminalId: text("terminal_id").notNull(),
-  isAgentTerminal: integer("is_agent_terminal", { mode: "boolean" })
+    .references(() => projects.id, { onDelete: "cascade" }),
+  status: text("status", {
+    enum: ["active", "idle", "stopped"],
+  })
     .notNull()
-    .default(false),
+    .default("active"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  lastAccessedAt: integer("last_accessed_at", { mode: "timestamp_ms" }).notNull(),
 });
 
 export const conversations = sqliteTable("conversations", {
   id: text("id").primaryKey(),
-  sessionId: text("session_id")
+  workspaceId: text("workspace_id")
     .notNull()
-    .references(() => sessions.id, { onDelete: "cascade" }),
+    .references(() => workspaces.id, { onDelete: "cascade" }),
   status: text("status", {
     enum: ["active", "streaming", "completed", "aborted"],
   })
@@ -37,15 +40,16 @@ export const messages = sqliteTable("messages", {
   conversationId: text("conversation_id")
     .notNull()
     .references(() => conversations.id, { onDelete: "cascade" }),
-  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
   content: text("content").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
 // Type exports for use in repositories
-export type SessionRow = typeof sessions.$inferSelect;
-export type NewSessionRow = typeof sessions.$inferInsert;
-export type SessionTerminalRow = typeof sessionTerminals.$inferSelect;
+export type ProjectRow = typeof projects.$inferSelect;
+export type NewProjectRow = typeof projects.$inferInsert;
+export type WorkspaceRow = typeof workspaces.$inferSelect;
+export type NewWorkspaceRow = typeof workspaces.$inferInsert;
 export type ConversationRow = typeof conversations.$inferSelect;
 export type NewConversationRow = typeof conversations.$inferInsert;
 export type MessageRow = typeof messages.$inferSelect;

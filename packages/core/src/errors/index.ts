@@ -1,3 +1,6 @@
+/**
+ * Base error class for domain-specific errors
+ */
 export class DomainError extends Error {
   constructor(
     message: string,
@@ -15,24 +18,6 @@ export class DomainError extends Error {
         message: this.message,
       },
     };
-  }
-}
-
-export class SessionNotFoundError extends DomainError {
-  constructor(sessionId: string) {
-    super(`Session ${sessionId} not found`, "SESSION_NOT_FOUND", 404);
-    this.name = "SessionNotFoundError";
-  }
-}
-
-export class ConversationNotFoundError extends DomainError {
-  constructor(conversationId: string) {
-    super(
-      `Conversation ${conversationId} not found`,
-      "CONVERSATION_NOT_FOUND",
-      404
-    );
-    this.name = "ConversationNotFoundError";
   }
 }
 

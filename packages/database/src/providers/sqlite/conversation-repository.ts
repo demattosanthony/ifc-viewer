@@ -1,162 +1,82 @@
-import { eq } from "drizzle-orm";
-import type {
-  Conversation,
-  ConversationMessage,
-  ConversationStatus,
-  CreateConversationInput,
-  AddMessageInput,
-  ConversationRepository,
+import { eq, and } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
+import {
+  type Conversation,
+  type ConversationRepository,
+  type CreateConversationInput,
+  type UpdateConversationInput,
+  createConversation,
 } from "@ifc-viewer/core";
-import { conversations, messages } from "./schema";
+import { conversations, type ConversationRow } from "./schema";
 import type { DrizzleDB } from "./db";
 
-export interface SQLiteConversationRepositoryConfig {
-  db: DrizzleDB;
+function rowToConversation(row: ConversationRow): Conversation {
+  return createConversation({
+    id: row.id,
+    workspaceId: row.workspaceId,
+    status: row.status,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  });
 }
 
-export class SQLiteConversationRepository implements ConversationRepository {
-  private readonly db: DrizzleDB;
+export function createSqliteConversationRepository(
+  db: DrizzleDB
+): ConversationRepository {
+  return {
+    async create(input: CreateConversationInput): Promise<Conversation> {
+      const now = new Date();
+      const id = uuidv4();
 
-  constructor(config: SQLiteConversationRepositoryConfig) {
-    this.db = config.db;
-  }
+      await db.insert(conversations).values({
+        id,
+        workspaceId: input.workspaceId,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
 
-  private generateId(prefix: string): string {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-  }
+      const [row] = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, id));
 
-  async create(input: CreateConversationInput): Promise<Conversation> {
-    const now = new Date();
-    const id = this.generateId("conv");
+      return rowToConversation(row);
+    },
 
-    await this.db.insert(conversations).values({
-      id,
-      sessionId: input.sessionId,
-      status: "active",
-      createdAt: now,
-      updatedAt: now,
-    });
+    async findActiveByWorkspaceId(workspaceId: string): Promise<Conversation | null> {
+      const [row] = await db
+        .select()
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.workspaceId, workspaceId),
+            eq(conversations.status, "active")
+          )
+        );
 
-    return {
-      id,
-      sessionId: input.sessionId,
-      messages: [],
-      status: "active",
-      createdAt: now,
-      updatedAt: now,
-    };
-  }
+      return row ? rowToConversation(row) : null;
+    },
 
-  async findById(id: string): Promise<Conversation | null> {
-    const rows = await this.db
-      .select()
-      .from(conversations)
-      .where(eq(conversations.id, id))
-      .limit(1);
+    async update(id: string, input: UpdateConversationInput): Promise<Conversation> {
+      const updates: Partial<ConversationRow> = {
+        updatedAt: new Date(),
+      };
 
-    if (rows.length === 0) return null;
+      if (input.status !== undefined) updates.status = input.status;
 
-    const row = rows[0];
-    const msgs = await this.db
-      .select()
-      .from(messages)
-      .where(eq(messages.conversationId, id));
+      await db.update(conversations).set(updates).where(eq(conversations.id, id));
 
-    return {
-      id: row.id,
-      sessionId: row.sessionId,
-      status: row.status as ConversationStatus,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      messages: msgs.map((m) => ({
-        id: m.id,
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        createdAt: m.createdAt,
-      })),
-    };
-  }
+      const [row] = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, id));
 
-  async findBySessionId(sessionId: string): Promise<Conversation | null> {
-    const rows = await this.db
-      .select()
-      .from(conversations)
-      .where(eq(conversations.sessionId, sessionId))
-      .limit(1);
+      return rowToConversation(row);
+    },
 
-    if (rows.length === 0) return null;
-    return this.findById(rows[0].id);
-  }
-
-  async findAllBySessionId(sessionId: string): Promise<Conversation[]> {
-    const rows = await this.db
-      .select()
-      .from(conversations)
-      .where(eq(conversations.sessionId, sessionId));
-
-    const results: Conversation[] = [];
-    for (const row of rows) {
-      const conv = await this.findById(row.id);
-      if (conv) results.push(conv);
-    }
-    return results;
-  }
-
-  async addMessage(
-    conversationId: string,
-    input: AddMessageInput
-  ): Promise<ConversationMessage> {
-    const id = this.generateId("msg");
-    const now = new Date();
-
-    await this.db.insert(messages).values({
-      id,
-      conversationId,
-      role: input.role,
-      content: input.content,
-      createdAt: now,
-    });
-
-    await this.db
-      .update(conversations)
-      .set({ updatedAt: now })
-      .where(eq(conversations.id, conversationId));
-
-    return {
-      id,
-      role: input.role,
-      content: input.content,
-      createdAt: now,
-    };
-  }
-
-  async updateStatus(id: string, status: ConversationStatus): Promise<void> {
-    await this.db
-      .update(conversations)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(conversations.id, id));
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.db.delete(conversations).where(eq(conversations.id, id));
-  }
-
-  async deleteBySessionId(sessionId: string): Promise<void> {
-    await this.db
-      .delete(conversations)
-      .where(eq(conversations.sessionId, sessionId));
-  }
-
-  async exists(id: string): Promise<boolean> {
-    const rows = await this.db
-      .select({ id: conversations.id })
-      .from(conversations)
-      .where(eq(conversations.id, id))
-      .limit(1);
-    return rows.length > 0;
-  }
-
-  async disposeAll(): Promise<void> {
-    // No timers to clean up for conversations
-  }
+    async deleteByWorkspaceId(workspaceId: string): Promise<void> {
+      await db.delete(conversations).where(eq(conversations.workspaceId, workspaceId));
+    },
+  };
 }

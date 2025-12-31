@@ -1,4 +1,6 @@
 export * from "./schema";
 export * from "./db";
-export * from "./session-repository";
-export * from "./conversation-repository";
+export { createSqliteProjectRepository } from "./project-repository";
+export { createSqliteWorkspaceRepository } from "./workspace-repository";
+export { createSqliteConversationRepository } from "./conversation-repository";
+export { createSqliteMessageRepository } from "./message-repository";

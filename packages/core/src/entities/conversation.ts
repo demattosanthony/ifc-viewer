@@ -1,54 +1,44 @@
 /**
- * A single message in a conversation
- */
-export interface ConversationMessage {
-  /** Unique message identifier */
-  id: string;
-  /** Message role - user or assistant */
-  role: "user" | "assistant";
-  /** Message content */
-  content: string;
-  /** When the message was created */
-  createdAt: Date;
-}
-
-/**
- * Conversation status
+ * Conversation entity - represents an AI chat session within a workspace
+ *
+ * Conversations belong to Workspaces and contain Messages.
+ * Messages are now stored separately via MessageRepository.
  */
 export type ConversationStatus = "active" | "streaming" | "completed" | "aborted";
 
-/**
- * A conversation with an AI agent
- */
 export interface Conversation {
-  /** Unique conversation identifier */
-  id: string;
-  /** Session this conversation belongs to */
-  sessionId: string;
-  /** Messages in the conversation */
-  messages: ConversationMessage[];
+  /** Unique identifier */
+  readonly id: string;
+
+  /** Reference to the parent Workspace */
+  readonly workspaceId: string;
+
   /** Current status of the conversation */
-  status: ConversationStatus;
+  readonly status: ConversationStatus;
+
   /** When the conversation was created */
-  createdAt: Date;
+  readonly createdAt: Date;
+
   /** When the conversation was last updated */
-  updatedAt: Date;
+  readonly updatedAt: Date;
 }
 
 /**
- * Input for creating a new conversation
+ * Create a new Conversation entity
  */
-export interface CreateConversationInput {
-  /** Session ID this conversation belongs to */
-  sessionId: string;
-}
-
-/**
- * Input for adding a message to a conversation
- */
-export interface AddMessageInput {
-  /** Message role */
-  role: "user" | "assistant";
-  /** Message content */
-  content: string;
+export function createConversation(params: {
+  id: string;
+  workspaceId: string;
+  status?: ConversationStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
+}): Conversation {
+  const now = new Date();
+  return {
+    id: params.id,
+    workspaceId: params.workspaceId,
+    status: params.status ?? "active",
+    createdAt: params.createdAt ?? now,
+    updatedAt: params.updatedAt ?? now,
+  };
 }

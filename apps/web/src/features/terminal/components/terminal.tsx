@@ -13,7 +13,7 @@ export interface TerminalHandle {
 }
 
 interface TerminalProps {
-  sessionId: string;
+  workspaceId: string;
   onClose?: () => void;
 }
 
@@ -37,7 +37,7 @@ function filterTerminalOutput(data: string): string {
 }
 
 const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
-  { sessionId, onClose },
+  { workspaceId, onClose },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -198,7 +198,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
 
     // WebSocket connection - connect directly to API server
     const ws = new WebSocket(
-      `ws://localhost:3000/ws/terminal?sessionId=${sessionId}`
+      `ws://localhost:3000/ws/terminal?workspaceId=${workspaceId}`
     );
     wsRef.current = ws;
 
@@ -276,7 +276,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [sessionId, sendResize]);
+  }, [workspaceId, sendResize]);
 
   return (
     <div className="terminal-container h-full border-t border-border bg-background overflow-hidden flex flex-col">

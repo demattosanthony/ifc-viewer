@@ -7,7 +7,7 @@ import {
   ViewerProvider,
   type ElementSelectedEvent,
 } from "@ifc-viewer/viewer";
-import { postApiSessionsMutation } from "@ifc-viewer/sdk/hooks";
+import { postApiWorkspacesMutation } from "@ifc-viewer/sdk/hooks";
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
 import Terminal, {
@@ -31,7 +31,7 @@ interface SelectedElement {
 }
 
 interface MainContentProps {
-  sessionId: string;
+  workspaceId: string;
   showSidebar: boolean;
   showTerminal: boolean;
   showChat: boolean;
@@ -44,7 +44,7 @@ interface MainContentProps {
 }
 
 function MainContent({
-  sessionId,
+  workspaceId,
   showSidebar,
   showTerminal,
   showChat,
@@ -139,7 +139,7 @@ function MainContent({
             {/* Code Editor / Other content - layered on top when active */}
             {!isIfcActive && activeTab && (
               <div className="absolute inset-0 z-10">
-                <EditorPane sessionId={sessionId} />
+                <EditorPane workspaceId={workspaceId} />
               </div>
             )}
 
@@ -156,7 +156,7 @@ function MainContent({
             )}
 
             {/* IFC Loader - triggers model loading when IFC tab is active */}
-            {isIfcActive && <EditorPane sessionId={sessionId} />}
+            {isIfcActive && <EditorPane workspaceId={workspaceId} />}
           </div>
 
           {showTerminal && (
@@ -170,7 +170,7 @@ function MainContent({
               <div className="h-full">
                 <Terminal
                   ref={terminalRef}
-                  sessionId={sessionId}
+                  workspaceId={workspaceId}
                   onClose={onToggleTerminal}
                 />
               </div>
@@ -202,22 +202,22 @@ function MainContent({
 }
 
 function Home() {
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showTerminal, setShowTerminal] = useState(true);
   const [showChat, setShowChat] = useState(true);
-  const sessionIdRef = useRef<string | null>(null);
+  const workspaceIdRef = useRef<string | null>(null);
   const terminalRef = useRef<TerminalHandle | null>(null);
   const fileBrowserRef = useRef<FileBrowserHandle | null>(null);
 
-  const createSessionMutation = useMutation({
-    ...postApiSessionsMutation(),
+  const createWorkspaceMutation = useMutation({
+    ...postApiWorkspacesMutation(),
     onSuccess: (data) => {
-      setSessionId(data.id);
-      sessionIdRef.current = data.id;
+      setWorkspaceId(data.id);
+      workspaceIdRef.current = data.id;
     },
     onError: (error) => {
-      console.error("Failed to create session:", error);
+      console.error("Failed to create workspace:", error);
     },
   });
 
@@ -226,11 +226,14 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    createSessionMutation.mutate({});
+    // Create workspace for the sample project (auto-created by API on startup)
+    createWorkspaceMutation.mutate({
+      body: { projectId: "sample-project" },
+    });
 
     const cleanup = () => {
-      if (sessionIdRef.current) {
-        navigator.sendBeacon(`/api/sessions/${sessionIdRef.current}`);
+      if (workspaceIdRef.current) {
+        navigator.sendBeacon(`/api/workspaces/${workspaceIdRef.current}`);
       }
     };
 
@@ -244,13 +247,13 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!sessionId) {
+  if (!workspaceId) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#1e1e1e] text-[#cccccc] gap-4">
         <div className="flex flex-col items-center gap-2">
           <div className="w-8 h-8 border-2 border-[#858585] border-t-[#cccccc] rounded-full animate-spin" />
           <span className="text-[#858585] text-sm">
-            Initializing session...
+            Initializing workspace...
           </span>
         </div>
       </div>
@@ -259,15 +262,15 @@ function Home() {
 
   return (
     <EditorProvider initialFile="sample.ifc">
-      <AgentProvider sessionId={sessionId}>
+      <AgentProvider workspaceId={workspaceId}>
         <div className="h-screen w-screen bg-[#1e1e1e] flex overflow-hidden">
           <FileBrowser
             ref={fileBrowserRef}
-            sessionId={sessionId}
+            workspaceId={workspaceId}
             visible={showSidebar}
           />
           <MainContent
-            sessionId={sessionId}
+            workspaceId={workspaceId}
             showSidebar={showSidebar}
             showTerminal={showTerminal}
             showChat={showChat}

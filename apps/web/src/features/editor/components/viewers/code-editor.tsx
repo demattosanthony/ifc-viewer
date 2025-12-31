@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { postApiSessionsByIdFilesContentMutation } from "@ifc-viewer/sdk/hooks";
+import { postApiWorkspacesByIdFilesContentMutation } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../../context";
 import Editor, { type OnMount } from "@monaco-editor/react";
 
@@ -28,7 +28,7 @@ function getLanguage(filename: string): string {
 }
 
 export interface CodeEditorProps {
-  sessionId: string;
+  workspaceId: string;
   path: string;
   tabId: string;
   content: string;
@@ -36,7 +36,7 @@ export interface CodeEditorProps {
 }
 
 export function CodeEditor({
-  sessionId,
+  workspaceId,
   path,
   tabId,
   content,
@@ -47,7 +47,7 @@ export function CodeEditor({
   const saveRef = useRef<() => Promise<void> | undefined>(undefined);
 
   const saveMutation = useMutation({
-    ...postApiSessionsByIdFilesContentMutation(),
+    ...postApiWorkspacesByIdFilesContentMutation(),
     onSuccess: () => {
       const currentContent = getFileContent(path);
       if (currentContent) {
@@ -72,11 +72,11 @@ export function CodeEditor({
       if (!currentContent) return;
 
       saveMutation.mutate({
-        path: { id: sessionId },
+        path: { id: workspaceId },
         body: { path, content: currentContent.content },
       });
     };
-  }, [sessionId, path, getFileContent, saveMutation]);
+  }, [workspaceId, path, getFileContent, saveMutation]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     // Add Ctrl+S / Cmd+S keybinding
