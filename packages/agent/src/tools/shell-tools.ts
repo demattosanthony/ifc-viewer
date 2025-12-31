@@ -4,7 +4,6 @@ import type { TerminalSession } from "@ifc-viewer/compute";
 import type { AgentEvent } from "../events";
 import { getErrorMessage } from "../utils";
 
-// Unique marker pattern to detect command completion
 const MARKER_PREFIX = "<<CMD_DONE:";
 const MARKER_SUFFIX = ">>";
 const MARKER_REGEX = /<<CMD_DONE:(-?\d+)>>/;
@@ -35,26 +34,18 @@ Commands run sequentially and share environment/state between calls.`,
         timeout: number;
       }) => {
         try {
-          // Focus the terminal panel (streaming already happened via tool-input-delta)
           emit({ type: "terminal-focus" });
-
-          // Press enter to execute
           emit({ type: "terminal-execute" });
 
-          // Get or create the persistent terminal
           const terminal = await getTerminal();
-
-          // Generate a unique marker for this command
           const marker = `${MARKER_PREFIX}$?${MARKER_SUFFIX}`;
 
           let output = "";
           let exitCode: number | null = null;
           let skippedEcho = false;
 
-          // Strip ANSI escape codes for pattern matching
           const stripAnsi = (str: string) => str.replace(/\x1b\[[0-9;]*m/g, "");
 
-          // Pattern to detect the echoed command line (contains our marker echo command)
           const isEchoLine = (line: string) => {
             const clean = stripAnsi(line);
             return (
@@ -63,7 +54,6 @@ Commands run sequentially and share environment/state between calls.`,
             );
           };
 
-          // Local cleanup function for this specific command execution
           let cleanup: (() => void) | null = null;
 
           const outputPromise = new Promise<{
@@ -78,15 +68,12 @@ Commands run sequentially and share environment/state between calls.`,
               reject(new Error(`Command timed out after ${timeout}ms`));
             }, timeout);
 
-            // Listen for output - cleanup is local to this execution
             cleanup = terminal.onData((data) => {
-              // Filter out echoed command lines containing our marker
               if (!skippedEcho) {
                 const lines = data.split("\n");
                 const hasEchoLine = lines.some(isEchoLine);
                 if (hasEchoLine) {
                   skippedEcho = true;
-                  // Keep only lines that don't contain the echo command
                   const filteredLines = lines.filter(
                     (line) => !isEchoLine(line)
                   );
@@ -99,12 +86,9 @@ Commands run sequentially and share environment/state between calls.`,
                 }
               }
 
-              // Check for completion marker in output
               const match = data.match(MARKER_REGEX);
               if (match && match[1]) {
                 exitCode = parseInt(match[1], 10);
-
-                // Remove marker line from output
                 const lines = data.split("\n");
                 const cleanLines = lines.filter(
                   (line) => !MARKER_REGEX.test(line)
@@ -115,7 +99,6 @@ Commands run sequentially and share environment/state between calls.`,
                   emit({ type: "terminal-output", data: cleanData });
                 }
 
-                // Clean up listener
                 clearTimeout(timeoutId);
                 if (cleanup) {
                   cleanup();
@@ -125,14 +108,11 @@ Commands run sequentially and share environment/state between calls.`,
                 resolve({ output: output.trim(), exitCode });
               } else {
                 output += data;
-                // Stream output to the terminal UI
                 emit({ type: "terminal-output", data });
               }
             });
           });
 
-          // Write command followed by marker echo
-          // The marker echoes the exit code of the previous command
           await terminal.write(`${command}; echo "${marker}"\n`);
 
           const result = await outputPromise;

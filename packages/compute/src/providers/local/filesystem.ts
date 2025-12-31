@@ -21,17 +21,12 @@ import type {
 export class LocalFileSystem implements FileSystem {
   constructor(private baseDir: string) {}
 
-  /**
-   * Resolve path relative to base directory
-   * Prevents escaping the sandbox
-   */
   private resolvePath(path: string): string {
     const resolved = resolve(
       this.baseDir,
       path.startsWith("/") ? path.slice(1) : path
     );
 
-    // Security: ensure we don't escape the base directory
     if (!resolved.startsWith(this.baseDir)) {
       throw new Error(`Path escapes sandbox: ${path}`);
     }
@@ -58,8 +53,6 @@ export class LocalFileSystem implements FileSystem {
 
   async write(path: string, content: string | Uint8Array): Promise<void> {
     const fullPath = this.resolvePath(path);
-
-    // Ensure parent directory exists
     const parentDir = fullPath.substring(0, fullPath.lastIndexOf("/"));
     await mkdir(parentDir, { recursive: true }).catch(() => {});
 
@@ -110,7 +103,6 @@ export class LocalFileSystem implements FileSystem {
       if (options?.recursive) {
         await rm(fullPath, { recursive: true, force: true });
       } else {
-        // rmdir only works on empty directories
         await rmdir(fullPath);
       }
     } else {
@@ -141,8 +133,6 @@ export class LocalFileSystem implements FileSystem {
   async copy(src: string, dest: string): Promise<void> {
     const srcPath = this.resolvePath(src);
     const destPath = this.resolvePath(dest);
-
-    // Ensure destination parent directory exists
     await mkdir(dirname(destPath), { recursive: true }).catch(() => {});
 
     const srcStat = await lstat(srcPath);
@@ -172,8 +162,6 @@ export class LocalFileSystem implements FileSystem {
   async move(src: string, dest: string): Promise<void> {
     const srcPath = this.resolvePath(src);
     const destPath = this.resolvePath(dest);
-
-    // Ensure destination parent directory exists
     await mkdir(dirname(destPath), { recursive: true }).catch(() => {});
 
     await rename(srcPath, destPath);

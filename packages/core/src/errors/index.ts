@@ -87,6 +87,24 @@ export class ValidationError extends DomainError {
   }
 }
 
+export class ConversationNotFoundError extends DomainError {
+  constructor(conversationId: string) {
+    super(
+      `Conversation ${conversationId} not found`,
+      "CONVERSATION_NOT_FOUND",
+      404
+    );
+    this.name = "ConversationNotFoundError";
+  }
+}
+
+export class ConversationError extends DomainError {
+  constructor(message: string) {
+    super(message, "CONVERSATION_ERROR", 500);
+    this.name = "ConversationError";
+  }
+}
+
 export function isDomainError(error: unknown): error is DomainError {
   return error instanceof DomainError;
 }

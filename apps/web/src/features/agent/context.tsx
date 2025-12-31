@@ -16,7 +16,6 @@ import type {
   MessagePart,
 } from "@ifc-viewer/agent";
 
-// Streaming tool state for tracking partial JSON as it arrives
 interface StreamingToolState {
   id: string;
   name: string;
@@ -27,7 +26,6 @@ interface StreamingToolState {
   currentColumn: number;
 }
 
-// Extract a string field value from partial JSON
 function extractStreamingField(
   buffer: string,
   fieldName: string
@@ -87,17 +85,14 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
   const currentStepRef = useRef<number>(0);
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map());
 
-  // Helper to emit presence events
   const emitPresenceEvent = useCallback((event: AgentEvent) => {
     for (const callback of presenceCallbacksRef.current) {
       callback(event);
     }
   }, []);
 
-  // Handle agent events from SSE stream
   const handleAgentEvent = useCallback(
     (event: AgentEvent) => {
-      // Notify presence callbacks
       emitPresenceEvent(event);
 
       switch (event.type) {
@@ -464,10 +459,8 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
     [emitPresenceEvent]
   );
 
-  // Send message via HTTP POST + SSE
   const sendMessage = useCallback(
     (content: string) => {
-      // Abort any in-flight request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -475,7 +468,6 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      // Add user message
       const userMessage: AgentMessage = {
         id: `msg-${Date.now()}`,
         role: "user",
@@ -483,7 +475,6 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
         createdAt: new Date(),
       };
 
-      // Add placeholder assistant message
       const assistantMessage: AgentMessage = {
         id: `msg-${Date.now() + 1}`,
         role: "assistant",
@@ -496,9 +487,10 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
       setIsLoading(true);
 
-      // Make the SSE request
       fetchSSE<AgentEvent>({
-        url: `/api/sessions/${sessionId}/agent/chat`,
+        url: `${
+          import.meta.env.VITE_API_URL
+        }/api/sessions/${sessionId}/agent/chat`,
         body: {
           content,
           history: messages.map((m) => ({
@@ -523,15 +515,12 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
     [sessionId, messages, handleAgentEvent]
   );
 
-  // Stop generation
   const stop = useCallback(async () => {
-    // Abort the SSE stream
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
 
-    // Call the stop endpoint
     try {
       await fetch(`/api/sessions/${sessionId}/agent/stop`, {
         method: "POST",
@@ -544,11 +533,9 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
     streamingToolsRef.current.clear();
   }, [sessionId]);
 
-  // Clear messages
   const clearMessages = useCallback(async () => {
     setMessages([]);
 
-    // Clear server-side history
     try {
       await fetch(`/api/sessions/${sessionId}/agent/history`, {
         method: "DELETE",
@@ -558,7 +545,6 @@ export function AgentProvider({ sessionId, children }: AgentProviderProps) {
     }
   }, [sessionId]);
 
-  // Subscribe to presence events
   const onPresenceEvent = useCallback(
     (callback: (event: AgentEvent) => void) => {
       presenceCallbacksRef.current.add(callback);

@@ -38,3 +38,6 @@ workspace
 
 # Generated SDK code
 packages/sdk/src/generated/
+
+# Data directory
+data

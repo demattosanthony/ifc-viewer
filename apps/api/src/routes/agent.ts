@@ -1,64 +1,65 @@
 import { Elysia, t } from "elysia";
 import { createAgent, type AgentEvent } from "@ifc-viewer/agent";
 import { createSSEStream, sseResponse } from "@ifc-viewer/realtime";
+import { isDomainError } from "@ifc-viewer/core";
 import type { AppContext } from "../context";
 
-/**
- * Agent chat routes with SSE streaming
- */
-export function agentRoutes(ctx: AppContext) {
-  // Track active conversations for abort handling
-  const activeConversations = new Map<
-    string,
-    {
-      abortController: AbortController;
-      messages: Array<{ role: "user" | "assistant"; content: string }>;
-    }
-  >();
+const abortControllers = new Map<string, AbortController>();
 
+export function agentRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/api/sessions/:id/agent" })
     .post(
       "/chat",
       async ({ params, body, set }) => {
         const computer = ctx.getComputer(params.id);
 
-        // Create or get conversation state
-        let conversation = activeConversations.get(params.id);
+        let conversation = await ctx.client.conversations.getBySessionId(
+          params.id
+        );
         if (!conversation) {
-          conversation = {
-            abortController: new AbortController(),
-            messages: [],
-          };
-          activeConversations.set(params.id, conversation);
+          conversation = await ctx.client.conversations.start(params.id);
         }
 
-        // Cancel any existing generation
-        if (conversation.abortController) {
-          conversation.abortController.abort();
+        const existingController = abortControllers.get(params.id);
+        if (existingController) {
+          existingController.abort();
         }
-        conversation.abortController = new AbortController();
 
-        // Add user message to history
-        if (body.history) {
-          conversation.messages = body.history.map((m) => ({
+        const abortController = new AbortController();
+        abortControllers.set(params.id, abortController);
+
+        let messageHistory: Array<{ role: "user" | "assistant"; content: string }>;
+
+        if (body.history && body.history.length > 0) {
+          messageHistory = body.history.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
           }));
+        } else {
+          messageHistory = conversation.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          }));
         }
-        conversation.messages.push({ role: "user", content: body.content });
 
-        // Create the agent
+        messageHistory.push({ role: "user", content: body.content });
+
+        await ctx.client.conversations.addMessage(
+          conversation.id,
+          "user",
+          body.content
+        );
+
+        await ctx.client.conversations.updateStatus(conversation.id, "streaming");
+
         const agent = createAgent({
           computer,
           getTerminal: () => computer.getOrCreateAgentTerminal(),
         });
 
-        // Capture conversation reference for closure
-        const currentConversation = conversation;
+        const conversationId = conversation.id;
 
-        // Stream the response using SSE
         const stream = createSSEStream(async (sseCtx) => {
-          // Send ready event
           sseCtx.send("message", { type: "ready" });
 
           let assistantMessage = "";
@@ -71,35 +72,42 @@ export function agentRoutes(ctx: AppContext) {
             };
 
             for await (const event of agent.streamChat(
-              currentConversation.messages,
+              messageHistory,
               emit,
-              currentConversation.abortController.signal
+              abortController.signal
             )) {
               if (event.type === "text-delta") {
                 assistantMessage += event.content;
               }
             }
 
-            // Add assistant message to history
             if (assistantMessage) {
-              currentConversation.messages.push({
-                role: "assistant",
-                content: assistantMessage,
-              });
+              await ctx.client.conversations.addMessage(
+                conversationId,
+                "assistant",
+                assistantMessage
+              );
             }
+
+            await ctx.client.conversations.updateStatus(conversationId, "active");
           } catch (err) {
             if (err instanceof Error && err.name !== "AbortError") {
               sseCtx.send("message", {
                 type: "error",
                 message: err.message,
               });
+            } else if (err instanceof Error && err.name === "AbortError") {
+              await ctx.client.conversations.updateStatus(
+                conversationId,
+                "aborted"
+              );
             }
-            // Always emit finish event so client can reset loading state
             sseCtx.send("message", {
               type: "finish",
               usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             });
           } finally {
+            abortControllers.delete(params.id);
             sseCtx.close();
           }
         });
@@ -130,13 +138,13 @@ export function agentRoutes(ctx: AppContext) {
     .post(
       "/stop",
       async ({ params, set }) => {
-        const conversation = activeConversations.get(params.id);
-        if (!conversation) {
+        const abortController = abortControllers.get(params.id);
+        if (!abortController) {
           set.status = 404;
-          return { error: "No active conversation" };
+          return { error: "No active generation" };
         }
 
-        conversation.abortController.abort();
+        abortController.abort();
         return { success: true };
       },
       {
@@ -149,11 +157,41 @@ export function agentRoutes(ctx: AppContext) {
         },
       }
     )
+    .get(
+      "/conversation",
+      async ({ params, set }) => {
+        const conversation = await ctx.client.conversations.getBySessionId(
+          params.id
+        );
+        if (!conversation) {
+          set.status = 404;
+          return { error: "No conversation found" };
+        }
+        return conversation;
+      },
+      {
+        params: t.Object({
+          id: t.String(),
+        }),
+        detail: {
+          summary: "Get conversation for session",
+          tags: ["Agent"],
+        },
+      }
+    )
     .delete(
       "/history",
-      async ({ params }) => {
-        activeConversations.delete(params.id);
-        return { success: true };
+      async ({ params, set }) => {
+        try {
+          await ctx.client.conversations.deleteBySessionId(params.id);
+          return { success: true };
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode;
+            return error.toJSON();
+          }
+          throw error;
+        }
       },
       {
         params: t.Object({

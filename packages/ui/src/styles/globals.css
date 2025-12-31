@@ -83,8 +83,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    @apply h-full overflow-hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+  }
   body {
     @apply bg-background text-foreground;
+  }
+  #root {
+    @apply h-full overflow-hidden;
   }
 }
 

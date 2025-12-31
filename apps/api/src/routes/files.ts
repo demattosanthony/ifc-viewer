@@ -1,9 +1,6 @@
 import { Elysia, t } from "elysia";
 import type { AppContext } from "../context";
 
-/**
- * File operations routes
- */
 export function filesRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/api/sessions/:id/files" })
     .get(

@@ -1,7 +1,5 @@
 ---
 description: Remove AI code slop
-agent: build
-model: anthropic/claude-4-5-opus
 ---
 
 # Remove AI code slop

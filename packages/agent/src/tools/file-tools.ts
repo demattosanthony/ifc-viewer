@@ -16,7 +16,6 @@ export function createFileTools(
       }),
       execute: async ({ path }: { path: string }) => {
         try {
-          // Open file in editor for visibility
           emit({ type: "editor-open", path });
 
           const result = await computer.files.read(path);
@@ -48,16 +47,9 @@ export function createFileTools(
       }),
       execute: async ({ path, content }: { path: string; content: string }) => {
         try {
-          // Open file in editor (streaming already happened via tool-input-delta)
           emit({ type: "editor-open", path });
-
-          // Replace with final content (ensures consistency after streaming)
           emit({ type: "editor-replace", path, content });
-
-          // Actually write the file
           await computer.files.write(path, content);
-
-          // Show save indicator
           emit({ type: "editor-save", path });
           emit({ type: "file-created", path });
 

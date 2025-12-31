@@ -72,7 +72,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
         )}
       >
         {/* Status icon */}
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
           ) : isError ? (
@@ -99,7 +99,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
         {/* Expand icon */}
         <ChevronRight
           className={cn(
-            "h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-transform",
+            "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
             isOpen && "rotate-90"
           )}
         />

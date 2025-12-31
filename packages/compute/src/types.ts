@@ -1,50 +1,14 @@
-/**
- * Core Computer interface - provides file system and shell capabilities
- */
 export interface Computer {
   readonly id: string;
   readonly workingDirectory: string;
-
-  /** File system operations */
   files: FileSystem;
-
-  /** Shell for terminal sessions */
   shell: Shell;
-
-  /**
-   * Create a new terminal session
-   */
   createTerminal(): Promise<TerminalSession>;
-
-  /**
-   * Get an existing terminal by ID
-   */
   getTerminal(id: string): TerminalSession | undefined;
-
-  /**
-   * Get all active terminals
-   */
   getAllTerminals(): TerminalSession[];
-
-  /**
-   * Dispose a terminal by ID
-   */
   disposeTerminal(id: string): Promise<void>;
-
-  /**
-   * Get or create the dedicated agent terminal
-   * This terminal persists for the lifetime of the computer
-   */
   getOrCreateAgentTerminal(): Promise<TerminalSession>;
-
-  /**
-   * Check if the computer has an agent terminal
-   */
   hasAgentTerminal(): boolean;
-
-  /**
-   * Dispose the computer and all its resources
-   */
   dispose(): Promise<void>;
 }
 
@@ -77,7 +41,6 @@ export interface TerminalSession {
 export interface ComputerConfig {
   workingDirectory: string;
   environment?: Record<string, string>;
-  /** Whether to cleanup the workspace on dispose */
   cleanup?: boolean;
 }
 

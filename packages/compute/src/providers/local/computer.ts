@@ -9,9 +9,6 @@ import { mkdir, rm } from "node:fs/promises";
 import { LocalFileSystem } from "./filesystem";
 import { LocalShell } from "./shell";
 
-/**
- * Local computer implementation using Bun native APIs
- */
 export class LocalComputer implements Computer {
   readonly id: string;
   readonly workingDirectory: string;
@@ -20,7 +17,6 @@ export class LocalComputer implements Computer {
   private _files: FileSystem;
   private _shell: Shell;
 
-  // Terminal management
   private terminals = new Map<string, TerminalSession>();
   private agentTerminal: TerminalSession | null = null;
 
@@ -33,9 +29,6 @@ export class LocalComputer implements Computer {
     this._shell = new LocalShell(config.workingDirectory, config.environment);
   }
 
-  /**
-   * Initialize the computer (create working directory)
-   */
   async init(): Promise<void> {
     await mkdir(this.workingDirectory, { recursive: true });
   }
@@ -47,8 +40,6 @@ export class LocalComputer implements Computer {
   get shell(): Shell {
     return this._shell;
   }
-
-  // Terminal management methods
 
   async createTerminal(): Promise<TerminalSession> {
     const terminal = await this._shell.startTerminal();
@@ -71,7 +62,6 @@ export class LocalComputer implements Computer {
     await terminal.kill();
     this.terminals.delete(id);
 
-    // Clear agent terminal reference if this was it
     if (this.agentTerminal?.id === id) {
       this.agentTerminal = null;
     }
@@ -93,13 +83,11 @@ export class LocalComputer implements Computer {
   }
 
   async dispose(): Promise<void> {
-    // Kill all terminals
     const terminalsToKill = Array.from(this.terminals.values());
     await Promise.all(terminalsToKill.map((t) => t.kill()));
     this.terminals.clear();
     this.agentTerminal = null;
 
-    // Cleanup workspace if configured
     if (this.cleanup) {
       await rm(this.workingDirectory, { recursive: true, force: true }).catch(
         () => {}
@@ -108,29 +96,6 @@ export class LocalComputer implements Computer {
   }
 }
 
-/**
- * Create a local computer instance
- *
- * @example
- * ```ts
- * import { createLocalComputer } from '@ifc-viewer/compute';
- *
- * const computer = await createLocalComputer({
- *   workingDirectory: '/tmp/my-workspace',
- * });
- *
- * // Write a file
- * await computer.files.write('/hello.txt', 'Hello World!');
- *
- * // Start an interactive terminal
- * const terminal = await computer.createTerminal();
- * terminal.onData(data => console.log(data));
- * await terminal.write('ls -la\n');
- *
- * // Cleanup
- * await computer.dispose();
- * ```
- */
 export async function createLocalComputer(
   config: ComputerConfig
 ): Promise<Computer> {

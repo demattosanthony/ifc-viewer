@@ -61,15 +61,16 @@ export function EditorPane({ sessionId }: EditorPaneProps) {
     staleTime: 30000,
   });
 
-  // Update editor context when content is fetched
+  // Update editor context when content is fetched (only if not already cached)
   useEffect(() => {
-    if (contentQuery.data && activeTab) {
+    if (contentQuery.data && activeTab && !getFileContent(activeTab.path)) {
       setFileContent(activeTab.path, {
         type: contentQuery.data.type,
         content: contentQuery.data.content,
       });
     }
-  }, [contentQuery.data, activeTab, setFileContent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentQuery.data]);
 
   if (!activeTab) {
     return <EmptyState />;
