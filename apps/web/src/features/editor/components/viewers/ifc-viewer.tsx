@@ -9,12 +9,6 @@ export interface IFCViewerProps {
   filePath: string;
 }
 
-interface FileContentResponse {
-  type: string;
-  content: string;
-  path: string;
-}
-
 export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
   const { loadModel, unloadAllModels, isInitialized } = useViewer();
   const loadedPathRef = useRef<string | null>(null);
@@ -32,7 +26,7 @@ export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
         path: { id: workspaceId },
         query: { path: filePath },
       });
-      return data as FileContentResponse;
+      return data ?? undefined;
     },
     enabled: isInitialized && loadedPathRef.current !== filePath,
     staleTime: Infinity, // IFC files are large, don't refetch
@@ -55,8 +49,8 @@ export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
         const data = contentQuery.data;
         let buffer: ArrayBuffer;
 
-        if (data.type === "binary") {
-          const binary = atob(data.content);
+        if (data?.type === "binary") {
+          const binary = atob(data?.content ?? "");
           buffer = new ArrayBuffer(binary.length);
           const view = new Uint8Array(buffer);
           for (let i = 0; i < binary.length; i++) {
@@ -64,7 +58,7 @@ export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
           }
         } else {
           const encoder = new TextEncoder();
-          buffer = encoder.encode(data.content).buffer;
+          buffer = encoder.encode(data?.content ?? "").buffer;
         }
 
         const filename = filePath.split("/").pop() || "model.ifc";

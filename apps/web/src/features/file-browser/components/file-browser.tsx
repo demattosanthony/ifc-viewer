@@ -7,7 +7,10 @@ import {
   useImperativeHandle,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getApiWorkspacesByIdFiles } from "@ifc-viewer/sdk";
+import {
+  getApiWorkspacesByIdFiles,
+  type GetApiWorkspacesByIdFilesResponse,
+} from "@ifc-viewer/sdk";
 import { getApiWorkspacesByIdFilesQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "@/features/editor/context";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
@@ -17,13 +20,7 @@ import { FileTreeItem } from "./file-tree-item";
 import { NewItemInput } from "./new-item-input";
 import { DeleteDialog } from "./delete-dialog";
 
-interface FileEntry {
-  name: string;
-  path: string;
-  type: "file" | "directory" | "symlink";
-  size?: number;
-  modifiedAt?: number;
-}
+type FileEntry = GetApiWorkspacesByIdFilesResponse["files"][number];
 
 interface FileBrowserProps {
   workspaceId: string;
@@ -79,7 +76,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
           path: { id: workspaceId },
           query: { path: "." },
         });
-        return data as { files: FileEntry[] };
+        return data!;
       },
       staleTime: 30000,
     });
@@ -87,7 +84,9 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
     // Update file tree when root files are fetched
     useEffect(() => {
       if (rootFilesQuery.data?.files) {
-        setFileTree((prev) => new Map(prev).set(".", rootFilesQuery.data.files));
+        setFileTree((prev) =>
+          new Map(prev).set(".", rootFilesQuery.data.files)
+        );
       }
     }, [rootFilesQuery.data]);
 
@@ -101,8 +100,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
             path: { id: workspaceId },
             query: { path },
           });
-          const result = data as { files: FileEntry[] };
-          setFileTree((prev) => new Map(prev).set(path, result.files ?? []));
+          setFileTree((prev) => new Map(prev).set(path, data?.files ?? []));
         } catch (err) {
           console.error("Error fetching files:", err);
         } finally {

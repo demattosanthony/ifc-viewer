@@ -212,10 +212,9 @@ function Home() {
 
   const createWorkspaceMutation = useMutation({
     ...postApiWorkspacesMutation(),
-    onSuccess: (data: unknown) => {
-      const workspace = data as { id: string };
-      setWorkspaceId(workspace.id);
-      workspaceIdRef.current = workspace.id;
+    onSuccess: (data) => {
+      setWorkspaceId(data.id);
+      workspaceIdRef.current = data.id;
     },
     onError: (error) => {
       console.error("Failed to create workspace:", error);

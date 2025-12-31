@@ -1,7 +1,9 @@
 import { Elysia, t } from "elysia";
 import { createAgent, type AgentEvent } from "@ifc-viewer/agent";
 import { createSSEStream, sseResponse } from "@ifc-viewer/realtime";
-import type { AppContext } from "../context";
+import type { AppContext } from "../../context";
+import { ErrorResponse, SuccessResponse } from "../../schemas";
+import { ConversationWithMessagesResponse } from "./agent.schemas";
 
 const abortControllers = new Map<string, AbortController>();
 
@@ -31,7 +33,10 @@ export function agentRoutes(ctx: AppContext) {
         abortControllers.set(params.id, abortController);
 
         // Get message history
-        let messageHistory: Array<{ role: "user" | "assistant"; content: string }>;
+        let messageHistory: Array<{
+          role: "user" | "assistant";
+          content: string;
+        }>;
 
         if (body.history && body.history.length > 0) {
           messageHistory = body.history.map((m) => ({
@@ -162,6 +167,10 @@ export function agentRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: SuccessResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Stop ongoing agent generation",
           tags: ["Agent"],
@@ -193,6 +202,10 @@ export function agentRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: ConversationWithMessagesResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Get conversation for workspace",
           tags: ["Agent"],
@@ -209,6 +222,9 @@ export function agentRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: SuccessResponse,
+        },
         detail: {
           summary: "Clear conversation history",
           tags: ["Agent"],

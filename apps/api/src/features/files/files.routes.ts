@@ -1,5 +1,7 @@
 import { Elysia, t } from "elysia";
-import type { AppContext } from "../context";
+import type { AppContext } from "../../context";
+import { ErrorResponse, SuccessWithPathResponse } from "../../schemas";
+import { FileListResponse, FileContentResponse } from "./files.schemas";
 
 export function filesRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/api/workspaces/:id/files" })
@@ -28,6 +30,9 @@ export function filesRoutes(ctx: AppContext) {
         query: t.Object({
           path: t.Optional(t.String()),
         }),
+        response: {
+          200: FileListResponse,
+        },
         detail: {
           summary: "List files in a directory",
           tags: ["Files"],
@@ -66,6 +71,11 @@ export function filesRoutes(ctx: AppContext) {
         query: t.Object({
           path: t.String(),
         }),
+        response: {
+          200: FileContentResponse,
+          400: ErrorResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Read file content",
           tags: ["Files"],
@@ -99,6 +109,10 @@ export function filesRoutes(ctx: AppContext) {
           content: t.String(),
           isBinary: t.Optional(t.Boolean()),
         }),
+        response: {
+          200: SuccessWithPathResponse,
+          500: ErrorResponse,
+        },
         detail: {
           summary: "Write file content",
           tags: ["Files"],
@@ -130,6 +144,11 @@ export function filesRoutes(ctx: AppContext) {
         query: t.Object({
           path: t.String(),
         }),
+        response: {
+          200: SuccessWithPathResponse,
+          400: ErrorResponse,
+          500: ErrorResponse,
+        },
         detail: {
           summary: "Delete a file or directory",
           tags: ["Files"],
@@ -156,6 +175,10 @@ export function filesRoutes(ctx: AppContext) {
         body: t.Object({
           path: t.String(),
         }),
+        response: {
+          200: SuccessWithPathResponse,
+          500: ErrorResponse,
+        },
         detail: {
           summary: "Create a directory",
           tags: ["Files"],

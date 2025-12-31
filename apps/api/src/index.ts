@@ -2,11 +2,12 @@ import { Elysia } from "elysia";
 import { swagger } from "@elysiajs/swagger";
 import { cors } from "@elysiajs/cors";
 import { createAppContext } from "./context";
-import { projectsRoutes } from "./routes/projects";
-import { workspacesRoutes } from "./routes/workspaces";
-import { filesRoutes } from "./routes/files";
-import { agentRoutes } from "./routes/agent";
-import { terminalRoutes } from "./routes/terminal";
+import { ApiInfoResponse, HealthResponse } from "./schemas";
+import { projectsRoutes } from "./features/projects";
+import { workspacesRoutes } from "./features/workspaces";
+import { filesRoutes } from "./features/files";
+import { agentRoutes } from "./features/agent";
+import { terminalRoutes } from "./features/terminal";
 
 // Create app context
 const ctx = await createAppContext();
@@ -33,15 +34,39 @@ const app = new Elysia()
       },
     })
   )
-  .get("/", () => ({
-    message: "BIM IDE API",
-    version: "2.0.0",
-    docs: "/swagger",
-  }))
-  .get("/health", () => ({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-  }))
+  .get(
+    "/",
+    () => ({
+      message: "BIM IDE API",
+      version: "2.0.0",
+      docs: "/swagger",
+    }),
+    {
+      response: {
+        200: ApiInfoResponse,
+      },
+      detail: {
+        summary: "API info",
+        tags: ["General"],
+      },
+    }
+  )
+  .get(
+    "/health",
+    () => ({
+      status: "ok" as const,
+      timestamp: new Date().toISOString(),
+    }),
+    {
+      response: {
+        200: HealthResponse,
+      },
+      detail: {
+        summary: "Health check",
+        tags: ["General"],
+      },
+    }
+  )
   .use(projectsRoutes(ctx))
   .use(workspacesRoutes(ctx))
   .use(filesRoutes(ctx))

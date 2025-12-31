@@ -1,6 +1,9 @@
 import { Elysia, t } from "elysia";
 import { isValidProjectSlug } from "@ifc-viewer/core";
-import type { AppContext } from "../context";
+import type { AppContext } from "../../context";
+import { ErrorResponse, SuccessResponse } from "../../schemas";
+import { ProjectResponse, ProjectListResponse } from "./projects.schemas";
+import { WorkspaceListResponse } from "../workspaces/workspaces.schemas";
 
 export function projectsRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/api/projects" })
@@ -11,7 +14,8 @@ export function projectsRoutes(ctx: AppContext) {
         if (!isValidProjectSlug(body.id)) {
           set.status = 400;
           return {
-            error: "Invalid project ID. Must be lowercase alphanumeric with hyphens, 1-100 characters.",
+            error:
+              "Invalid project ID. Must be lowercase alphanumeric with hyphens, 1-100 characters.",
           };
         }
 
@@ -28,11 +32,9 @@ export function projectsRoutes(ctx: AppContext) {
         });
 
         // Create project directory in storage
-        await ctx.storage.put(
-          `projects/${body.id}/.gitkeep`,
-          "",
-          { contentType: "text/plain" }
-        );
+        await ctx.storage.put(`projects/${body.id}/.gitkeep`, "", {
+          contentType: "text/plain",
+        });
 
         return project;
       },
@@ -41,6 +43,10 @@ export function projectsRoutes(ctx: AppContext) {
           id: t.String({ minLength: 1, maxLength: 100 }),
           description: t.Optional(t.String()),
         }),
+        response: {
+          200: ProjectResponse,
+          400: ErrorResponse,
+        },
         detail: {
           summary: "Create a new project",
           tags: ["Projects"],
@@ -53,6 +59,9 @@ export function projectsRoutes(ctx: AppContext) {
         return ctx.db.projects.findAll();
       },
       {
+        response: {
+          200: ProjectListResponse,
+        },
         detail: {
           summary: "List all projects",
           tags: ["Projects"],
@@ -73,6 +82,10 @@ export function projectsRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: ProjectResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Get a project by ID",
           tags: ["Projects"],
@@ -98,6 +111,10 @@ export function projectsRoutes(ctx: AppContext) {
         body: t.Object({
           description: t.Optional(t.String()),
         }),
+        response: {
+          200: ProjectResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Update a project",
           tags: ["Projects"],
@@ -127,6 +144,10 @@ export function projectsRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: SuccessResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Delete a project",
           tags: ["Projects"],
@@ -142,6 +163,9 @@ export function projectsRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: WorkspaceListResponse,
+        },
         detail: {
           summary: "List workspaces for a project",
           tags: ["Projects"],

@@ -1,5 +1,7 @@
 import { Elysia, t } from "elysia";
-import type { AppContext } from "../context";
+import type { AppContext } from "../../context";
+import { ErrorResponse, SuccessResponse } from "../../schemas";
+import { WorkspaceResponse, WorkspaceListResponse } from "./workspaces.schemas";
 
 export function workspacesRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/api/workspaces" })
@@ -27,6 +29,10 @@ export function workspacesRoutes(ctx: AppContext) {
         body: t.Object({
           projectId: t.String(),
         }),
+        response: {
+          200: WorkspaceResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Create a new workspace",
           tags: ["Workspaces"],
@@ -39,6 +45,9 @@ export function workspacesRoutes(ctx: AppContext) {
         return ctx.db.workspaces.findAll();
       },
       {
+        response: {
+          200: WorkspaceListResponse,
+        },
         detail: {
           summary: "List all workspaces",
           tags: ["Workspaces"],
@@ -51,6 +60,9 @@ export function workspacesRoutes(ctx: AppContext) {
         return ctx.db.workspaces.findActive();
       },
       {
+        response: {
+          200: WorkspaceListResponse,
+        },
         detail: {
           summary: "List active workspaces",
           tags: ["Workspaces"],
@@ -71,6 +83,10 @@ export function workspacesRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: WorkspaceResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Get a workspace by ID",
           tags: ["Workspaces"],
@@ -91,6 +107,10 @@ export function workspacesRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: WorkspaceResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Touch a workspace (update last accessed time)",
           tags: ["Workspaces"],
@@ -111,6 +131,10 @@ export function workspacesRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: WorkspaceResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Stop a workspace",
           tags: ["Workspaces"],
@@ -132,6 +156,10 @@ export function workspacesRoutes(ctx: AppContext) {
         params: t.Object({
           id: t.String(),
         }),
+        response: {
+          200: SuccessResponse,
+          404: ErrorResponse,
+        },
         detail: {
           summary: "Delete a workspace",
           tags: ["Workspaces"],

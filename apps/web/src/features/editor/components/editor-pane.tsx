@@ -13,12 +13,6 @@ interface EditorPaneProps {
   onShowTerminal?: () => void;
 }
 
-interface FileContentResponse {
-  type: "text" | "binary";
-  content: string;
-  path: string;
-}
-
 function EmptyState() {
   return (
     <div className="flex-1 flex items-center justify-center bg-[#1e1e1e] text-[#858585]">
@@ -56,7 +50,7 @@ export function EditorPane({ workspaceId }: EditorPaneProps) {
         path: { id: workspaceId },
         query: { path: activeTab!.path },
       });
-      return data as FileContentResponse;
+      return data;
     },
     enabled: !!shouldFetchContent,
     staleTime: 30000,
@@ -66,7 +60,8 @@ export function EditorPane({ workspaceId }: EditorPaneProps) {
   useEffect(() => {
     if (contentQuery.data && activeTab && !getFileContent(activeTab.path)) {
       setFileContent(activeTab.path, {
-        type: contentQuery.data.type,
+        // SDK generates `type: string` but API always returns "text" | "binary"
+        type: contentQuery.data.type as "text" | "binary",
         content: contentQuery.data.content,
       });
     }

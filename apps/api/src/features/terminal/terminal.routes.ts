@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import type { AppContext } from "../context";
+import type { AppContext } from "../../context";
 import type {
   TerminalServerEvent,
   TerminalClientMessage,
