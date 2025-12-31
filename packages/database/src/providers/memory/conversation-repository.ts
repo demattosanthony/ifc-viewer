@@ -20,16 +20,6 @@ export function createMemoryConversationRepository(): ConversationRepository {
       return conversation;
     },
 
-    async findById(id: string): Promise<Conversation | null> {
-      return conversations.get(id) ?? null;
-    },
-
-    async findByWorkspaceId(workspaceId: string): Promise<Conversation[]> {
-      return Array.from(conversations.values()).filter(
-        (c) => c.workspaceId === workspaceId
-      );
-    },
-
     async findActiveByWorkspaceId(workspaceId: string): Promise<Conversation | null> {
       for (const conversation of conversations.values()) {
         if (conversation.workspaceId === workspaceId && conversation.status === "active") {
@@ -53,20 +43,12 @@ export function createMemoryConversationRepository(): ConversationRepository {
       return updated;
     },
 
-    async delete(id: string): Promise<void> {
-      conversations.delete(id);
-    },
-
     async deleteByWorkspaceId(workspaceId: string): Promise<void> {
       for (const [id, conversation] of conversations) {
         if (conversation.workspaceId === workspaceId) {
           conversations.delete(id);
         }
       }
-    },
-
-    async exists(id: string): Promise<boolean> {
-      return conversations.has(id);
     },
   };
 }

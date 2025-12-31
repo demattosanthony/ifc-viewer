@@ -98,15 +98,6 @@ export function createSqliteWorkspaceRepository(
       await db.delete(workspaces).where(eq(workspaces.id, id));
     },
 
-    async exists(id: string): Promise<boolean> {
-      const [row] = await db
-        .select({ id: workspaces.id })
-        .from(workspaces)
-        .where(eq(workspaces.id, id));
-
-      return !!row;
-    },
-
     async touch(id: string): Promise<Workspace> {
       const now = new Date();
 

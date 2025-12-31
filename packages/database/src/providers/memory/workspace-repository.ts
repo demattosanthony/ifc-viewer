@@ -59,10 +59,6 @@ export function createMemoryWorkspaceRepository(): WorkspaceRepository {
       workspaces.delete(id);
     },
 
-    async exists(id: string): Promise<boolean> {
-      return workspaces.has(id);
-    },
-
     async touch(id: string): Promise<Workspace> {
       const existing = workspaces.get(id);
       if (!existing) {

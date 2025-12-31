@@ -1,3 +1,6 @@
+/**
+ * Base error class for domain-specific errors
+ */
 export class DomainError extends Error {
   constructor(
     message: string,
@@ -15,38 +18,6 @@ export class DomainError extends Error {
         message: this.message,
       },
     };
-  }
-}
-
-export class ProjectNotFoundError extends DomainError {
-  constructor(projectId: string) {
-    super(`Project ${projectId} not found`, "PROJECT_NOT_FOUND", 404);
-    this.name = "ProjectNotFoundError";
-  }
-}
-
-export class WorkspaceNotFoundError extends DomainError {
-  constructor(workspaceId: string) {
-    super(`Workspace ${workspaceId} not found`, "WORKSPACE_NOT_FOUND", 404);
-    this.name = "WorkspaceNotFoundError";
-  }
-}
-
-export class ConversationNotFoundError extends DomainError {
-  constructor(conversationId: string) {
-    super(
-      `Conversation ${conversationId} not found`,
-      "CONVERSATION_NOT_FOUND",
-      404
-    );
-    this.name = "ConversationNotFoundError";
-  }
-}
-
-export class MessageNotFoundError extends DomainError {
-  constructor(messageId: string) {
-    super(`Message ${messageId} not found`, "MESSAGE_NOT_FOUND", 404);
-    this.name = "MessageNotFoundError";
   }
 }
 

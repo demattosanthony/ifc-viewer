@@ -6,18 +6,8 @@ import {
   type CreateMessageInput,
   createMessage,
 } from "@ifc-viewer/core";
-import { messages, type MessageRow } from "./schema";
+import { messages } from "./schema";
 import type { DrizzleDB } from "./db";
-
-function rowToMessage(row: MessageRow): Message {
-  return createMessage({
-    id: row.id,
-    conversationId: row.conversationId,
-    role: row.role,
-    content: row.content,
-    createdAt: row.createdAt,
-  });
-}
 
 export function createSqliteMessageRepository(
   db: DrizzleDB
@@ -40,16 +30,13 @@ export function createSqliteMessageRepository(
         .from(messages)
         .where(eq(messages.id, id));
 
-      return rowToMessage(row);
-    },
-
-    async findById(id: string): Promise<Message | null> {
-      const [row] = await db
-        .select()
-        .from(messages)
-        .where(eq(messages.id, id));
-
-      return row ? rowToMessage(row) : null;
+      return createMessage({
+        id: row.id,
+        conversationId: row.conversationId,
+        role: row.role,
+        content: row.content,
+        createdAt: row.createdAt,
+      });
     },
 
     async findByConversationId(conversationId: string): Promise<Message[]> {
@@ -59,15 +46,15 @@ export function createSqliteMessageRepository(
         .where(eq(messages.conversationId, conversationId))
         .orderBy(asc(messages.createdAt));
 
-      return rows.map(rowToMessage);
-    },
-
-    async delete(id: string): Promise<void> {
-      await db.delete(messages).where(eq(messages.id, id));
-    },
-
-    async deleteByConversationId(conversationId: string): Promise<void> {
-      await db.delete(messages).where(eq(messages.conversationId, conversationId));
+      return rows.map((row) =>
+        createMessage({
+          id: row.id,
+          conversationId: row.conversationId,
+          role: row.role,
+          content: row.content,
+          createdAt: row.createdAt,
+        })
+      );
     },
   };
 }

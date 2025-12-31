@@ -21,26 +21,10 @@ export function createMemoryMessageRepository(): MessageRepository {
       return message;
     },
 
-    async findById(id: string): Promise<Message | null> {
-      return messages.get(id) ?? null;
-    },
-
     async findByConversationId(conversationId: string): Promise<Message[]> {
       return Array.from(messages.values())
         .filter((m) => m.conversationId === conversationId)
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    },
-
-    async delete(id: string): Promise<void> {
-      messages.delete(id);
-    },
-
-    async deleteByConversationId(conversationId: string): Promise<void> {
-      for (const [id, message] of messages) {
-        if (message.conversationId === conversationId) {
-          messages.delete(id);
-        }
-      }
     },
   };
 }

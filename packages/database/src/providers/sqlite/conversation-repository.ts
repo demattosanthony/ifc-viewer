@@ -44,24 +44,6 @@ export function createSqliteConversationRepository(
       return rowToConversation(row);
     },
 
-    async findById(id: string): Promise<Conversation | null> {
-      const [row] = await db
-        .select()
-        .from(conversations)
-        .where(eq(conversations.id, id));
-
-      return row ? rowToConversation(row) : null;
-    },
-
-    async findByWorkspaceId(workspaceId: string): Promise<Conversation[]> {
-      const rows = await db
-        .select()
-        .from(conversations)
-        .where(eq(conversations.workspaceId, workspaceId));
-
-      return rows.map(rowToConversation);
-    },
-
     async findActiveByWorkspaceId(workspaceId: string): Promise<Conversation | null> {
       const [row] = await db
         .select()
@@ -93,21 +75,8 @@ export function createSqliteConversationRepository(
       return rowToConversation(row);
     },
 
-    async delete(id: string): Promise<void> {
-      await db.delete(conversations).where(eq(conversations.id, id));
-    },
-
     async deleteByWorkspaceId(workspaceId: string): Promise<void> {
       await db.delete(conversations).where(eq(conversations.workspaceId, workspaceId));
-    },
-
-    async exists(id: string): Promise<boolean> {
-      const [row] = await db
-        .select({ id: conversations.id })
-        .from(conversations)
-        .where(eq(conversations.id, id));
-
-      return !!row;
     },
   };
 }

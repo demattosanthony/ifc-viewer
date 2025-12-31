@@ -58,18 +58,5 @@ export function createMemoryProjectRepository(): ProjectRepository {
     async delete(id: string): Promise<void> {
       projects.delete(id);
     },
-
-    async exists(id: string): Promise<boolean> {
-      return projects.has(id);
-    },
-
-    async existsByName(name: string): Promise<boolean> {
-      for (const project of projects.values()) {
-        if (project.name === name) {
-          return true;
-        }
-      }
-      return false;
-    },
   };
 }

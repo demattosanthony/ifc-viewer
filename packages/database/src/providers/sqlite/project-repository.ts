@@ -91,23 +91,5 @@ export function createSqliteProjectRepository(
     async delete(id: string): Promise<void> {
       await db.delete(projects).where(eq(projects.id, id));
     },
-
-    async exists(id: string): Promise<boolean> {
-      const [row] = await db
-        .select({ id: projects.id })
-        .from(projects)
-        .where(eq(projects.id, id));
-
-      return !!row;
-    },
-
-    async existsByName(name: string): Promise<boolean> {
-      const [row] = await db
-        .select({ id: projects.id })
-        .from(projects)
-        .where(eq(projects.name, name));
-
-      return !!row;
-    },
   };
 }
