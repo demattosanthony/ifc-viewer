@@ -2,7 +2,7 @@
   "name": "@ifc-viewer/monorepo",
   "private": true,
   "scripts": {
-    "dev": "bun --filter=@ifc-viewer/api run start & bun --filter=@ifc-viewer/web run dev",
+    "dev": "bun run --filter='@ifc-viewer/api' --filter='@ifc-viewer/web' dev",
     "dev:api": "bun --filter=@ifc-viewer/api run start",
     "dev:web": "bun --filter=@ifc-viewer/web run dev",
     "build": "bun --filter=@ifc-viewer/api run build && bun --filter=@ifc-viewer/web run build",

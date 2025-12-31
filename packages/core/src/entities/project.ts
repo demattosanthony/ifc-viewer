@@ -1,5 +1,5 @@
 /**
- * Project entity - represents a persistent git repository for BIM files
+ * Project entity - represents a persistent git repository for Buildings
  *
  * A Project is the top-level persistent entity that owns:
  * - Git repository metadata
