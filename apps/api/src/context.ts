@@ -11,6 +11,9 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Monorepo root (apps/api/src -> apps/api -> apps -> root)
+const MONOREPO_ROOT = resolve(__dirname, "..", "..", "..");
+
 // Sample project assets
 const SAMPLE_PROJECT_ID = "sample-project";
 const SAMPLE_IFC_PATH = resolve(__dirname, "..", "assets", "sample.ifc");
@@ -42,17 +45,17 @@ export async function createAppContext(
   const workingDirectory =
     config.workingDirectory ??
     process.env.PLAYGROUND_WORKING_DIR ??
-    resolve(process.cwd(), "workspace");
+    resolve(MONOREPO_ROOT, ".data", "workspace");
 
   const dataDirectory =
     config.dataDirectory ??
     process.env.DATA_DIR ??
-    resolve(process.cwd(), ".data", "sqlite");
+    resolve(MONOREPO_ROOT, ".data", "sqlite");
 
   const storageDirectory =
     config.storageDirectory ??
     process.env.STORAGE_LOCAL_BASE_DIR ??
-    resolve(process.cwd(), ".data", "storage");
+    resolve(MONOREPO_ROOT, ".data", "storage");
 
   // Ensure directories exist
   await mkdir(workingDirectory, { recursive: true });

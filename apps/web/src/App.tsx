@@ -7,10 +7,7 @@ import {
   ViewerProvider,
   type ElementSelectedEvent,
 } from "@ifc-viewer/viewer";
-import {
-  postApiProjectsMutation,
-  postApiWorkspacesMutation,
-} from "@ifc-viewer/sdk/hooks";
+import { postApiWorkspacesMutation } from "@ifc-viewer/sdk/hooks";
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
 import Terminal, {
@@ -213,10 +210,6 @@ function Home() {
   const terminalRef = useRef<TerminalHandle | null>(null);
   const fileBrowserRef = useRef<FileBrowserHandle | null>(null);
 
-  const createProjectMutation = useMutation({
-    ...postApiProjectsMutation(),
-  });
-
   const createWorkspaceMutation = useMutation({
     ...postApiWorkspacesMutation(),
     onSuccess: (data: unknown) => {
@@ -234,24 +227,10 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    // Create or get default project, then create workspace
-    const initWorkspace = async () => {
-      try {
-        // Create a default project (API will handle if it already exists)
-        const projectData = await createProjectMutation.mutateAsync({
-          body: { name: "default", description: "Default demo project" },
-        });
-        const project = projectData as { id: string };
-        // Create workspace for the project
-        createWorkspaceMutation.mutate({
-          body: { projectId: project.id },
-        });
-      } catch {
-        console.error("Failed to initialize workspace");
-      }
-    };
-
-    initWorkspace();
+    // Create workspace for the sample project (auto-created by API on startup)
+    createWorkspaceMutation.mutate({
+      body: { projectId: "sample-project" },
+    });
 
     const cleanup = () => {
       if (workspaceIdRef.current) {
