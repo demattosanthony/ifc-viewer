@@ -5,7 +5,7 @@
  *
  * @example
  * ```ts
- * import { createStorageProvider } from '@anthropic/computer/storage';
+ * import { createStorageProvider } from '@ifc-viewer/storage';
  *
  * // Create a local storage provider
  * const storage = createStorageProvider({
