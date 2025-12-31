@@ -7,8 +7,8 @@ import {
   useImperativeHandle,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getApiSessionsByIdFiles } from "@ifc-viewer/sdk";
-import { getApiSessionsByIdFilesQueryKey } from "@ifc-viewer/sdk/hooks";
+import { getApiWorkspacesByIdFiles } from "@ifc-viewer/sdk";
+import { getApiWorkspacesByIdFilesQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "@/features/editor/context";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
 import { useFileOperations } from "../hooks/use-file-operations";
@@ -26,7 +26,7 @@ interface FileEntry {
 }
 
 interface FileBrowserProps {
-  sessionId: string;
+  workspaceId: string;
   visible?: boolean;
 }
 
@@ -40,7 +40,7 @@ const DEFAULT_WIDTH = 275;
 const COLLAPSED_WIDTH = 48;
 
 export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
-  function FileBrowser({ sessionId, visible = true }, ref) {
+  function FileBrowser({ workspaceId, visible = true }, ref) {
     const queryClient = useQueryClient();
     const { openFile, closeTab, tabs } = useEditor();
     const [fileTree, setFileTree] = useState<Map<string, FileEntry[]>>(
@@ -70,13 +70,13 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
     // Query for root files
     const rootFilesQuery = useQuery({
-      queryKey: getApiSessionsByIdFilesQueryKey({
-        path: { id: sessionId },
+      queryKey: getApiWorkspacesByIdFilesQueryKey({
+        path: { id: workspaceId },
         query: { path: "." },
       }),
       queryFn: async () => {
-        const { data } = await getApiSessionsByIdFiles({
-          path: { id: sessionId },
+        const { data } = await getApiWorkspacesByIdFiles({
+          path: { id: workspaceId },
           query: { path: "." },
         });
         return data as { files: FileEntry[] };
@@ -97,8 +97,8 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
         setLoadingPaths((prev) => new Set(prev).add(path));
         try {
-          const { data } = await getApiSessionsByIdFiles({
-            path: { id: sessionId },
+          const { data } = await getApiWorkspacesByIdFiles({
+            path: { id: workspaceId },
             query: { path },
           });
           const result = data as { files: FileEntry[] };
@@ -113,22 +113,22 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
           });
         }
       },
-      [sessionId, fileTree]
+      [workspaceId, fileTree]
     );
 
     const refreshFolder = useCallback(
       (path: string) => {
         // Invalidate the query cache for this path
         queryClient.invalidateQueries({
-          queryKey: getApiSessionsByIdFilesQueryKey({
-            path: { id: sessionId },
+          queryKey: getApiWorkspacesByIdFilesQueryKey({
+            path: { id: workspaceId },
             query: { path },
           }),
         });
         // Also refetch directly
         fetchFiles(path, true);
       },
-      [fetchFiles, queryClient, sessionId]
+      [fetchFiles, queryClient, workspaceId]
     );
 
     // Expose refresh method to parent via ref
@@ -154,7 +154,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
       confirmDelete,
       cancelDelete,
     } = useFileOperations({
-      sessionId,
+      workspaceId,
       onRefresh: refreshFolder,
     });
 

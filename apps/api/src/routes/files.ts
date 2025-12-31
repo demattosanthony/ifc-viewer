@@ -2,10 +2,10 @@ import { Elysia, t } from "elysia";
 import type { AppContext } from "../context";
 
 export function filesRoutes(ctx: AppContext) {
-  return new Elysia({ prefix: "/api/sessions/:id/files" })
+  return new Elysia({ prefix: "/api/workspaces/:id/files" })
     .get(
       "/",
-      async ({ params, query, set }) => {
+      async ({ params, query }) => {
         const computer = ctx.getComputer(params.id);
         const path = query.path ?? ".";
         const files = await computer.files.list(path);

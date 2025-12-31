@@ -2,7 +2,8 @@ import { Elysia } from "elysia";
 import { swagger } from "@elysiajs/swagger";
 import { cors } from "@elysiajs/cors";
 import { createAppContext } from "./context";
-import { sessionsRoutes } from "./routes/sessions";
+import { projectsRoutes } from "./routes/projects";
+import { workspacesRoutes } from "./routes/workspaces";
 import { filesRoutes } from "./routes/files";
 import { agentRoutes } from "./routes/agent";
 import { terminalRoutes } from "./routes/terminal";
@@ -17,13 +18,14 @@ const app = new Elysia()
     swagger({
       documentation: {
         info: {
-          title: "IFC Viewer API",
-          version: "1.0.0",
+          title: "BIM IDE API",
+          version: "2.0.0",
           description:
-            "API for IFC Viewer platform with session management, file operations, and AI agent",
+            "API for BIM IDE platform with project/workspace management, file operations, and AI agent",
         },
         tags: [
-          { name: "Sessions", description: "Session management" },
+          { name: "Projects", description: "Project management" },
+          { name: "Workspaces", description: "Workspace management" },
           { name: "Files", description: "File operations" },
           { name: "Agent", description: "AI agent chat" },
           { name: "Terminal", description: "Terminal WebSocket" },
@@ -32,15 +34,16 @@ const app = new Elysia()
     })
   )
   .get("/", () => ({
-    message: "IFC Viewer API",
-    version: "1.0.0",
+    message: "BIM IDE API",
+    version: "2.0.0",
     docs: "/swagger",
   }))
   .get("/health", () => ({
     status: "ok",
     timestamp: new Date().toISOString(),
   }))
-  .use(sessionsRoutes(ctx))
+  .use(projectsRoutes(ctx))
+  .use(workspacesRoutes(ctx))
   .use(filesRoutes(ctx))
   .use(agentRoutes(ctx))
   .use(terminalRoutes(ctx))

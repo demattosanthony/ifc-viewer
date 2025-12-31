@@ -1,10 +1,6 @@
 export { createClient, type IFCViewerClient } from "./client";
-export { createSessionsClient, type SessionsClient } from "./sessions";
+export { createProjectsClient, type ProjectsClient } from "./projects";
+export { createWorkspacesClient, type WorkspacesClient } from "./workspaces";
 export { createConversationsClient, type ConversationsClient } from "./conversations";
-export type {
-  IFCViewerClientConfig,
-  RepositoryProvider,
-  SessionOutput,
-  ConversationOutput,
-  MessageOutput,
-} from "./types";
+export { createMessagesClient, type MessagesClient } from "./messages";
+export * from "./types";

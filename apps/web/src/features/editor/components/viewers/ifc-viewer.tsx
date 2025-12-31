@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useViewer } from "@ifc-viewer/viewer";
-import { getApiSessionsByIdFilesContent } from "@ifc-viewer/sdk";
-import { getApiSessionsByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
+import { getApiWorkspacesByIdFilesContent } from "@ifc-viewer/sdk";
+import { getApiWorkspacesByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
 
 export interface IFCViewerProps {
-  sessionId: string;
+  workspaceId: string;
   filePath: string;
 }
 
@@ -15,7 +15,7 @@ interface FileContentResponse {
   path: string;
 }
 
-export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
+export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
   const { loadModel, unloadAllModels, isInitialized } = useViewer();
   const loadedPathRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
@@ -23,13 +23,13 @@ export function IFCViewer({ sessionId, filePath }: IFCViewerProps) {
 
   // Query for IFC file content
   const contentQuery = useQuery({
-    queryKey: getApiSessionsByIdFilesContentQueryKey({
-      path: { id: sessionId },
+    queryKey: getApiWorkspacesByIdFilesContentQueryKey({
+      path: { id: workspaceId },
       query: { path: filePath },
     }),
     queryFn: async () => {
-      const { data } = await getApiSessionsByIdFilesContent({
-        path: { id: sessionId },
+      const { data } = await getApiWorkspacesByIdFilesContent({
+        path: { id: workspaceId },
         query: { path: filePath },
       });
       return data as FileContentResponse;

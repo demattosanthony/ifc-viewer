@@ -7,17 +7,20 @@ import type { AppContext } from "../context";
 const abortControllers = new Map<string, AbortController>();
 
 export function agentRoutes(ctx: AppContext) {
-  return new Elysia({ prefix: "/api/sessions/:id/agent" })
+  return new Elysia({ prefix: "/api/workspaces/:id/agent" })
     .post(
       "/chat",
-      async ({ params, body, set }) => {
+      async ({ params, body }) => {
         const computer = ctx.getComputer(params.id);
 
-        let conversation = await ctx.client.conversations.getBySessionId(
+        // Get or create conversation for workspace
+        let conversation = await ctx.client.conversations.getActiveByWorkspace(
           params.id
         );
         if (!conversation) {
-          conversation = await ctx.client.conversations.start(params.id);
+          conversation = await ctx.client.conversations.create({
+            workspaceId: params.id,
+          });
         }
 
         const existingController = abortControllers.get(params.id);
@@ -28,6 +31,7 @@ export function agentRoutes(ctx: AppContext) {
         const abortController = new AbortController();
         abortControllers.set(params.id, abortController);
 
+        // Get message history
         let messageHistory: Array<{ role: "user" | "assistant"; content: string }>;
 
         if (body.history && body.history.length > 0) {
@@ -36,21 +40,28 @@ export function agentRoutes(ctx: AppContext) {
             content: m.content,
           }));
         } else {
-          messageHistory = conversation.messages.map((m) => ({
-            role: m.role,
+          // Fetch messages from DB
+          const messages = await ctx.client.messages.listByConversation(
+            conversation.id
+          );
+          messageHistory = messages.map((m) => ({
+            role: m.role as "user" | "assistant",
             content: m.content,
           }));
         }
 
         messageHistory.push({ role: "user", content: body.content });
 
-        await ctx.client.conversations.addMessage(
-          conversation.id,
-          "user",
-          body.content
-        );
+        // Save user message
+        await ctx.client.messages.create({
+          conversationId: conversation.id,
+          role: "user",
+          content: body.content,
+        });
 
-        await ctx.client.conversations.updateStatus(conversation.id, "streaming");
+        await ctx.client.conversations.update(conversation.id, {
+          status: "streaming",
+        });
 
         const agent = createAgent({
           computer,
@@ -82,14 +93,16 @@ export function agentRoutes(ctx: AppContext) {
             }
 
             if (assistantMessage) {
-              await ctx.client.conversations.addMessage(
+              await ctx.client.messages.create({
                 conversationId,
-                "assistant",
-                assistantMessage
-              );
+                role: "assistant",
+                content: assistantMessage,
+              });
             }
 
-            await ctx.client.conversations.updateStatus(conversationId, "active");
+            await ctx.client.conversations.update(conversationId, {
+              status: "active",
+            });
           } catch (err) {
             if (err instanceof Error && err.name !== "AbortError") {
               sseCtx.send("message", {
@@ -97,10 +110,9 @@ export function agentRoutes(ctx: AppContext) {
                 message: err.message,
               });
             } else if (err instanceof Error && err.name === "AbortError") {
-              await ctx.client.conversations.updateStatus(
-                conversationId,
-                "aborted"
-              );
+              await ctx.client.conversations.update(conversationId, {
+                status: "aborted",
+              });
             }
             sseCtx.send("message", {
               type: "finish",
@@ -160,21 +172,30 @@ export function agentRoutes(ctx: AppContext) {
     .get(
       "/conversation",
       async ({ params, set }) => {
-        const conversation = await ctx.client.conversations.getBySessionId(
+        const conversation = await ctx.client.conversations.getActiveByWorkspace(
           params.id
         );
         if (!conversation) {
           set.status = 404;
           return { error: "No conversation found" };
         }
-        return conversation;
+
+        // Include messages
+        const messages = await ctx.client.messages.listByConversation(
+          conversation.id
+        );
+
+        return {
+          ...conversation,
+          messages,
+        };
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         detail: {
-          summary: "Get conversation for session",
+          summary: "Get conversation for workspace",
           tags: ["Agent"],
         },
       }
@@ -183,7 +204,7 @@ export function agentRoutes(ctx: AppContext) {
       "/history",
       async ({ params, set }) => {
         try {
-          await ctx.client.conversations.deleteBySessionId(params.id);
+          await ctx.client.conversations.deleteByWorkspace(params.id);
           return { success: true };
         } catch (error) {
           if (isDomainError(error)) {

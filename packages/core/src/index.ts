@@ -5,25 +5,19 @@
  *
  * ## Architecture
  *
- * - **Entities**: Core domain objects (Session, Conversation, FileNode)
+ * - **Entities**: Core domain objects (Project, Workspace, Conversation, Message)
  * - **Repositories**: Data access interfaces
  * - **Errors**: Domain-specific error types
  * - **Client**: Unified facade for all operations
  *
- * ## Usage
+ * ## Domain Model
  *
- * ```typescript
- * import { createClient } from "@ifc-viewer/core";
+ * Project (persistent) -> Workspace (ephemeral) -> Conversation -> Message
  *
- * const client = createClient({
- *   sessionRepository: db.sessions,
- *   conversationRepository: db.conversations,
- *   defaultWorkingDirectory: "/tmp/ifc-viewer",
- * });
- *
- * const session = await client.sessions.create();
- * const conversation = await client.conversations.start(session.id);
- * ```
+ * - Project: Persistent git repository for BIM files
+ * - Workspace: Ephemeral compute environment where projects are loaded
+ * - Conversation: AI chat session within a workspace
+ * - Message: Individual chat message in a conversation
  */
 
 // Entities

@@ -9,19 +9,18 @@ export interface AppContext {
   client: IFCViewerClient;
   db: DatabaseProvider;
   computer: Computer;
-  getComputer(sessionId: string): Computer;
+  getComputer(workspaceId: string): Computer;
   dispose(): Promise<void>;
 }
 
 export interface AppContextConfig {
   workingDirectory?: string;
   dataDirectory?: string;
-  sessionTtlMs?: number;
 }
 
 const SAMPLE_FILES = {
   "README.md":
-    "Welcome to the IFC Viewer Playground! This is a sample README file.",
+    "Welcome to the BIM IDE Playground! This is a sample README file.",
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,19 +58,10 @@ export async function createAppContext(
 
   const db = await createDatabase({
     dataDirectory,
-    defaultWorkingDirectory: workingDirectory,
-    defaultTtlMs: config.sessionTtlMs ?? 5 * 60 * 1000,
-    events: {
-      onSessionExpired: async (sessionId) => {
-        console.log(`[Context] Session ${sessionId} expired`);
-      },
-    },
   });
 
   const client = createClient({
     db,
-    defaultWorkingDirectory: workingDirectory,
-    defaultSessionTtlMs: config.sessionTtlMs,
   });
 
   const context: AppContext = {
@@ -79,7 +69,9 @@ export async function createAppContext(
     db,
     computer,
 
-    getComputer(_sessionId: string) {
+    getComputer(_workspaceId: string) {
+      // For now, return the single shared computer
+      // In the future, each workspace will have its own computer (Docker container)
       return computer;
     },
 

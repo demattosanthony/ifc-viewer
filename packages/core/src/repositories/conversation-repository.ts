@@ -1,14 +1,8 @@
-import type {
-  Conversation,
-  ConversationMessage,
-  ConversationStatus,
-  CreateConversationInput,
-  AddMessageInput,
-} from "../entities/conversation";
+import type { Conversation } from "../entities/conversation";
+import type { CreateConversationInput, UpdateConversationInput } from "./types";
 
 /**
- * Repository interface for conversation management
- * Implementations can use different storage backends (memory, postgres, etc.)
+ * Repository interface for Conversation entity persistence
  */
 export interface ConversationRepository {
   /**
@@ -18,34 +12,23 @@ export interface ConversationRepository {
 
   /**
    * Find a conversation by ID
-   * @returns The conversation or null if not found
    */
   findById(id: string): Promise<Conversation | null>;
 
   /**
-   * Find conversation by session ID
-   * Returns the active conversation for a session, if any
+   * Find all conversations for a workspace
    */
-  findBySessionId(sessionId: string): Promise<Conversation | null>;
+  findByWorkspaceId(workspaceId: string): Promise<Conversation[]>;
 
   /**
-   * Find all conversations for a session
+   * Find the active conversation for a workspace (if any)
    */
-  findAllBySessionId(sessionId: string): Promise<Conversation[]>;
+  findActiveByWorkspaceId(workspaceId: string): Promise<Conversation | null>;
 
   /**
-   * Add a message to a conversation
-   * @returns The created message
+   * Update a conversation
    */
-  addMessage(
-    conversationId: string,
-    input: AddMessageInput
-  ): Promise<ConversationMessage>;
-
-  /**
-   * Update conversation status
-   */
-  updateStatus(id: string, status: ConversationStatus): Promise<void>;
+  update(id: string, input: UpdateConversationInput): Promise<Conversation>;
 
   /**
    * Delete a conversation by ID
@@ -53,10 +36,9 @@ export interface ConversationRepository {
   delete(id: string): Promise<void>;
 
   /**
-   * Delete all conversations for a session
-   * Used when a session expires or is deleted
+   * Delete all conversations for a workspace
    */
-  deleteBySessionId(sessionId: string): Promise<void>;
+  deleteByWorkspaceId(workspaceId: string): Promise<void>;
 
   /**
    * Check if a conversation exists

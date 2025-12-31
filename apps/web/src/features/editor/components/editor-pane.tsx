@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getApiSessionsByIdFilesContent } from "@ifc-viewer/sdk";
-import { getApiSessionsByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
+import { getApiWorkspacesByIdFilesContent } from "@ifc-viewer/sdk";
+import { getApiWorkspacesByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../context";
 import { CodeEditor } from "./viewers/code-editor";
 import { IFCViewer } from "./viewers/ifc-viewer";
@@ -9,7 +9,8 @@ import { HtmlViewer } from "./viewers/html-viewer";
 import { PdfViewer } from "./viewers/pdf-viewer";
 
 interface EditorPaneProps {
-  sessionId: string;
+  workspaceId: string;
+  onShowTerminal?: () => void;
 }
 
 interface FileContentResponse {
@@ -37,7 +38,7 @@ function LoadingState() {
   );
 }
 
-export function EditorPane({ sessionId }: EditorPaneProps) {
+export function EditorPane({ workspaceId }: EditorPaneProps) {
   const { tabs, activeTabId, getFileContent, setFileContent } = useEditor();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -46,13 +47,13 @@ export function EditorPane({ sessionId }: EditorPaneProps) {
 
   // Query for file content (non-IFC files only)
   const contentQuery = useQuery({
-    queryKey: getApiSessionsByIdFilesContentQueryKey({
-      path: { id: sessionId },
+    queryKey: getApiWorkspacesByIdFilesContentQueryKey({
+      path: { id: workspaceId },
       query: { path: activeTab?.path ?? "" },
     }),
     queryFn: async () => {
-      const { data } = await getApiSessionsByIdFilesContent({
-        path: { id: sessionId },
+      const { data } = await getApiWorkspacesByIdFilesContent({
+        path: { id: workspaceId },
         query: { path: activeTab!.path },
       });
       return data as FileContentResponse;
@@ -78,7 +79,7 @@ export function EditorPane({ sessionId }: EditorPaneProps) {
 
   // IFC has its own loading mechanism
   if (activeTab.type === "ifc") {
-    return <IFCViewer sessionId={sessionId} filePath={activeTab.path} />;
+    return <IFCViewer workspaceId={workspaceId} filePath={activeTab.path} />;
   }
 
   const content = getFileContent(activeTab.path);
@@ -111,7 +112,7 @@ export function EditorPane({ sessionId }: EditorPaneProps) {
     default:
       return (
         <CodeEditor
-          sessionId={sessionId}
+          workspaceId={workspaceId}
           path={activeTab.path}
           tabId={activeTab.id}
           content={content.content}

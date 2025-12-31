@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
-  postApiSessionsByIdFilesContentMutation,
-  postApiSessionsByIdFilesDirectoryMutation,
-  deleteApiSessionsByIdFilesMutation,
+  postApiWorkspacesByIdFilesContentMutation,
+  postApiWorkspacesByIdFilesDirectoryMutation,
+  deleteApiWorkspacesByIdFilesMutation,
 } from "@ifc-viewer/sdk/hooks";
 
 interface UseFileOperationsOptions {
-  sessionId: string;
+  workspaceId: string;
   onRefresh: (path: string) => void;
 }
 
@@ -17,21 +17,21 @@ interface DeleteTarget {
 }
 
 export function useFileOperations({
-  sessionId,
+  workspaceId,
   onRefresh,
 }: UseFileOperationsOptions) {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   const writeFileMutation = useMutation({
-    ...postApiSessionsByIdFilesContentMutation(),
+    ...postApiWorkspacesByIdFilesContentMutation(),
   });
 
   const createDirectoryMutation = useMutation({
-    ...postApiSessionsByIdFilesDirectoryMutation(),
+    ...postApiWorkspacesByIdFilesDirectoryMutation(),
   });
 
   const deleteFileMutation = useMutation({
-    ...deleteApiSessionsByIdFilesMutation(),
+    ...deleteApiWorkspacesByIdFilesMutation(),
   });
 
   const uploadFiles = useCallback(
@@ -46,7 +46,7 @@ export function useFileOperations({
 
           try {
             await writeFileMutation.mutateAsync({
-              path: { id: sessionId },
+              path: { id: workspaceId },
               body: { path: filePath, content: base64, isBinary: true },
             });
             onRefresh(targetPath);
@@ -57,7 +57,7 @@ export function useFileOperations({
         reader.readAsDataURL(file);
       }
     },
-    [sessionId, onRefresh, writeFileMutation]
+    [workspaceId, onRefresh, writeFileMutation]
   );
 
   const createItem = useCallback(
@@ -74,12 +74,12 @@ export function useFileOperations({
       try {
         if (type === "folder") {
           await createDirectoryMutation.mutateAsync({
-            path: { id: sessionId },
+            path: { id: workspaceId },
             body: { path: newPath },
           });
         } else {
           await writeFileMutation.mutateAsync({
-            path: { id: sessionId },
+            path: { id: workspaceId },
             body: { path: newPath, content: "" },
           });
         }
@@ -90,14 +90,14 @@ export function useFileOperations({
         return false;
       }
     },
-    [sessionId, onRefresh, writeFileMutation, createDirectoryMutation]
+    [workspaceId, onRefresh, writeFileMutation, createDirectoryMutation]
   );
 
   const deleteItem = useCallback(
     async (path: string, onTabClose?: () => void): Promise<boolean> => {
       try {
         await deleteFileMutation.mutateAsync({
-          path: { id: sessionId },
+          path: { id: workspaceId },
           query: { path },
         });
 
@@ -113,7 +113,7 @@ export function useFileOperations({
         return false;
       }
     },
-    [sessionId, onRefresh, deleteFileMutation]
+    [workspaceId, onRefresh, deleteFileMutation]
   );
 
   const initiateDelete = useCallback(

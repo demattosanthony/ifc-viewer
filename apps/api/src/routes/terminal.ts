@@ -6,7 +6,7 @@ import type {
 } from "@ifc-viewer/realtime";
 
 interface TerminalWSData {
-  query: { sessionId: string };
+  query: { workspaceId: string };
   terminalId?: string;
   unsubData?: () => void;
   unsubExit?: () => void;
@@ -15,13 +15,13 @@ interface TerminalWSData {
 export function terminalRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/ws" }).ws("/terminal", {
     query: t.Object({
-      sessionId: t.String(),
+      workspaceId: t.String(),
     }),
 
     async open(ws) {
       const data = ws.data as TerminalWSData;
-      const sessionId = data.query.sessionId;
-      const computer = ctx.getComputer(sessionId);
+      const workspaceId = data.query.workspaceId;
+      const computer = ctx.getComputer(workspaceId);
 
       try {
         const terminal = await computer.createTerminal();
@@ -73,7 +73,7 @@ export function terminalRoutes(ctx: AppContext) {
 
     async message(ws, rawMessage) {
       const data = ws.data as TerminalWSData;
-      const sessionId = data.query.sessionId;
+      const workspaceId = data.query.workspaceId;
       const terminalId = data.terminalId;
 
       if (!terminalId) {
@@ -86,7 +86,7 @@ export function terminalRoutes(ctx: AppContext) {
         return;
       }
 
-      const computer = ctx.getComputer(sessionId);
+      const computer = ctx.getComputer(workspaceId);
       const terminal = computer.getTerminal(terminalId);
 
       if (!terminal) {
@@ -129,14 +129,14 @@ export function terminalRoutes(ctx: AppContext) {
 
     async close(ws) {
       const data = ws.data as TerminalWSData;
-      const sessionId = data.query.sessionId;
+      const workspaceId = data.query.workspaceId;
       const terminalId = data.terminalId;
 
       data.unsubData?.();
       data.unsubExit?.();
 
       if (terminalId) {
-        const computer = ctx.getComputer(sessionId);
+        const computer = ctx.getComputer(workspaceId);
         await computer.disposeTerminal(terminalId);
       }
     },

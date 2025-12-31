@@ -1,29 +1,39 @@
-import { createSessionsClient, type SessionsClient } from "./sessions";
+import { createProjectsClient, type ProjectsClient } from "./projects";
+import { createWorkspacesClient, type WorkspacesClient } from "./workspaces";
 import { createConversationsClient, type ConversationsClient } from "./conversations";
+import { createMessagesClient, type MessagesClient } from "./messages";
 import type { IFCViewerClientConfig } from "./types";
 
-const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
 export interface IFCViewerClient {
-  sessions: SessionsClient;
+  projects: ProjectsClient;
+  workspaces: WorkspacesClient;
   conversations: ConversationsClient;
+  messages: MessagesClient;
   dispose(): Promise<void>;
 }
 
 export function createClient(config: IFCViewerClientConfig): IFCViewerClient {
-  const sessions = createSessionsClient({
-    repository: config.db.sessions,
-    defaultWorkingDirectory: config.defaultWorkingDirectory,
-    defaultTtlMs: config.defaultSessionTtlMs ?? DEFAULT_TTL_MS,
+  const projects = createProjectsClient({
+    repository: config.db.projects,
+  });
+
+  const workspaces = createWorkspacesClient({
+    repository: config.db.workspaces,
   });
 
   const conversations = createConversationsClient({
     repository: config.db.conversations,
   });
 
+  const messages = createMessagesClient({
+    repository: config.db.messages,
+  });
+
   return {
-    sessions,
+    projects,
+    workspaces,
     conversations,
+    messages,
     async dispose() {},
   };
 }

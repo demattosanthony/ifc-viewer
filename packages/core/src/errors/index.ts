@@ -18,10 +18,17 @@ export class DomainError extends Error {
   }
 }
 
-export class SessionNotFoundError extends DomainError {
-  constructor(sessionId: string) {
-    super(`Session ${sessionId} not found`, "SESSION_NOT_FOUND", 404);
-    this.name = "SessionNotFoundError";
+export class ProjectNotFoundError extends DomainError {
+  constructor(projectId: string) {
+    super(`Project ${projectId} not found`, "PROJECT_NOT_FOUND", 404);
+    this.name = "ProjectNotFoundError";
+  }
+}
+
+export class WorkspaceNotFoundError extends DomainError {
+  constructor(workspaceId: string) {
+    super(`Workspace ${workspaceId} not found`, "WORKSPACE_NOT_FOUND", 404);
+    this.name = "WorkspaceNotFoundError";
   }
 }
 
@@ -33,6 +40,13 @@ export class ConversationNotFoundError extends DomainError {
       404
     );
     this.name = "ConversationNotFoundError";
+  }
+}
+
+export class MessageNotFoundError extends DomainError {
+  constructor(messageId: string) {
+    super(`Message ${messageId} not found`, "MESSAGE_NOT_FOUND", 404);
+    this.name = "MessageNotFoundError";
   }
 }
 
