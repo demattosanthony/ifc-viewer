@@ -1,15 +1,3 @@
-import type { Computer } from "@ifc-viewer/computer";
-import type { AgentEvent } from "./events";
-
-export interface AgentConfig {
-  computer: Computer;
-  model?: string;
-  maxSteps?: number;
-  systemPrompt?: string;
-  emit: (event: AgentEvent) => void;
-}
-
-// Message parts for sequential rendering
 export interface TextPart {
   type: "text";
   content: string;
@@ -56,9 +44,4 @@ export interface UsageStats {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-}
-
-export interface ToolContext {
-  computer: Computer;
-  emit: (event: AgentEvent) => void;
 }

@@ -1,1 +1,1 @@
-export { BIM_IDE_SYSTEM_PROMPT, PROMPTS } from "./system-prompt";
+export { BIM_IDE_SYSTEM_PROMPT } from "./system-prompt";

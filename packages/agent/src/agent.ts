@@ -1,6 +1,6 @@
 import { ToolLoopAgent, type ModelMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import type { Computer, TerminalSession } from "@ifc-viewer/computer";
+import type { Computer, TerminalSession } from "@ifc-viewer/compute";
 import { createFileTools } from "./tools/file-tools";
 import { createShellTools } from "./tools/shell-tools";
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt";
@@ -64,10 +64,8 @@ export class BimAgent {
         abortSignal,
       });
 
-      // Track current step index
       let currentStepIndex = 0;
 
-      // Use fullStream to get all events including tool calls
       for await (const part of result.fullStream) {
         switch (part.type) {
           case "start-step":
@@ -138,7 +136,6 @@ export class BimAgent {
         }
       }
 
-      // Get final result for usage stats
       const usage = await result.usage;
 
       const finishEvent: AgentEvent = {
@@ -149,7 +146,6 @@ export class BimAgent {
       yield finishEvent;
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        // Chat was cancelled, don't emit error
         return;
       }
 
@@ -162,7 +158,6 @@ export class BimAgent {
     }
   }
 
-  // Non-streaming version for simple use cases
   async chat(
     messages: ModelMessage[],
     emit: (event: AgentEvent) => void
@@ -188,7 +183,6 @@ export class BimAgent {
       messages,
     });
 
-    // Collect tool calls from steps
     if (result.steps) {
       for (const step of result.steps) {
         if (step.toolCalls) {

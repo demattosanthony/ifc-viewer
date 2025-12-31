@@ -1,17 +1,9 @@
-// Main exports
 export { BimAgent, createAgent } from "./agent";
 export type { BimAgentConfig } from "./agent";
 
-// Tools
-export { createFileTools } from "./tools/file-tools";
-export { createShellTools } from "./tools/shell-tools";
+export { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt";
 
-// Prompts
-export { BIM_IDE_SYSTEM_PROMPT, PROMPTS } from "./prompts/system-prompt";
-
-// Types
 export type {
-  AgentConfig,
   AgentMessage,
   MessagePart,
   TextPart,
@@ -20,7 +12,6 @@ export type {
   Position,
   Range,
   UsageStats,
-  ToolContext,
 } from "./types";
 
 // Events

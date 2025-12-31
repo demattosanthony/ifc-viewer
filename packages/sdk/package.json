@@ -1,0 +1,40 @@
+{
+  "name": "@ifc-viewer/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Type-safe SDK for IFC Viewer API with TanStack Query hooks",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./hooks": "./src/hooks.ts"
+  },
+  "scripts": {
+    "generate": "openapi-ts",
+    "fetch-spec": "curl -s http://localhost:3000/swagger/json > openapi.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "^0.9.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.66.0",
+    "@tanstack/react-query": "^5.0.0",
+    "@types/react": "^19.2.0",
+    "react": "^19.2.0",
+    "typescript": "^5"
+  }
+}
