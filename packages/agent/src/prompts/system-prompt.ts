@@ -78,6 +78,4 @@ Common tasks:
 
 You have the skills to help with any BIM data task - from simple queries to complex automation scripts.`;
 
-export const PROMPTS = {
-  bimIde: BIM_IDE_SYSTEM_PROMPT,
-} as const;
+

@@ -20,10 +20,10 @@ import {
 import { TabBar } from "@/features/editor/components/tab-bar";
 import { EditorPane } from "@/features/editor/components/editor-pane";
 import { EditorProvider, useEditor } from "@/features/editor/context";
-import { AgentProvider, useAgent } from "@/features/agent/context";
+import { AgentProvider } from "@/features/agent/context";
+import { useAgentPresence } from "@/features/agent/hooks/use-agent-presence";
 import { ChatPanel } from "@/features/agent/components/chat-panel";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
-import type { AgentEvent } from "@ifc-viewer/agent";
 import "@xterm/xterm/css/xterm.css";
 
 interface SelectedElement {
@@ -56,57 +56,11 @@ function MainContent({
   onShowTerminal,
 }: MainContentProps) {
   const { getElement } = useViewer();
-  const { tabs, activeTabId, openFile, setFileContent } = useEditor();
-  const { onPresenceEvent } = useAgent();
+  const { tabs, activeTabId } = useEditor();
   const [selectedElement, setSelectedElement] =
     useState<SelectedElement | null>(null);
 
-  // Handle agent presence events
-  useEffect(() => {
-    return onPresenceEvent((event: AgentEvent) => {
-      switch (event.type) {
-        // Editor events
-        case "editor-open":
-          openFile(event.path);
-          break;
-
-        case "editor-replace":
-          setFileContent(event.path, { type: "text", content: event.content });
-          break;
-
-        // Terminal events
-        case "terminal-focus":
-          onShowTerminal();
-          terminalRef.current?.focus();
-          break;
-
-        case "terminal-type":
-          terminalRef.current?.typeText(event.text, event.speed);
-          break;
-
-        case "terminal-execute":
-          terminalRef.current?.execute();
-          break;
-
-        case "terminal-output":
-          terminalRef.current?.writeOutput(event.data);
-          break;
-
-        // File browser events
-        case "file-created":
-        case "file-deleted":
-          fileBrowserRef.current?.refreshPath(event.path);
-          break;
-      }
-    });
-  }, [
-    onPresenceEvent,
-    openFile,
-    setFileContent,
-    onShowTerminal,
-    terminalRef,
-    fileBrowserRef,
-  ]);
+  useAgentPresence({ terminalRef, fileBrowserRef, onShowTerminal });
 
   const { size: terminalHeight, handleResizeStart: handleTerminalResizeStart } =
     useResizable({
