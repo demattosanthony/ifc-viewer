@@ -1,12 +1,10 @@
 import { createDatabase, type DatabaseProvider } from "@ifc-viewer/database";
-import { createClient, type IFCViewerClient } from "@ifc-viewer/core";
 import { createLocalComputer, type Computer } from "@ifc-viewer/compute";
 import { mkdir, readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export interface AppContext {
-  client: IFCViewerClient;
   db: DatabaseProvider;
   computer: Computer;
   getComputer(workspaceId: string): Computer;
@@ -44,7 +42,7 @@ export async function createAppContext(
   const dataDirectory =
     config.dataDirectory ??
     process.env.DATA_DIR ??
-    resolve(process.cwd(), "data");
+    resolve(process.cwd(), "..", "..", ".data", "sqlite");
 
   await mkdir(workingDirectory, { recursive: true });
   await mkdir(dataDirectory, { recursive: true });
@@ -60,12 +58,7 @@ export async function createAppContext(
     dataDirectory,
   });
 
-  const client = createClient({
-    db,
-  });
-
-  const context: AppContext = {
-    client,
+  return {
     db,
     computer,
 
@@ -76,13 +69,10 @@ export async function createAppContext(
     },
 
     async dispose() {
-      await client.dispose();
       await computer.dispose();
       await db.dispose();
     },
   };
-
-  return context;
 }
 
 async function writeSampleFiles(computer: Computer): Promise<void> {

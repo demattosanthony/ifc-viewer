@@ -1,7 +1,6 @@
 import { Elysia, t } from "elysia";
 import { createAgent, type AgentEvent } from "@ifc-viewer/agent";
 import { createSSEStream, sseResponse } from "@ifc-viewer/realtime";
-import { isDomainError } from "@ifc-viewer/core";
 import type { AppContext } from "../context";
 
 const abortControllers = new Map<string, AbortController>();
@@ -14,11 +13,11 @@ export function agentRoutes(ctx: AppContext) {
         const computer = ctx.getComputer(params.id);
 
         // Get or create conversation for workspace
-        let conversation = await ctx.client.conversations.getActiveByWorkspace(
+        let conversation = await ctx.db.conversations.findActiveByWorkspaceId(
           params.id
         );
         if (!conversation) {
-          conversation = await ctx.client.conversations.create({
+          conversation = await ctx.db.conversations.create({
             workspaceId: params.id,
           });
         }
@@ -41,7 +40,7 @@ export function agentRoutes(ctx: AppContext) {
           }));
         } else {
           // Fetch messages from DB
-          const messages = await ctx.client.messages.listByConversation(
+          const messages = await ctx.db.messages.findByConversationId(
             conversation.id
           );
           messageHistory = messages.map((m) => ({
@@ -53,13 +52,13 @@ export function agentRoutes(ctx: AppContext) {
         messageHistory.push({ role: "user", content: body.content });
 
         // Save user message
-        await ctx.client.messages.create({
+        await ctx.db.messages.create({
           conversationId: conversation.id,
           role: "user",
           content: body.content,
         });
 
-        await ctx.client.conversations.update(conversation.id, {
+        await ctx.db.conversations.update(conversation.id, {
           status: "streaming",
         });
 
@@ -93,14 +92,14 @@ export function agentRoutes(ctx: AppContext) {
             }
 
             if (assistantMessage) {
-              await ctx.client.messages.create({
+              await ctx.db.messages.create({
                 conversationId,
                 role: "assistant",
                 content: assistantMessage,
               });
             }
 
-            await ctx.client.conversations.update(conversationId, {
+            await ctx.db.conversations.update(conversationId, {
               status: "active",
             });
           } catch (err) {
@@ -110,7 +109,7 @@ export function agentRoutes(ctx: AppContext) {
                 message: err.message,
               });
             } else if (err instanceof Error && err.name === "AbortError") {
-              await ctx.client.conversations.update(conversationId, {
+              await ctx.db.conversations.update(conversationId, {
                 status: "aborted",
               });
             }
@@ -172,7 +171,7 @@ export function agentRoutes(ctx: AppContext) {
     .get(
       "/conversation",
       async ({ params, set }) => {
-        const conversation = await ctx.client.conversations.getActiveByWorkspace(
+        const conversation = await ctx.db.conversations.findActiveByWorkspaceId(
           params.id
         );
         if (!conversation) {
@@ -181,7 +180,7 @@ export function agentRoutes(ctx: AppContext) {
         }
 
         // Include messages
-        const messages = await ctx.client.messages.listByConversation(
+        const messages = await ctx.db.messages.findByConversationId(
           conversation.id
         );
 
@@ -202,17 +201,9 @@ export function agentRoutes(ctx: AppContext) {
     )
     .delete(
       "/history",
-      async ({ params, set }) => {
-        try {
-          await ctx.client.conversations.deleteByWorkspace(params.id);
-          return { success: true };
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode;
-            return error.toJSON();
-          }
-          throw error;
-        }
+      async ({ params }) => {
+        await ctx.db.conversations.deleteByWorkspaceId(params.id);
+        return { success: true };
       },
       {
         params: t.Object({

@@ -1,5 +1,4 @@
 import { Elysia, t } from "elysia";
-import { isDomainError } from "@ifc-viewer/core";
 import type { AppContext } from "../context";
 
 export function projectsRoutes(ctx: AppContext) {
@@ -8,16 +7,15 @@ export function projectsRoutes(ctx: AppContext) {
       "/",
       async ({ body }) => {
         // Check if project with same name already exists (idempotent create)
-        const existing = await ctx.client.projects.getByName(body.name);
+        const existing = await ctx.db.projects.findByName(body.name);
         if (existing) {
           return existing;
         }
-        const project = await ctx.client.projects.create({
+        return ctx.db.projects.create({
           name: body.name,
           description: body.description,
           defaultBranch: body.defaultBranch,
         });
-        return project;
       },
       {
         body: t.Object({
@@ -34,8 +32,7 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/",
       async () => {
-        const projects = await ctx.client.projects.list();
-        return projects;
+        return ctx.db.projects.findAll();
       },
       {
         detail: {
@@ -47,7 +44,7 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/:id",
       async ({ params, set }) => {
-        const project = await ctx.client.projects.get(params.id);
+        const project = await ctx.db.projects.findById(params.id);
         if (!project) {
           set.status = 404;
           return { error: "Project not found" };
@@ -67,20 +64,16 @@ export function projectsRoutes(ctx: AppContext) {
     .patch(
       "/:id",
       async ({ params, body, set }) => {
-        try {
-          const project = await ctx.client.projects.update(params.id, {
-            name: body.name,
-            description: body.description,
-            defaultBranch: body.defaultBranch,
-          });
-          return project;
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode;
-            return error.toJSON();
-          }
-          throw error;
+        const existing = await ctx.db.projects.findById(params.id);
+        if (!existing) {
+          set.status = 404;
+          return { error: "Project not found" };
         }
+        return ctx.db.projects.update(params.id, {
+          name: body.name,
+          description: body.description,
+          defaultBranch: body.defaultBranch,
+        });
       },
       {
         params: t.Object({
@@ -100,16 +93,13 @@ export function projectsRoutes(ctx: AppContext) {
     .delete(
       "/:id",
       async ({ params, set }) => {
-        try {
-          await ctx.client.projects.delete(params.id);
-          return { success: true };
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode;
-            return error.toJSON();
-          }
-          throw error;
+        const existing = await ctx.db.projects.findById(params.id);
+        if (!existing) {
+          set.status = 404;
+          return { error: "Project not found" };
         }
+        await ctx.db.projects.delete(params.id);
+        return { success: true };
       },
       {
         params: t.Object({
@@ -124,8 +114,7 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/:id/workspaces",
       async ({ params }) => {
-        const workspaces = await ctx.client.workspaces.listByProject(params.id);
-        return workspaces;
+        return ctx.db.workspaces.findByProjectId(params.id);
       },
       {
         params: t.Object({

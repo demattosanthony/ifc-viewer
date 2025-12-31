@@ -1,5 +1,4 @@
 import { Elysia, t } from "elysia";
-import { isDomainError } from "@ifc-viewer/core";
 import type { AppContext } from "../context";
 
 export function workspacesRoutes(ctx: AppContext) {
@@ -8,17 +7,15 @@ export function workspacesRoutes(ctx: AppContext) {
       "/",
       async ({ body, set }) => {
         // Verify project exists
-        const project = await ctx.client.projects.get(body.projectId);
+        const project = await ctx.db.projects.findById(body.projectId);
         if (!project) {
           set.status = 404;
           return { error: "Project not found" };
         }
-
-        const workspace = await ctx.client.workspaces.create({
+        return ctx.db.workspaces.create({
           projectId: body.projectId,
           branch: body.branch,
         });
-        return workspace;
       },
       {
         body: t.Object({
@@ -34,8 +31,7 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/",
       async () => {
-        const workspaces = await ctx.client.workspaces.list();
-        return workspaces;
+        return ctx.db.workspaces.findAll();
       },
       {
         detail: {
@@ -47,8 +43,7 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/active",
       async () => {
-        const workspaces = await ctx.client.workspaces.listActive();
-        return workspaces;
+        return ctx.db.workspaces.findActive();
       },
       {
         detail: {
@@ -60,7 +55,7 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/:id",
       async ({ params, set }) => {
-        const workspace = await ctx.client.workspaces.get(params.id);
+        const workspace = await ctx.db.workspaces.findById(params.id);
         if (!workspace) {
           set.status = 404;
           return { error: "Workspace not found" };
@@ -80,16 +75,12 @@ export function workspacesRoutes(ctx: AppContext) {
     .post(
       "/:id/touch",
       async ({ params, set }) => {
-        try {
-          const workspace = await ctx.client.workspaces.touch(params.id);
-          return workspace;
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode;
-            return error.toJSON();
-          }
-          throw error;
+        const existing = await ctx.db.workspaces.findById(params.id);
+        if (!existing) {
+          set.status = 404;
+          return { error: "Workspace not found" };
         }
+        return ctx.db.workspaces.touch(params.id);
       },
       {
         params: t.Object({
@@ -104,18 +95,12 @@ export function workspacesRoutes(ctx: AppContext) {
     .post(
       "/:id/stop",
       async ({ params, set }) => {
-        try {
-          const workspace = await ctx.client.workspaces.update(params.id, {
-            status: "stopped",
-          });
-          return workspace;
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode;
-            return error.toJSON();
-          }
-          throw error;
+        const existing = await ctx.db.workspaces.findById(params.id);
+        if (!existing) {
+          set.status = 404;
+          return { error: "Workspace not found" };
         }
+        return ctx.db.workspaces.update(params.id, { status: "stopped" });
       },
       {
         params: t.Object({
@@ -130,16 +115,13 @@ export function workspacesRoutes(ctx: AppContext) {
     .delete(
       "/:id",
       async ({ params, set }) => {
-        try {
-          await ctx.client.workspaces.delete(params.id);
-          return { success: true };
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode;
-            return error.toJSON();
-          }
-          throw error;
+        const existing = await ctx.db.workspaces.findById(params.id);
+        if (!existing) {
+          set.status = 404;
+          return { error: "Workspace not found" };
         }
+        await ctx.db.workspaces.delete(params.id);
+        return { success: true };
       },
       {
         params: t.Object({
