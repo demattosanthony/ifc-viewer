@@ -15,7 +15,6 @@ export function createMemoryWorkspaceRepository(): WorkspaceRepository {
       const workspace = createWorkspace({
         id: uuidv4(),
         projectId: input.projectId,
-        branch: input.branch,
       });
       workspaces.set(workspace.id, workspace);
       return workspace;

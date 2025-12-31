@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import {
   type Project,
   type ProjectRepository,
@@ -13,10 +12,8 @@ export function createMemoryProjectRepository(): ProjectRepository {
   return {
     async create(input: CreateProjectInput): Promise<Project> {
       const project = createProject({
-        id: uuidv4(),
-        name: input.name,
+        id: input.id,
         description: input.description,
-        defaultBranch: input.defaultBranch,
       });
       projects.set(project.id, project);
       return project;
@@ -24,15 +21,6 @@ export function createMemoryProjectRepository(): ProjectRepository {
 
     async findById(id: string): Promise<Project | null> {
       return projects.get(id) ?? null;
-    },
-
-    async findByName(name: string): Promise<Project | null> {
-      for (const project of projects.values()) {
-        if (project.name === name) {
-          return project;
-        }
-      }
-      return null;
     },
 
     async findAll(): Promise<Project[]> {
@@ -46,9 +34,7 @@ export function createMemoryProjectRepository(): ProjectRepository {
       }
       const updated = createProject({
         ...existing,
-        name: input.name ?? existing.name,
         description: input.description !== undefined ? input.description : existing.description,
-        defaultBranch: input.defaultBranch ?? existing.defaultBranch,
         updatedAt: new Date(),
       });
       projects.set(id, updated);

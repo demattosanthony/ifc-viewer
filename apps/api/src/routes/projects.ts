@@ -1,30 +1,48 @@
 import { Elysia, t } from "elysia";
+import { isValidProjectSlug } from "@ifc-viewer/core";
 import type { AppContext } from "../context";
 
 export function projectsRoutes(ctx: AppContext) {
   return new Elysia({ prefix: "/api/projects" })
     .post(
       "/",
-      async ({ body }) => {
-        // Check if project with same name already exists (idempotent create)
-        const existing = await ctx.db.projects.findByName(body.name);
+      async ({ body, set }) => {
+        // Validate slug format
+        if (!isValidProjectSlug(body.id)) {
+          set.status = 400;
+          return {
+            error: "Invalid project ID. Must be lowercase alphanumeric with hyphens, 1-100 characters.",
+          };
+        }
+
+        // Check if project already exists (idempotent create)
+        const existing = await ctx.db.projects.findById(body.id);
         if (existing) {
           return existing;
         }
-        return ctx.db.projects.create({
-          name: body.name,
+
+        // Create project in DB
+        const project = await ctx.db.projects.create({
+          id: body.id,
           description: body.description,
-          defaultBranch: body.defaultBranch,
         });
+
+        // Create project directory in storage
+        await ctx.storage.put(
+          `projects/${body.id}/.gitkeep`,
+          "",
+          { contentType: "text/plain" }
+        );
+
+        return project;
       },
       {
         body: t.Object({
-          name: t.String(),
+          id: t.String({ minLength: 1, maxLength: 100 }),
           description: t.Optional(t.String()),
-          defaultBranch: t.Optional(t.String()),
         }),
         detail: {
-          summary: "Create a new project (or return existing if name matches)",
+          summary: "Create a new project",
           tags: ["Projects"],
         },
       }
@@ -70,9 +88,7 @@ export function projectsRoutes(ctx: AppContext) {
           return { error: "Project not found" };
         }
         return ctx.db.projects.update(params.id, {
-          name: body.name,
           description: body.description,
-          defaultBranch: body.defaultBranch,
         });
       },
       {
@@ -80,9 +96,7 @@ export function projectsRoutes(ctx: AppContext) {
           id: t.String(),
         }),
         body: t.Object({
-          name: t.Optional(t.String()),
           description: t.Optional(t.String()),
-          defaultBranch: t.Optional(t.String()),
         }),
         detail: {
           summary: "Update a project",
@@ -98,6 +112,14 @@ export function projectsRoutes(ctx: AppContext) {
           set.status = 404;
           return { error: "Project not found" };
         }
+
+        // Delete project files from storage
+        const projectPrefix = `projects/${params.id}/`;
+        for await (const entry of ctx.storage.list(projectPrefix)) {
+          await ctx.storage.delete(entry.key);
+        }
+
+        // Delete from database
         await ctx.db.projects.delete(params.id);
         return { success: true };
       },

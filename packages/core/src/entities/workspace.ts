@@ -1,8 +1,8 @@
 /**
  * Workspace entity - represents an ephemeral compute environment
  *
- * A Workspace is a short-lived compute environment where a Project is loaded.
- * It replaces the old "Session" concept with clearer semantics.
+ * A Workspace is a short-lived compute environment where a Project's files
+ * are loaded for editing and AI interaction.
  *
  * Hierarchy: Project (persistent) -> Workspace (ephemeral) -> Conversation -> Message
  */
@@ -12,11 +12,8 @@ export interface Workspace {
   /** Unique identifier */
   readonly id: string;
 
-  /** Reference to the parent Project */
+  /** Reference to the parent Project (slug) */
   readonly projectId: string;
-
-  /** Git branch being worked on */
-  readonly branch: string;
 
   /** Current workspace status */
   readonly status: WorkspaceStatus;
@@ -34,7 +31,6 @@ export interface Workspace {
 export function createWorkspace(params: {
   id: string;
   projectId: string;
-  branch?: string;
   status?: WorkspaceStatus;
   createdAt?: Date;
   lastAccessedAt?: Date;
@@ -43,7 +39,6 @@ export function createWorkspace(params: {
   return {
     id: params.id,
     projectId: params.projectId,
-    branch: params.branch ?? "main",
     status: params.status ?? "active",
     createdAt: params.createdAt ?? now,
     lastAccessedAt: params.lastAccessedAt ?? now,

@@ -1,5 +1,4 @@
 import { eq } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
 import {
   type Project,
   type ProjectRepository,
@@ -13,9 +12,7 @@ import type { DrizzleDB } from "./db";
 function rowToProject(row: ProjectRow): Project {
   return createProject({
     id: row.id,
-    name: row.name,
     description: row.description,
-    defaultBranch: row.defaultBranch,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
@@ -27,13 +24,10 @@ export function createSqliteProjectRepository(
   return {
     async create(input: CreateProjectInput): Promise<Project> {
       const now = new Date();
-      const id = uuidv4();
 
       await db.insert(projects).values({
-        id,
-        name: input.name,
+        id: input.id,
         description: input.description ?? null,
-        defaultBranch: input.defaultBranch ?? "main",
         createdAt: now,
         updatedAt: now,
       });
@@ -41,7 +35,7 @@ export function createSqliteProjectRepository(
       const [row] = await db
         .select()
         .from(projects)
-        .where(eq(projects.id, id));
+        .where(eq(projects.id, input.id));
 
       return rowToProject(row);
     },
@@ -51,15 +45,6 @@ export function createSqliteProjectRepository(
         .select()
         .from(projects)
         .where(eq(projects.id, id));
-
-      return row ? rowToProject(row) : null;
-    },
-
-    async findByName(name: string): Promise<Project | null> {
-      const [row] = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.name, name));
 
       return row ? rowToProject(row) : null;
     },
@@ -74,9 +59,7 @@ export function createSqliteProjectRepository(
         updatedAt: new Date(),
       };
 
-      if (input.name !== undefined) updates.name = input.name;
       if (input.description !== undefined) updates.description = input.description;
-      if (input.defaultBranch !== undefined) updates.defaultBranch = input.defaultBranch;
 
       await db.update(projects).set(updates).where(eq(projects.id, id));
 

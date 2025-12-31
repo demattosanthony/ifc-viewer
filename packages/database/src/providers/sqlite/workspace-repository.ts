@@ -14,7 +14,6 @@ function rowToWorkspace(row: WorkspaceRow): Workspace {
   return createWorkspace({
     id: row.id,
     projectId: row.projectId,
-    branch: row.branch,
     status: row.status,
     createdAt: row.createdAt,
     lastAccessedAt: row.lastAccessedAt,
@@ -32,7 +31,6 @@ export function createSqliteWorkspaceRepository(
       await db.insert(workspaces).values({
         id,
         projectId: input.projectId,
-        branch: input.branch ?? "main",
         status: "active",
         createdAt: now,
         lastAccessedAt: now,

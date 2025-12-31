@@ -4,21 +4,17 @@ import type { MessageRole } from "../entities/message";
 
 // Project input types
 export interface CreateProjectInput {
-  name: string;
+  id: string; // Slug (e.g., "sample-project")
   description?: string | null;
-  defaultBranch?: string;
 }
 
 export interface UpdateProjectInput {
-  name?: string;
   description?: string | null;
-  defaultBranch?: string;
 }
 
 // Workspace input types
 export interface CreateWorkspaceInput {
   projectId: string;
-  branch?: string;
 }
 
 export interface UpdateWorkspaceInput {

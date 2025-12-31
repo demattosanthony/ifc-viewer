@@ -1,10 +1,8 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
 export const projects = sqliteTable("projects", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull().unique(),
+  id: text("id").primaryKey(), // Slug (e.g., "sample-project")
   description: text("description"),
-  defaultBranch: text("default_branch").notNull().default("main"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
@@ -14,7 +12,6 @@ export const workspaces = sqliteTable("workspaces", {
   projectId: text("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
-  branch: text("branch").notNull().default("main"),
   status: text("status", {
     enum: ["active", "idle", "stopped"],
   })

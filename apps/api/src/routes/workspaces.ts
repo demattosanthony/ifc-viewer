@@ -12,15 +12,20 @@ export function workspacesRoutes(ctx: AppContext) {
           set.status = 404;
           return { error: "Project not found" };
         }
-        return ctx.db.workspaces.create({
+
+        // Create workspace
+        const workspace = await ctx.db.workspaces.create({
           projectId: body.projectId,
-          branch: body.branch,
         });
+
+        // Load project files into compute
+        await ctx.loadProjectIntoCompute(body.projectId);
+
+        return workspace;
       },
       {
         body: t.Object({
           projectId: t.String(),
-          branch: t.Optional(t.String()),
         }),
         detail: {
           summary: "Create a new workspace",
