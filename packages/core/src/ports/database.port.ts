@@ -35,9 +35,11 @@ export interface WorkspaceRepository {
 /** Conversation repository interface */
 export interface ConversationRepository {
   create(input: Conversation.CreateInput): Promise<Conversation>
-  findActiveByWorkspaceId(workspaceId: string): Promise<Conversation | null>
+  findById(id: string): Promise<Conversation | null>
+  findByProjectId(projectId: string): Promise<Conversation[]>
   update(id: string, input: Conversation.UpdateInput): Promise<Conversation>
-  deleteByWorkspaceId(workspaceId: string): Promise<void>
+  delete(id: string): Promise<void>
+  deleteByProjectId(projectId: string): Promise<void>
 }
 
 /** Message repository interface */
@@ -80,7 +82,7 @@ export interface Database extends UnitOfWork {
    * @example
    * ```ts
    * const result = await db.transaction(async (uow) => {
-   *   const conversation = await uow.conversations.create({ workspaceId })
+   *   const conversation = await uow.conversations.create({ projectId })
    *   await uow.messages.create({ conversationId: conversation.id, role: "user", content })
    *   return conversation
    * })

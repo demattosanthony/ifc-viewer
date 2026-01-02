@@ -1,7 +1,8 @@
 /**
  * Conversation Entity
  *
- * Represents an AI chat session within a workspace.
+ * Represents an AI chat session within a project.
+ * Conversations persist across workspace lifecycles.
  */
 
 import { z } from "zod"
@@ -14,7 +15,8 @@ export const ConversationStatusSchema = z.enum(["active", "streaming", "complete
 
 export const ConversationSchema = z.object({
   id: z.string().uuid(),
-  workspaceId: z.string().uuid(),
+  projectId: z.string(), // Project slug (not UUID)
+  title: z.string().nullable(), // Auto-generated from first message
   status: ConversationStatusSchema,
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -26,10 +28,12 @@ export type Conversation = z.infer<typeof ConversationSchema>
 /** Namespace for Conversation-related input types */
 export namespace Conversation {
   export type CreateInput = {
-    workspaceId: string
+    projectId: string
+    title?: string | null
   }
 
   export type UpdateInput = {
+    title?: string | null
     status?: ConversationStatus
   }
 }

@@ -20,5 +20,6 @@ export {
   ProjectController,
   WorkspaceController,
   FilesController,
-  AgentController,
+  ConversationController,
+  AgentController, // Alias for backward compatibility
 } from "./controllers"

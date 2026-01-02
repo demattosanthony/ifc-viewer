@@ -12,7 +12,8 @@
  *
  * ## Domain Model
  *
- * Project (persistent) -> Workspace (ephemeral) -> Conversation -> Message
+ * Project (persistent) -> Conversation -> Message
+ *                      -> Workspace (ephemeral compute)
  *
  * ## Usage Pattern
  *
@@ -88,8 +89,6 @@ export {
   createProjectWithStorage,
   createWorkspaceWithFiles,
   runAgentChat,
-  getConversation,
-  clearConversation,
   type CreateProjectInput,
   type CreateWorkspaceInput,
   type AgentChatInput,

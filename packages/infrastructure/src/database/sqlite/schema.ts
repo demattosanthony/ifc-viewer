@@ -23,9 +23,10 @@ export const workspaces = sqliteTable("workspaces", {
 
 export const conversations = sqliteTable("conversations", {
   id: text("id").primaryKey(),
-  workspaceId: text("workspace_id")
+  projectId: text("project_id")
     .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
+    .references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title"),
   status: text("status", {
     enum: ["active", "streaming", "completed", "aborted"],
   })

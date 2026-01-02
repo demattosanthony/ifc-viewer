@@ -9,7 +9,8 @@ export function createConversationRepository(): ConversationRepository {
       const now = new Date()
       const entity: Conversation = {
         id: uuidv4(),
-        workspaceId: input.workspaceId,
+        projectId: input.projectId,
+        title: input.title ?? null,
         status: "active",
         createdAt: now,
         updatedAt: now,
@@ -18,13 +19,19 @@ export function createConversationRepository(): ConversationRepository {
       return entity
     },
 
-    async findActiveByWorkspaceId(workspaceId: string): Promise<Conversation | null> {
+    async findById(id: string): Promise<Conversation | null> {
+      return store.get(id) ?? null
+    },
+
+    async findByProjectId(projectId: string): Promise<Conversation[]> {
+      const results: Conversation[] = []
       for (const entity of store.values()) {
-        if (entity.workspaceId === workspaceId && entity.status === "active") {
-          return entity
+        if (entity.projectId === projectId) {
+          results.push(entity)
         }
       }
-      return null
+      // Sort by updatedAt descending (most recent first)
+      return results.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
     },
 
     async update(id: string, input: Conversation.UpdateInput): Promise<Conversation> {
@@ -33,6 +40,7 @@ export function createConversationRepository(): ConversationRepository {
 
       const updated: Conversation = {
         ...existing,
+        title: input.title !== undefined ? input.title : existing.title,
         status: input.status ?? existing.status,
         updatedAt: new Date(),
       }
@@ -40,9 +48,13 @@ export function createConversationRepository(): ConversationRepository {
       return updated
     },
 
-    async deleteByWorkspaceId(workspaceId: string): Promise<void> {
+    async delete(id: string): Promise<void> {
+      store.delete(id)
+    },
+
+    async deleteByProjectId(projectId: string): Promise<void> {
       for (const [id, entity] of store) {
-        if (entity.workspaceId === workspaceId) {
+        if (entity.projectId === projectId) {
           store.delete(id)
         }
       }

@@ -1,13 +1,14 @@
 import { Elysia } from "elysia"
-import { swagger } from "@elysiajs/swagger"
+import { openapi } from "@elysiajs/openapi"
 import { cors } from "@elysiajs/cors"
+import { zodToJsonSchema } from "zod-to-json-schema"
 import { createAppContext } from "./context"
 import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface"
 import {
   projectsRoutes,
   workspacesRoutes,
   filesRoutes,
-  agentRoutes,
+  conversationRoutes,
   terminalRoutes,
 } from "./routes"
 
@@ -18,7 +19,9 @@ const ctx = await createAppContext()
 const app = new Elysia()
   .use(cors())
   .use(
-    swagger({
+    openapi({
+      path: "/swagger",
+      specPath: "/swagger/json",
       documentation: {
         info: {
           title: "BIM IDE API",
@@ -30,9 +33,13 @@ const app = new Elysia()
           { name: "Projects", description: "Project management" },
           { name: "Workspaces", description: "Workspace management" },
           { name: "Files", description: "File operations" },
-          { name: "Agent", description: "AI agent chat" },
+          { name: "Conversations", description: "AI conversations and chat" },
           { name: "Terminal", description: "Terminal WebSocket" },
         ],
+      },
+      // Map Zod schemas to JSON Schema for OpenAPI docs
+      mapJsonSchema: {
+        zod: (schema: unknown) => zodToJsonSchema(schema as Parameters<typeof zodToJsonSchema>[0], { target: "openApi3", $refStrategy: "none" }),
       },
     })
   )
@@ -72,7 +79,7 @@ const app = new Elysia()
   .use(projectsRoutes(ctx))
   .use(workspacesRoutes(ctx))
   .use(filesRoutes(ctx))
-  .use(agentRoutes(ctx))
+  .use(conversationRoutes(ctx))
   .use(terminalRoutes(ctx))
   .listen(process.env.PORT ?? 3000)
 

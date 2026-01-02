@@ -33,12 +33,14 @@ export {
   WorkspaceListResponse,
 } from "./workspace.dto"
 
-// Agent
+// Conversations
 export {
+  CreateConversationRequest,
   ChatHistoryMessage,
   StartChatRequest,
   MessageResponse,
   ConversationResponse,
+  ConversationListResponse,
   ConversationWithMessagesResponse,
 } from "./agent.dto"
 

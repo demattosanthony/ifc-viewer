@@ -7,4 +7,4 @@
 export { ProjectController } from "./project.controller"
 export { WorkspaceController } from "./workspace.controller"
 export { FilesController } from "./files.controller"
-export { AgentController } from "./agent.controller"
+export { ConversationController, AgentController } from "./agent.controller"

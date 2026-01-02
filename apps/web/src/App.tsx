@@ -260,9 +260,11 @@ function Home() {
     );
   }
 
+  const projectId = "sample-project"; // TODO: Make this dynamic based on selected project
+
   return (
     <EditorProvider initialFile="sample.ifc">
-      <AgentProvider workspaceId={workspaceId}>
+      <AgentProvider projectId={projectId} workspaceId={workspaceId}>
         <div className="h-screen w-screen bg-[#1e1e1e] flex overflow-hidden">
           <FileBrowser
             ref={fileBrowserRef}

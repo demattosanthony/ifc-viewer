@@ -63,11 +63,13 @@ export {
   WorkspaceIdParam,
   WorkspaceResponse,
   WorkspaceListResponse,
-  // Agent
+  // Conversations
+  CreateConversationRequest,
   ChatHistoryMessage,
   StartChatRequest,
   MessageResponse,
   ConversationResponse,
+  ConversationListResponse,
   ConversationWithMessagesResponse,
   // Files
   FileEntryType,
@@ -96,5 +98,6 @@ export {
   ProjectController,
   WorkspaceController,
   FilesController,
-  AgentController,
+  ConversationController,
+  AgentController, // Alias for backward compatibility
 } from "./http"

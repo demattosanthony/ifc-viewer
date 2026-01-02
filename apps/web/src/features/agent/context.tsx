@@ -6,15 +6,36 @@ import {
   useState,
   useCallback,
   useRef,
+  useEffect,
   type ReactNode,
 } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSSE } from "@ifc-viewer/realtime";
 import type { AgentEvent } from "@ifc-viewer/realtime";
+import type { AgentMessage, ToolInvocation, MessagePart } from "@ifc-viewer/core";
+import {
+  getApiProjectsByIdConversationsOptions,
+  getApiProjectsByIdConversationsQueryKey,
+  getApiProjectsByIdConversationsByConversationIdOptions,
+  postApiProjectsByIdConversationsMutation,
+  deleteApiProjectsByIdConversationsByConversationIdMutation,
+  postApiProjectsByIdConversationsByConversationIdStopMutation,
+} from "@ifc-viewer/sdk/hooks";
 import type {
-  AgentMessage,
-  ToolInvocation,
-  MessagePart,
-} from "@ifc-viewer/core";
+  GetApiProjectsByIdConversationsResponse,
+  PostApiProjectsByIdConversationsResponse,
+  GetApiProjectsByIdConversationsByConversationIdResponse,
+} from "@ifc-viewer/sdk";
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/** Conversation type from API (derived from SDK) */
+type Conversation = GetApiProjectsByIdConversationsResponse[number];
+
+/** Conversation with messages from API (derived from SDK) */
+type ConversationWithMessages = GetApiProjectsByIdConversationsByConversationIdResponse;
 
 interface StreamingToolState {
   id: string;
@@ -25,6 +46,27 @@ interface StreamingToolState {
   currentLine: number;
   currentColumn: number;
 }
+
+interface AgentContextValue {
+  messages: AgentMessage[];
+  isLoading: boolean;
+  conversationId: string | null;
+  conversations: Conversation[];
+  sendMessage: (content: string) => void;
+  stop: () => void;
+  clearMessages: () => void;
+  deselectConversation: () => void;
+  selectConversation: (conversationId: string) => Promise<void>;
+  createNewConversation: () => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
+  onPresenceEvent: (callback: (event: AgentEvent) => void) => () => void;
+}
+
+const AgentContext = createContext<AgentContextValue | null>(null);
+
+// ============================================================================
+// Helpers
+// ============================================================================
 
 function extractStreamingField(
   buffer: string,
@@ -58,25 +100,45 @@ function extractStreamingField(
   return content;
 }
 
-interface AgentContextValue {
-  messages: AgentMessage[];
-  isLoading: boolean;
-  sendMessage: (content: string) => void;
-  stop: () => void;
-  clearMessages: () => void;
-  onPresenceEvent: (callback: (event: AgentEvent) => void) => () => void;
+/** Get the session storage key for storing conversation ID */
+function getSessionStorageKey(projectId: string): string {
+  return `ifc-viewer:conversation:${projectId}`;
 }
 
-const AgentContext = createContext<AgentContextValue | null>(null);
+/** Convert API messages to AgentMessage format */
+function toAgentMessages(
+  messages: ConversationWithMessages["messages"]
+): AgentMessage[] {
+  return messages.map((m) => ({
+    id: m.id,
+    role: m.role as "user" | "assistant",
+    content: m.content,
+    createdAt: new Date(m.createdAt),
+  }));
+}
+
+// ============================================================================
+// Provider
+// ============================================================================
 
 interface AgentProviderProps {
+  projectId: string;
   workspaceId: string;
   children: ReactNode;
 }
 
-export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
+export function AgentProvider({
+  projectId,
+  workspaceId,
+  children,
+}: AgentProviderProps) {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    // Initialize from session storage
+    return sessionStorage.getItem(getSessionStorageKey(projectId));
+  });
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const presenceCallbacksRef = useRef<Set<(event: AgentEvent) => void>>(
@@ -84,6 +146,96 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
   );
   const currentStepRef = useRef<number>(0);
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map());
+
+  const apiUrl = import.meta.env.VITE_API_URL || "";
+
+  // ============================================================================
+  // SDK Queries & Mutations
+  // ============================================================================
+
+  const EMPTY_CONVERSATIONS: Conversation[] = []
+
+  // Fetch conversations list
+  const conversationsQuery = useQuery({
+    ...getApiProjectsByIdConversationsOptions({ path: { id: projectId } }),
+  })
+
+  const conversations = conversationsQuery.data ?? EMPTY_CONVERSATIONS
+
+  // Create conversation mutation
+  const createConversationMutation = useMutation({
+    ...postApiProjectsByIdConversationsMutation(),
+  });
+
+  // Delete conversation mutation
+  const deleteConversationMutation = useMutation({
+    ...deleteApiProjectsByIdConversationsByConversationIdMutation(),
+  });
+
+  // Stop generation mutation
+  const stopMutation = useMutation({
+    ...postApiProjectsByIdConversationsByConversationIdStopMutation(),
+  });
+
+  // Clear messages when no conversation selected
+  useEffect(() => {
+    if (!conversationId) {
+      setMessages([])
+    }
+  }, [conversationId])
+
+  // Load conversation messages when conversationId changes (and list is loaded)
+  // Skip if we already have messages (active chat session)
+  useEffect(() => {
+    if (!conversationId) return
+    if (!conversationsQuery.isSuccess) return
+
+    // Skip verification and fetching if we already have messages
+    // This prevents resetting state during an active chat session
+    if (messages.length > 0) return
+
+    // Verify conversation exists in the list
+    const list = conversationsQuery.data ?? EMPTY_CONVERSATIONS
+    const exists = list.some((c) => c.id === conversationId)
+    if (!exists) {
+      setConversationId(null)
+      return
+    }
+
+    // Fetch conversation messages
+    const fetchMessages = async () => {
+      try {
+        const data = await queryClient.fetchQuery(
+          getApiProjectsByIdConversationsByConversationIdOptions({
+            path: { id: projectId, conversationId },
+          })
+        )
+        if (data) {
+          setMessages(toAgentMessages(data.messages))
+        }
+      } catch (error) {
+        console.error("[Agent] Failed to fetch conversation:", error)
+      }
+    }
+
+    fetchMessages()
+  }, [
+    conversationId,
+    conversationsQuery.isSuccess,
+    conversationsQuery.dataUpdatedAt,
+    projectId,
+    queryClient,
+    messages.length,
+  ])
+
+  // Save conversation ID to session storage when it changes
+  useEffect(() => {
+    if (conversationId) {
+      sessionStorage.setItem(getSessionStorageKey(projectId), conversationId);
+    } else {
+      sessionStorage.removeItem(getSessionStorageKey(projectId));
+    }
+  }, [conversationId, projectId]);
 
   const emitPresenceEvent = useCallback((event: AgentEvent) => {
     for (const callback of presenceCallbacksRef.current) {
@@ -459,14 +611,94 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
     [emitPresenceEvent]
   );
 
+  // ============================================================================
+  // Conversation Management
+  // ============================================================================
+
+  const selectConversation = useCallback(async (convId: string) => {
+    setConversationId(convId);
+    setMessages([]);
+    // Messages will be fetched by the useEffect above
+  }, []);
+
+  const deselectConversation = useCallback(() => {
+    setConversationId(null);
+    setMessages([]);
+  }, []);
+
+  const createNewConversation = useCallback(async () => {
+    try {
+      const result = await createConversationMutation.mutateAsync({
+        path: { id: projectId },
+        body: {},
+      });
+      if (result) {
+        setConversationId(result.id);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error("[Agent] Failed to create conversation:", error);
+    }
+  }, [createConversationMutation, projectId]);
+
+  const deleteConversationHandler = useCallback(
+    async (convId: string) => {
+      try {
+        await deleteConversationMutation.mutateAsync({
+          path: { id: projectId, conversationId: convId },
+        });
+        // Invalidate conversations list to update UI
+        queryClient.invalidateQueries({
+          queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+        });
+        // If deleting active conversation, clear state
+        if (convId === conversationId) {
+          setConversationId(null);
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error("[Agent] Failed to delete conversation:", error);
+      }
+    },
+    [deleteConversationMutation, projectId, conversationId, queryClient]
+  );
+
+  // ============================================================================
+  // Chat
+  // ============================================================================
+
   const sendMessage = useCallback(
-    (content: string) => {
+    async (content: string) => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
+
+      // Create conversation if needed
+      let activeConvId = conversationId;
+      if (!activeConvId) {
+        try {
+          const conv = await createConversationMutation.mutateAsync({
+            path: { id: projectId },
+            body: {},
+          });
+          if (!conv) {
+            console.error("[Agent] Failed to create conversation");
+            return;
+          }
+          activeConvId = conv.id;
+          setConversationId(activeConvId);
+          // Invalidate conversations list so new conversation appears in list
+          queryClient.invalidateQueries({
+            queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+          });
+        } catch (error) {
+          console.error("[Agent] Failed to create conversation:", error);
+          return;
+        }
+      }
 
       const userMessage: AgentMessage = {
         id: `msg-${Date.now()}`,
@@ -488,10 +720,9 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
       setIsLoading(true);
 
       fetchSSE<AgentEvent>({
-        url: `${
-          import.meta.env.VITE_API_URL
-        }/api/workspaces/${workspaceId}/agent/chat`,
+        url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/chat`,
         body: {
+          workspaceId,
           content,
           history: messages.map((m) => ({
             role: m.role,
@@ -502,6 +733,10 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
         onComplete: () => {
           setIsLoading(false);
           abortControllerRef.current = null;
+          // Refresh conversations to update the title (auto-generated from first message)
+          queryClient.invalidateQueries({
+            queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+          });
         },
         onError: (err: Error) => {
           console.error("[Agent] SSE error:", err);
@@ -512,7 +747,16 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
         eventName: "message",
       });
     },
-    [workspaceId, messages, handleAgentEvent]
+    [
+      apiUrl,
+      projectId,
+      workspaceId,
+      conversationId,
+      messages,
+      createConversationMutation,
+      handleAgentEvent,
+      queryClient,
+    ]
   );
 
   const stop = useCallback(async () => {
@@ -521,29 +765,40 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
       abortControllerRef.current = null;
     }
 
-    try {
-      await fetch(`/api/workspaces/${workspaceId}/agent/stop`, {
-        method: "POST",
-      });
-    } catch (error) {
-      console.error("[Agent] Failed to stop:", error);
+    if (conversationId) {
+      try {
+        await stopMutation.mutateAsync({
+          path: { id: projectId, conversationId },
+        });
+      } catch (error) {
+        // 404 is expected if there's no active generation
+        if (!(error instanceof Error && error.message.includes("404"))) {
+          console.error("[Agent] Failed to stop:", error);
+        }
+      }
     }
 
     setIsLoading(false);
     streamingToolsRef.current.clear();
-  }, [workspaceId]);
+  }, [stopMutation, projectId, conversationId]);
 
   const clearMessages = useCallback(async () => {
-    setMessages([]);
-
-    try {
-      await fetch(`/api/workspaces/${workspaceId}/agent/history`, {
-        method: "DELETE",
-      });
-    } catch (error) {
-      console.error("[Agent] Failed to clear history:", error);
+    if (conversationId) {
+      try {
+        await deleteConversationMutation.mutateAsync({
+          path: { id: projectId, conversationId },
+        });
+        // Invalidate conversations list to update UI
+        queryClient.invalidateQueries({
+          queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+        });
+      } catch (error) {
+        console.error("[Agent] Failed to delete conversation:", error);
+      }
     }
-  }, [workspaceId]);
+    setConversationId(null);
+    setMessages([]);
+  }, [deleteConversationMutation, projectId, conversationId, queryClient]);
 
   const onPresenceEvent = useCallback(
     (callback: (event: AgentEvent) => void) => {
@@ -560,9 +815,15 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
       value={{
         messages,
         isLoading,
+        conversationId,
+        conversations,
         sendMessage,
         stop,
         clearMessages,
+        deselectConversation,
+        selectConversation,
+        createNewConversation,
+        deleteConversation: deleteConversationHandler,
         onPresenceEvent,
       }}
     >
