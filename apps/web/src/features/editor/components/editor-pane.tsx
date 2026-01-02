@@ -15,7 +15,7 @@ interface EditorPaneProps {
 
 function EmptyState() {
   return (
-    <div className="flex-1 flex items-center justify-center bg-[#1e1e1e] text-[#858585]">
+    <div className="flex-1 flex items-center justify-center bg-background text-muted-foreground">
       <div className="text-center">
         <p className="text-sm">No file open</p>
         <p className="text-xs mt-1">Select a file from the explorer</p>
@@ -26,7 +26,7 @@ function EmptyState() {
 
 function LoadingState() {
   return (
-    <div className="flex-1 flex items-center justify-center bg-[#1e1e1e] text-[#858585]">
+    <div className="flex-1 flex items-center justify-center bg-background text-muted-foreground">
       <p className="text-sm">Loading...</p>
     </div>
   );

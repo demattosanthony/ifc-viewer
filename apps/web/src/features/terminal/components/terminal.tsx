@@ -1,7 +1,104 @@
 import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
-import { Terminal as XTerm } from "@xterm/xterm";
+import { Terminal as XTerm, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { Minus } from "lucide-react";
+
+/**
+ * Gets the computed value of a CSS variable.
+ * Terminal CSS variables should be defined as hex/rgba values in globals.css.
+ */
+function getCssVar(varName: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  return value || fallback;
+}
+
+/**
+ * Checks if the document has the dark class applied.
+ */
+function isDarkMode(): boolean {
+  return document.documentElement.classList.contains("dark");
+}
+
+/**
+ * Creates an xterm theme from CSS variables defined in globals.css.
+ * Falls back to sensible defaults if CSS variables aren't available.
+ */
+function getTerminalTheme(): ITheme {
+  const dark = isDarkMode();
+
+  // Fallback colors for light and dark modes
+  const defaults = dark
+    ? {
+        background: "#121212",
+        foreground: "#a3a3a3",
+        cursor: "#fafafa",
+        cursorAccent: "#121212",
+        selection: "rgba(250, 250, 250, 0.15)",
+        black: "#262626",
+        brightBlack: "#525252",
+        white: "#e5e5e5",
+        brightWhite: "#fafafa",
+        blue: "#60a5fa",
+        brightBlue: "#93c5fd",
+        cyan: "#22d3ee",
+        brightCyan: "#67e8f9",
+        green: "#4ade80",
+        brightGreen: "#86efac",
+        magenta: "#c084fc",
+        brightMagenta: "#d8b4fe",
+        red: "#f87171",
+        brightRed: "#fca5a5",
+        yellow: "#facc15",
+        brightYellow: "#fde047",
+      }
+    : {
+        background: "#f5f5f7",
+        foreground: "#374151",
+        cursor: "#1f2937",
+        cursorAccent: "#f5f5f7",
+        selection: "rgba(31, 41, 55, 0.15)",
+        black: "#d1d5db",
+        brightBlack: "#9ca3af",
+        white: "#374151",
+        brightWhite: "#1f2937",
+        blue: "#2563eb",
+        brightBlue: "#1d4ed8",
+        cyan: "#0891b2",
+        brightCyan: "#0e7490",
+        green: "#16a34a",
+        brightGreen: "#15803d",
+        magenta: "#9333ea",
+        brightMagenta: "#7c3aed",
+        red: "#dc2626",
+        brightRed: "#b91c1c",
+        yellow: "#ca8a04",
+        brightYellow: "#a16207",
+      };
+
+  return {
+    background: getCssVar("--terminal-background", defaults.background),
+    foreground: getCssVar("--terminal-foreground", defaults.foreground),
+    cursor: getCssVar("--terminal-cursor", defaults.cursor),
+    cursorAccent: getCssVar("--terminal-cursor-accent", defaults.cursorAccent),
+    selectionBackground: getCssVar("--terminal-selection", defaults.selection),
+    black: getCssVar("--terminal-black", defaults.black),
+    brightBlack: getCssVar("--terminal-bright-black", defaults.brightBlack),
+    white: getCssVar("--terminal-white", defaults.white),
+    brightWhite: getCssVar("--terminal-bright-white", defaults.brightWhite),
+    blue: getCssVar("--terminal-blue", defaults.blue),
+    brightBlue: getCssVar("--terminal-bright-blue", defaults.brightBlue),
+    cyan: getCssVar("--terminal-cyan", defaults.cyan),
+    brightCyan: getCssVar("--terminal-bright-cyan", defaults.brightCyan),
+    green: getCssVar("--terminal-green", defaults.green),
+    brightGreen: getCssVar("--terminal-bright-green", defaults.brightGreen),
+    magenta: getCssVar("--terminal-magenta", defaults.magenta),
+    brightMagenta: getCssVar("--terminal-bright-magenta", defaults.brightMagenta),
+    red: getCssVar("--terminal-red", defaults.red),
+    brightRed: getCssVar("--terminal-bright-red", defaults.brightRed),
+    yellow: getCssVar("--terminal-yellow", defaults.yellow),
+    brightYellow: getCssVar("--terminal-bright-yellow", defaults.brightYellow),
+  };
+}
 
 export interface TerminalHandle {
   typeText: (text: string, speed?: number) => void;
@@ -143,29 +240,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
       fontFamily: '"Menlo", "Monaco", "Courier New", monospace',
       fontSize: 13,
       lineHeight: 1.5,
-      theme: {
-        background: "#121212",
-        foreground: "#a3a3a3",
-        cursor: "#fafafa",
-        cursorAccent: "#121212",
-        selectionBackground: "rgba(250, 250, 250, 0.15)",
-        black: "#262626",
-        brightBlack: "#404040",
-        white: "#e5e5e5",
-        brightWhite: "#fafafa",
-        blue: "#60a5fa",
-        brightBlue: "#93c5fd",
-        cyan: "#22d3ee",
-        brightCyan: "#67e8f9",
-        green: "#4ade80",
-        brightGreen: "#86efac",
-        magenta: "#c084fc",
-        brightMagenta: "#d8b4fe",
-        red: "#f87171",
-        brightRed: "#fca5a5",
-        yellow: "#facc15",
-        brightYellow: "#fde047",
-      },
+      theme: getTerminalTheme(),
     });
 
     const fitAddon = new FitAddon();
@@ -190,6 +265,20 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
       sendResize();
     });
     resizeObserver.observe(container);
+
+    // Watch for theme changes (dark class toggle on html element)
+    const themeObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "attributes" && mutation.attributeName === "class") {
+          // Theme changed, update terminal colors
+          terminal.options.theme = getTerminalTheme();
+        }
+      }
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
     // Delay initial fit to ensure container has dimensions
     requestAnimationFrame(() => {
@@ -265,6 +354,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
     return () => {
       isCleaningUp = true;
       resizeObserver.disconnect();
+      themeObserver.disconnect();
       // Only close if not already closed/closing
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();

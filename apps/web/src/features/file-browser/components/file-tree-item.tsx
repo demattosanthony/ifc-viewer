@@ -56,20 +56,20 @@ export function FileTreeItem({
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="flex items-center h-[22px] hover:bg-[#2a2d2e] text-[#cccccc] cursor-pointer group"
+        className="flex items-center h-[22px] hover:bg-accent/50 text-foreground cursor-pointer group"
         style={{ paddingLeft: indent + 4 }}
       >
         {isDir ? (
           <>
             {isExpanded ? (
-              <ChevronDown className="w-4 h-4 text-[#858585] shrink-0" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-[#858585] shrink-0" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             )}
             {isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-[#dcb67a] shrink-0 ml-0.5" />
+              <FolderOpen className="w-4 h-4 text-amber-500 shrink-0 ml-0.5" />
             ) : (
-              <Folder className="w-4 h-4 text-[#dcb67a] shrink-0 ml-0.5" />
+              <Folder className="w-4 h-4 text-amber-500 shrink-0 ml-0.5" />
             )}
           </>
         ) : (
@@ -94,7 +94,7 @@ export function FileTreeItem({
                     e.stopPropagation();
                     onNewFile(file.path);
                   }}
-                  className="p-0.5 hover:bg-[#3c3c3c] rounded text-[#858585] hover:text-[#cccccc]"
+                  className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
                   title="New File"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -104,7 +104,7 @@ export function FileTreeItem({
                     e.stopPropagation();
                     onNewFolder(file.path);
                   }}
-                  className="p-0.5 hover:bg-[#3c3c3c] rounded text-[#858585] hover:text-[#cccccc]"
+                  className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
                   title="New Folder"
                 >
                   <FolderPlus className="w-3.5 h-3.5" />
@@ -116,7 +116,7 @@ export function FileTreeItem({
                 e.stopPropagation();
                 onDelete(file.path, isDir);
               }}
-              className="p-0.5 hover:bg-[#3c3c3c] rounded text-[#858585] hover:text-[#f14c4c]"
+              className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-destructive"
               title="Delete"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -130,7 +130,7 @@ export function FileTreeItem({
         isExpanded &&
         (isLoading ? (
           <div
-            className="h-[22px] flex items-center text-[#858585] text-[13px]"
+            className="h-[22px] flex items-center text-muted-foreground text-[13px]"
             style={{ paddingLeft: indent + 32 }}
           >
             loading...

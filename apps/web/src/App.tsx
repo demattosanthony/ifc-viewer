@@ -25,6 +25,7 @@ import { useAgentPresence } from "@/features/agent/hooks/use-agent-presence";
 import { ChatPanel } from "@/features/agent/components/chat-panel";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
 import "@xterm/xterm/css/xterm.css";
+import { ThemeProvider } from "./shared/components/theme-provider";
 
 interface SelectedElement {
   data: Record<string, unknown>;
@@ -145,7 +146,7 @@ function MainContent({
 
             {/* Empty state when no tabs */}
             {!activeTab && (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#1e1e1e] text-[#858585]">
+              <div className="absolute inset-0 flex items-center justify-center bg-background text-muted-foreground">
                 <div className="text-center">
                   <p className="text-sm">No file open</p>
                   <p className="text-xs mt-1">
@@ -165,7 +166,7 @@ function MainContent({
                 onMouseDown={handleTerminalResizeStart}
                 className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize z-20 group"
               >
-                <div className="absolute inset-x-0 top-0 h-0.5 group-hover:h-1 bg-[#2d2d2d] group-hover:bg-[#007acc] transition-colors" />
+                <div className="absolute inset-x-0 top-0 h-0.5 group-hover:h-1 bg-border group-hover:bg-primary transition-colors" />
               </div>
               <div className="h-full">
                 <Terminal
@@ -191,7 +192,7 @@ function MainContent({
               onMouseDown={handleChatResizeStart}
               className="absolute top-0 left-0 bottom-0 w-2 cursor-ew-resize z-20 group"
             >
-              <div className="absolute inset-y-0 left-0 w-0.5 group-hover:w-1 bg-[#2d2d2d] group-hover:bg-[#007acc] transition-colors" />
+              <div className="absolute inset-y-0 left-0 w-0.5 group-hover:w-1 bg-border group-hover:bg-primary transition-colors" />
             </div>
             <ChatPanel onClose={onToggleChat} />
           </div>
@@ -249,10 +250,10 @@ function Home() {
 
   if (!workspaceId) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#1e1e1e] text-[#cccccc] gap-4">
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-foreground gap-4">
         <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-2 border-[#858585] border-t-[#cccccc] rounded-full animate-spin" />
-          <span className="text-[#858585] text-sm">
+          <div className="w-8 h-8 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin" />
+          <span className="text-muted-foreground text-sm">
             Initializing workspace...
           </span>
         </div>
@@ -265,7 +266,7 @@ function Home() {
   return (
     <EditorProvider initialFile="sample.ifc">
       <AgentProvider projectId={projectId} workspaceId={workspaceId}>
-        <div className="h-screen w-screen bg-[#1e1e1e] flex overflow-hidden">
+        <div className="h-screen w-screen bg-background flex overflow-hidden">
           <FileBrowser
             ref={fileBrowserRef}
             workspaceId={workspaceId}
@@ -291,14 +292,16 @@ function Home() {
 
 export default function App() {
   return (
-    <ViewerProvider
-      workerUrl="/worker.mjs"
-      config={{
-        gridEnabled: false,
-        statsEnabled: true,
-      }}
-    >
-      <Home />
-    </ViewerProvider>
+    <ThemeProvider>
+      <ViewerProvider
+        workerUrl="/worker.mjs"
+        config={{
+          gridEnabled: false,
+          statsEnabled: true,
+        }}
+      >
+        <Home />
+      </ViewerProvider>
+    </ThemeProvider>
   );
 }

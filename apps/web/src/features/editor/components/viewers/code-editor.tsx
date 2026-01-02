@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { writeFileMutation } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../../context";
 import Editor, { type OnMount } from "@monaco-editor/react";
+import { useEffectiveTheme } from "@/shared/hooks";
 
 function getLanguage(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
@@ -45,6 +46,7 @@ export function CodeEditor({
   const { setTabDirty, updateFileContent, getFileContent } = useEditor();
   const originalContentRef = useRef(content);
   const saveRef = useRef<() => Promise<void> | undefined>(undefined);
+  const effectiveTheme = useEffectiveTheme();
 
   const saveMutation = useMutation({
     ...writeFileMutation(),
@@ -101,7 +103,7 @@ export function CodeEditor({
         height="100%"
         language={getLanguage(filename)}
         value={content}
-        theme="vs-dark"
+        theme={effectiveTheme === "dark" ? "vs-dark" : "light"}
         onChange={handleChange}
         onMount={handleEditorMount}
         options={{
@@ -114,7 +116,7 @@ export function CodeEditor({
         }}
       />
       {saveMutation.isPending && (
-        <div className="absolute top-2 right-4 px-2 py-1 bg-[#007acc] text-white text-xs rounded">
+        <div className="absolute top-2 right-4 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
           Saving...
         </div>
       )}
