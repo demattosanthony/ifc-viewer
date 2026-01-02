@@ -4,13 +4,14 @@
  * Wires all dependencies together, enabling Dependency Injection without classes.
  */
 
-import type { Database, Storage, Computer } from "./ports"
+import type { Database, Storage, Computer, AIProvider } from "./ports"
 
 /** Application context with all infrastructure */
 export type Context = {
   db: Database
   storage: Storage
   compute: Computer
+  ai: AIProvider
   /** Get compute for a specific workspace (future: per-workspace containers) */
   getCompute(workspaceId: string): Computer
   dispose(): Promise<void>
@@ -21,6 +22,7 @@ export type ContextConfig = {
   db: Database
   storage: Storage
   compute: Computer
+  ai: AIProvider
   /** Optional: custom getCompute implementation for per-workspace compute */
   getCompute?: (workspaceId: string) => Computer
 }
@@ -31,6 +33,7 @@ export function createContext(config: ContextConfig): Context {
     db: config.db,
     storage: config.storage,
     compute: config.compute,
+    ai: config.ai,
     getCompute: config.getCompute ?? ((_workspaceId) => config.compute),
     async dispose() {
       await config.compute.dispose()

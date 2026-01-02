@@ -9,12 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { fetchSSE } from "@ifc-viewer/realtime";
+import type { AgentEvent } from "@ifc-viewer/realtime";
 import type {
-  AgentEvent,
   AgentMessage,
   ToolInvocation,
   MessagePart,
-} from "@ifc-viewer/agent";
+} from "@ifc-viewer/core";
 
 interface StreamingToolState {
   id: string;
@@ -96,7 +96,7 @@ export function AgentProvider({ workspaceId, children }: AgentProviderProps) {
       emitPresenceEvent(event);
 
       switch (event.type) {
-        case "start-step":
+        case "step-start":
           currentStepRef.current = event.stepIndex;
           break;
 

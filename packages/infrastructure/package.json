@@ -2,7 +2,7 @@
   "name": "@ifc-viewer/infrastructure",
   "version": "0.1.0",
   "private": true,
-  "description": "Infrastructure layer for IFC Viewer - repositories, storage adapters, and compute providers",
+  "description": "Infrastructure layer for IFC Viewer - repositories, storage adapters, compute providers, and AI adapters",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -21,12 +21,16 @@
     ".": "./src/index.ts",
     "./database": "./src/database/index.ts",
     "./storage": "./src/storage/index.ts",
-    "./compute": "./src/compute/index.ts"
+    "./compute": "./src/compute/index.ts",
+    "./ai": "./src/ai/index.ts"
   },
   "dependencies": {
     "@ifc-viewer/core": "workspace:*",
+    "@ai-sdk/anthropic": "beta",
+    "ai": "beta",
     "drizzle-orm": "^0.45.1",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

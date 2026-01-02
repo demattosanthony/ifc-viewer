@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { AgentMessage, MessagePart } from "@ifc-viewer/agent";
+import type { AgentMessage, MessagePart } from "@ifc-viewer/core";
 import { Tool, type ToolPart } from "./tool";
 import { Markdown } from "@ifc-viewer/ui/components";
 import { FilePreview } from "./tool-views/file-preview";

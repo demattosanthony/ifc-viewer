@@ -24,7 +24,6 @@
     "@elysiajs/swagger": "^1.2.0",
     "@ifc-viewer/core": "workspace:*",
     "@ifc-viewer/infrastructure": "workspace:*",
-    "@ifc-viewer/agent": "workspace:*",
     "@ifc-viewer/realtime": "workspace:*"
   },
   "devDependencies": {

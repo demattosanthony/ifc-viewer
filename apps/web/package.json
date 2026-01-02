@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ifc-viewer/agent": "workspace:*",
+    "@ifc-viewer/core": "workspace:*",
     "@ifc-viewer/realtime": "workspace:*",
     "@ifc-viewer/sdk": "workspace:*",
     "@ifc-viewer/ui": "workspace:*",

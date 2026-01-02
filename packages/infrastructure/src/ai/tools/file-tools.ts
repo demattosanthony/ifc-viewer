@@ -1,13 +1,15 @@
+/**
+ * File Tools
+ *
+ * AI tools for file system operations.
+ */
+
 import { tool } from "ai"
 import { z } from "zod"
-import type { Computer } from "@ifc-viewer/core"
-import type { AgentEvent } from "../events"
+import type { Computer, AIEvent } from "@ifc-viewer/core"
 import { getErrorMessage } from "../utils"
 
-export function createFileTools(
-  computer: Computer,
-  emit: (event: AgentEvent) => void
-) {
+export function createFileTools(computer: Computer, emit: (event: AIEvent) => void) {
   return {
     readFile: tool({
       description: "Read the contents of a file at the specified path",
@@ -16,24 +18,24 @@ export function createFileTools(
       }),
       execute: async ({ path }: { path: string }) => {
         try {
-          emit({ type: "editor-open", path });
+          emit({ type: "editor-open", path })
 
-          const result = await computer.files.read(path);
+          const result = await computer.files.read(path)
           if (result.type === "binary") {
             return {
               success: true,
               content: "[Binary file - cannot display as text]",
               type: "binary",
               path,
-            };
+            }
           }
-          return { success: true, content: result.content, type: "text", path };
+          return { success: true, content: result.content, type: "text", path }
         } catch (error: unknown) {
           return {
             success: false,
             error: getErrorMessage(error),
             path,
-          };
+          }
         }
       },
     }),
@@ -47,20 +49,20 @@ export function createFileTools(
       }),
       execute: async ({ path, content }: { path: string; content: string }) => {
         try {
-          emit({ type: "editor-open", path });
-          emit({ type: "editor-replace", path, content });
-          await computer.files.write(path, content);
-          emit({ type: "editor-save", path });
-          emit({ type: "file-created", path });
+          emit({ type: "editor-open", path })
+          emit({ type: "editor-replace", path, content })
+          await computer.files.write(path, content)
+          emit({ type: "editor-save", path })
+          emit({ type: "file-created", path })
 
-          return { success: true, path, bytesWritten: content.length };
+          return { success: true, path, bytesWritten: content.length }
         } catch (error) {
-          emit({ type: "error", message: `Failed to write file: ${path}` });
+          emit({ type: "error", message: `Failed to write file: ${path}` })
           return {
             success: false,
             error: getErrorMessage(error),
             path,
-          };
+          }
         }
       },
     }),
@@ -71,13 +73,11 @@ export function createFileTools(
         path: z
           .string()
           .default(".")
-          .describe(
-            "The directory path to list (defaults to current directory)"
-          ),
+          .describe("The directory path to list (defaults to current directory)"),
       }),
       execute: async ({ path }: { path: string }) => {
         try {
-          const entries = await computer.files.list(path);
+          const entries = await computer.files.list(path)
           return {
             success: true,
             path,
@@ -87,13 +87,13 @@ export function createFileTools(
               type: e.type,
               size: e.size,
             })),
-          };
+          }
         } catch (error) {
           return {
             success: false,
             error: getErrorMessage(error),
             path,
-          };
+          }
         }
       },
     }),
@@ -101,28 +101,25 @@ export function createFileTools(
     createDirectory: tool({
       description: "Create a new directory at the specified path",
       inputSchema: z.object({
-        path: z
-          .string()
-          .describe("The path where the directory should be created"),
+        path: z.string().describe("The path where the directory should be created"),
       }),
       execute: async ({ path }: { path: string }) => {
         try {
-          await computer.files.mkdir(path, { recursive: true });
-          emit({ type: "file-created", path });
-          return { success: true, path };
+          await computer.files.mkdir(path, { recursive: true })
+          emit({ type: "file-created", path })
+          return { success: true, path }
         } catch (error) {
           return {
             success: false,
             error: getErrorMessage(error),
             path,
-          };
+          }
         }
       },
     }),
 
     deleteFile: tool({
-      description:
-        "Delete a file or directory at the specified path. Use with caution.",
+      description: "Delete a file or directory at the specified path. Use with caution.",
       inputSchema: z.object({
         path: z.string().describe("The path to delete"),
         recursive: z
@@ -130,23 +127,17 @@ export function createFileTools(
           .default(false)
           .describe("Whether to recursively delete directories"),
       }),
-      execute: async ({
-        path,
-        recursive,
-      }: {
-        path: string;
-        recursive: boolean;
-      }) => {
+      execute: async ({ path, recursive }: { path: string; recursive: boolean }) => {
         try {
-          await computer.files.delete(path, { recursive });
-          emit({ type: "file-deleted", path });
-          return { success: true, path };
+          await computer.files.delete(path, { recursive })
+          emit({ type: "file-deleted", path })
+          return { success: true, path }
         } catch (error) {
           return {
             success: false,
             error: getErrorMessage(error),
             path,
-          };
+          }
         }
       },
     }),
@@ -157,27 +148,21 @@ export function createFileTools(
         source: z.string().describe("The current path of the file/directory"),
         destination: z.string().describe("The new path"),
       }),
-      execute: async ({
-        source,
-        destination,
-      }: {
-        source: string;
-        destination: string;
-      }) => {
+      execute: async ({ source, destination }: { source: string; destination: string }) => {
         try {
-          await computer.files.move(source, destination);
-          emit({ type: "file-deleted", path: source });
-          emit({ type: "file-created", path: destination });
-          return { success: true, source, destination };
+          await computer.files.move(source, destination)
+          emit({ type: "file-deleted", path: source })
+          emit({ type: "file-created", path: destination })
+          return { success: true, source, destination }
         } catch (error) {
           return {
             success: false,
             error: getErrorMessage(error),
             source,
             destination,
-          };
+          }
         }
       },
     }),
-  };
+  }
 }

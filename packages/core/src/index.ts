@@ -59,6 +59,20 @@ export {
 // Domain Layer - Value Objects
 export { Slug } from "./domain/value-objects"
 
+// Domain Layer - Agent Types
+export type {
+  Position,
+  Range,
+  UsageStats,
+  TextPart,
+  ToolInvocationState,
+  ToolInvocation,
+  ToolPart,
+  MessagePart,
+  AgentMessageRole,
+  AgentMessage,
+} from "./domain"
+
 // Domain Layer - Errors
 export {
   DomainError,
@@ -73,8 +87,13 @@ export {
 export {
   createProjectWithStorage,
   createWorkspaceWithFiles,
+  runAgentChat,
+  getConversation,
+  clearConversation,
   type CreateProjectInput,
   type CreateWorkspaceInput,
+  type AgentChatInput,
+  type AgentChatResult,
 } from "./services"
 
 // Ports - Infrastructure Interfaces
@@ -108,6 +127,43 @@ export type {
   FileReadOptions,
   FileContent,
   Shell,
+  // AI
+  AIProvider,
+  AIProviderConfig,
+  AIChatOptions,
+  AIMessage,
+  AIUsageStats,
+  AIEvent,
+  AIReadyEvent,
+  AITextDeltaEvent,
+  AIStepStartEvent,
+  AIStepEndEvent,
+  AIFinishEvent,
+  AIErrorEvent,
+  AIToolInputStartEvent,
+  AIToolInputDeltaEvent,
+  AIToolInputEndEvent,
+  AIToolCallEvent,
+  AIToolResultEvent,
+  AIToolNeedsApprovalEvent,
+  AIEditorOpenEvent,
+  AIEditorCursorEvent,
+  AIEditorInsertEvent,
+  AIEditorDeleteEvent,
+  AIEditorSaveEvent,
+  AIEditorReplaceEvent,
+  AITerminalFocusEvent,
+  AITerminalTypeEvent,
+  AITerminalExecuteEvent,
+  AITerminalOutputEvent,
+  AITerminalAppendEvent,
+  AIFileCreatedEvent,
+  AIFileDeletedEvent,
+  AIClientMessage,
+  AIChatMessage,
+  AIStopMessage,
+  AIApproveToolMessage,
+  AIRejectToolMessage,
 } from "./ports"
 
 // Context - Dependency Injection

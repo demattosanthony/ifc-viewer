@@ -36,5 +36,19 @@ export {
 // Value Objects
 export { Slug } from "./value-objects"
 
+// Agent types (value objects)
+export type {
+  Position,
+  Range,
+  UsageStats,
+  TextPart,
+  ToolInvocationState,
+  ToolInvocation,
+  ToolPart,
+  MessagePart,
+  AgentMessageRole,
+  AgentMessage,
+} from "./value-objects"
+
 // Errors
 export * from "./errors"

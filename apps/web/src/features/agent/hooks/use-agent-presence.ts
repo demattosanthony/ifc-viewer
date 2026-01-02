@@ -3,7 +3,7 @@
 import { useEffect, useCallback } from "react";
 import { useAgent } from "../context";
 import { useEditor } from "@/features/editor/context";
-import type { AgentEvent } from "@ifc-viewer/agent";
+import type { AgentEvent } from "@ifc-viewer/realtime";
 import type { TerminalHandle } from "@/features/terminal/components/terminal";
 import type { FileBrowserHandle } from "@/features/file-browser/components/file-browser";
 

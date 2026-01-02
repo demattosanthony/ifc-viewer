@@ -14,7 +14,6 @@
       "dependencies": {
         "@elysiajs/cors": "^1.2.0",
         "@elysiajs/swagger": "^1.2.0",
-        "@ifc-viewer/agent": "workspace:*",
         "@ifc-viewer/core": "workspace:*",
         "@ifc-viewer/infrastructure": "workspace:*",
         "@ifc-viewer/realtime": "workspace:*",
@@ -29,7 +28,7 @@
       "name": "@ifc-viewer/web",
       "version": "0.1.0",
       "dependencies": {
-        "@ifc-viewer/agent": "workspace:*",
+        "@ifc-viewer/core": "workspace:*",
         "@ifc-viewer/realtime": "workspace:*",
         "@ifc-viewer/sdk": "workspace:*",
         "@ifc-viewer/ui": "workspace:*",
@@ -56,22 +55,6 @@
         "tailwindcss-animate": "^1.0.7",
         "typescript": "^5",
         "vite": "^6.0.0",
-      },
-    },
-    "packages/agent": {
-      "name": "@ifc-viewer/agent",
-      "version": "0.0.1",
-      "dependencies": {
-        "@ai-sdk/anthropic": "beta",
-        "ai": "beta",
-        "zod": "^3.23.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "@ifc-viewer/core": "workspace:*",
-        "typescript": "^5",
       },
     },
     "packages/core": {
@@ -109,9 +92,12 @@
       "name": "@ifc-viewer/infrastructure",
       "version": "0.1.0",
       "dependencies": {
+        "@ai-sdk/anthropic": "beta",
         "@ifc-viewer/core": "workspace:*",
+        "ai": "beta",
         "drizzle-orm": "^0.45.1",
         "uuid": "^13.0.0",
+        "zod": "^3.23.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -124,7 +110,7 @@
       "name": "@ifc-viewer/realtime",
       "version": "0.1.0",
       "dependencies": {
-        "@ifc-viewer/agent": "workspace:*",
+        "@ifc-viewer/core": "workspace:*",
       },
       "devDependencies": {
         "@types/react": "^19.2.0",
@@ -376,8 +362,6 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/object-schema": ["@humanwhocodes/object-schema@2.0.3", "", {}, "sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA=="],
-
-    "@ifc-viewer/agent": ["@ifc-viewer/agent@workspace:packages/agent"],
 
     "@ifc-viewer/api": ["@ifc-viewer/api@workspace:apps/api"],
 

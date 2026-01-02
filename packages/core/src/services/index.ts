@@ -15,3 +15,11 @@ export {
   createWorkspaceWithFiles,
   type CreateWorkspaceInput,
 } from "./workspace.service"
+
+export {
+  runAgentChat,
+  getConversation,
+  clearConversation,
+  type AgentChatInput,
+  type AgentChatResult,
+} from "./agent.service"

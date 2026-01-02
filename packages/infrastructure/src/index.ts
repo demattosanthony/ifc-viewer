@@ -2,18 +2,24 @@
  * @ifc-viewer/infrastructure
  *
  * Infrastructure layer for the IFC Viewer platform.
- * Provides repositories, storage adapters, and compute providers.
+ * Provides repositories, storage adapters, compute providers, and AI adapters.
  *
  * ## Architecture
  *
  * - database/   - Database repositories (SQLite, Postgres, Memory)
  * - storage/    - Storage adapters (Local, S3, Memory)
  * - compute/    - Compute providers (Local)
+ * - ai/         - AI providers (Anthropic)
  *
  * ## Usage
  *
  * ```ts
- * import { createDatabase, createStorage, createLocalComputer } from '@ifc-viewer/infrastructure';
+ * import {
+ *   createDatabase,
+ *   createStorage,
+ *   createLocalComputer,
+ *   createAIProvider
+ * } from '@ifc-viewer/infrastructure';
  *
  * // Database
  * const db = await createDatabase({
@@ -30,6 +36,12 @@
  * // Compute
  * const compute = await createLocalComputer({
  *   workingDirectory: './workspace',
+ * });
+ *
+ * // AI
+ * const ai = createAIProvider({
+ *   type: 'anthropic',
+ *   model: 'claude-sonnet-4-5',
  * });
  * ```
  */
@@ -70,11 +82,30 @@ export {
   LocalShell,
 } from "./compute"
 
+// AI
+export {
+  createAIProvider,
+  createAIProviderFromEnv,
+  createAnthropicProvider,
+  type AIConfig,
+  type AIProviderType,
+  type AnthropicProviderConfig,
+  // Tools (for custom agent implementations)
+  createFileTools,
+  createShellTools,
+  // Prompts
+  BIM_IDE_SYSTEM_PROMPT,
+  // Utilities
+  getErrorMessage,
+  formatUsageStats,
+} from "./ai"
+
 // Re-export port types for convenience
 export type {
   Database,
   Storage,
   Computer,
+  AIProvider,
   ProjectRepository,
   WorkspaceRepository,
   ConversationRepository,
