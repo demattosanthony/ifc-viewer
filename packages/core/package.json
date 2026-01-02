@@ -2,15 +2,24 @@
   "name": "@ifc-viewer/core",
   "version": "0.1.0",
   "private": true,
-  "description": "Domain entities and interfaces for IFC Viewer",
+  "description": "Core domain logic, schemas, operations contracts, and context",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./domain": "./src/domain/index.ts",
+    "./ops": "./src/ops/index.ts",
+    "./use-cases": "./src/use-cases/index.ts",
+    "./context": "./src/context.ts",
+    "./errors": "./src/errors/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "typescript": "^5"

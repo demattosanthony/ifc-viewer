@@ -1,42 +1,30 @@
-import { Elysia, t } from "elysia";
-import { isValidProjectSlug } from "@ifc-viewer/core";
-import type { AppContext } from "../../context";
-import { ErrorResponse, SuccessResponse } from "../../schemas";
-import { ProjectResponse, ProjectListResponse } from "./projects.schemas";
-import { WorkspaceListResponse } from "../workspaces/workspaces.schemas";
+import { Elysia, t } from "elysia"
+import {
+  ProjectSchema,
+  WorkspaceSchema,
+  isDomainError,
+  NotFoundError,
+  createProjectWithStorage,
+  type Context
+} from "@ifc-viewer/core"
+import { ErrorResponse, SuccessResponse } from "../../schemas"
+import { z2e } from "../../schemas/zod-to-elysia"
 
-export function projectsRoutes(ctx: AppContext) {
+export function projectsRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/projects" })
     .post(
       "/",
       async ({ body, set }) => {
-        // Validate slug format
-        if (!isValidProjectSlug(body.id)) {
-          set.status = 400;
-          return {
-            error:
-              "Invalid project ID. Must be lowercase alphanumeric with hyphens, 1-100 characters.",
-          };
+        try {
+          // Use service for create (has storage initialization logic)
+          return await createProjectWithStorage(ctx, body)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-
-        // Check if project already exists (idempotent create)
-        const existing = await ctx.db.projects.findById(body.id);
-        if (existing) {
-          return existing;
-        }
-
-        // Create project in DB
-        const project = await ctx.db.projects.create({
-          id: body.id,
-          description: body.description,
-        });
-
-        // Create project directory in storage
-        await ctx.storage.put(`projects/${body.id}/.gitkeep`, "", {
-          contentType: "text/plain",
-        });
-
-        return project;
       },
       {
         body: t.Object({
@@ -44,7 +32,7 @@ export function projectsRoutes(ctx: AppContext) {
           description: t.Optional(t.String()),
         }),
         response: {
-          200: ProjectResponse,
+          200: z2e(ProjectSchema),
           400: ErrorResponse,
         },
         detail: {
@@ -56,11 +44,12 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/",
       async () => {
-        return ctx.db.projects.findAll();
+        // Direct repository call
+        return ctx.db.projects.findAll()
       },
       {
         response: {
-          200: ProjectListResponse,
+          200: t.Array(z2e(ProjectSchema)),
         },
         detail: {
           summary: "List all projects",
@@ -71,19 +60,20 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/:id",
       async ({ params, set }) => {
-        const project = await ctx.db.projects.findById(params.id);
+        // Direct repository call
+        const project = await ctx.db.projects.findById(params.id)
         if (!project) {
-          set.status = 404;
-          return { error: "Project not found" };
+          set.status = 404
+          return { error: `Project ${params.id} not found` }
         }
-        return project;
+        return project
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: ProjectResponse,
+          200: z2e(ProjectSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -95,14 +85,13 @@ export function projectsRoutes(ctx: AppContext) {
     .patch(
       "/:id",
       async ({ params, body, set }) => {
-        const existing = await ctx.db.projects.findById(params.id);
+        // Direct repository call
+        const existing = await ctx.db.projects.findById(params.id)
         if (!existing) {
-          set.status = 404;
-          return { error: "Project not found" };
+          set.status = 404
+          return { error: `Project ${params.id} not found` }
         }
-        return ctx.db.projects.update(params.id, {
-          description: body.description,
-        });
+        return ctx.db.projects.update(params.id, body)
       },
       {
         params: t.Object({
@@ -112,7 +101,7 @@ export function projectsRoutes(ctx: AppContext) {
           description: t.Optional(t.String()),
         }),
         response: {
-          200: ProjectResponse,
+          200: z2e(ProjectSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -124,21 +113,14 @@ export function projectsRoutes(ctx: AppContext) {
     .delete(
       "/:id",
       async ({ params, set }) => {
-        const existing = await ctx.db.projects.findById(params.id);
+        // Direct repository call
+        const existing = await ctx.db.projects.findById(params.id)
         if (!existing) {
-          set.status = 404;
-          return { error: "Project not found" };
+          set.status = 404
+          return { error: `Project ${params.id} not found` }
         }
-
-        // Delete project files from storage
-        const projectPrefix = `projects/${params.id}/`;
-        for await (const entry of ctx.storage.list(projectPrefix)) {
-          await ctx.storage.delete(entry.key);
-        }
-
-        // Delete from database
-        await ctx.db.projects.delete(params.id);
-        return { success: true };
+        await ctx.db.projects.delete(params.id)
+        return { success: true }
       },
       {
         params: t.Object({
@@ -157,19 +139,20 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/:id/workspaces",
       async ({ params }) => {
-        return ctx.db.workspaces.findByProjectId(params.id);
+        // Direct repository call
+        return ctx.db.workspaces.findByProjectId(params.id)
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: WorkspaceListResponse,
+          200: t.Array(z2e(WorkspaceSchema)),
         },
         detail: {
           summary: "List workspaces for a project",
           tags: ["Projects"],
         },
       }
-    );
+    )
 }

@@ -1,8 +1,8 @@
-import { tool } from "ai";
-import { z } from "zod";
-import type { Computer } from "@ifc-viewer/compute";
-import type { AgentEvent } from "../events";
-import { getErrorMessage } from "../utils";
+import { tool } from "ai"
+import { z } from "zod"
+import type { Computer } from "@ifc-viewer/core"
+import type { AgentEvent } from "../events"
+import { getErrorMessage } from "../utils"
 
 export function createFileTools(
   computer: Computer,
@@ -28,7 +28,7 @@ export function createFileTools(
             };
           }
           return { success: true, content: result.content, type: "text", path };
-        } catch (error) {
+        } catch (error: unknown) {
           return {
             success: false,
             error: getErrorMessage(error),

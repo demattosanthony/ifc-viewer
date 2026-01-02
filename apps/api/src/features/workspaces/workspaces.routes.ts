@@ -1,36 +1,35 @@
-import { Elysia, t } from "elysia";
-import type { AppContext } from "../../context";
-import { ErrorResponse, SuccessResponse } from "../../schemas";
-import { WorkspaceResponse, WorkspaceListResponse } from "./workspaces.schemas";
+import { Elysia, t } from "elysia"
+import {
+  WorkspaceSchema,
+  isDomainError,
+  createWorkspaceWithFiles,
+  type Context
+} from "@ifc-viewer/core"
+import { ErrorResponse, SuccessResponse } from "../../schemas"
+import { z2e } from "../../schemas/zod-to-elysia"
 
-export function workspacesRoutes(ctx: AppContext) {
+export function workspacesRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/workspaces" })
     .post(
       "/",
       async ({ body, set }) => {
-        // Verify project exists
-        const project = await ctx.db.projects.findById(body.projectId);
-        if (!project) {
-          set.status = 404;
-          return { error: "Project not found" };
+        try {
+          // Use service for create (loads files into compute)
+          return await createWorkspaceWithFiles(ctx, body)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-
-        // Create workspace
-        const workspace = await ctx.db.workspaces.create({
-          projectId: body.projectId,
-        });
-
-        // Load project files into compute
-        await ctx.loadProjectIntoCompute(body.projectId);
-
-        return workspace;
       },
       {
         body: t.Object({
           projectId: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -42,11 +41,12 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/",
       async () => {
-        return ctx.db.workspaces.findAll();
+        // Direct repository call
+        return ctx.db.workspaces.findAll()
       },
       {
         response: {
-          200: WorkspaceListResponse,
+          200: t.Array(z2e(WorkspaceSchema)),
         },
         detail: {
           summary: "List all workspaces",
@@ -57,11 +57,12 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/active",
       async () => {
-        return ctx.db.workspaces.findActive();
+        // Direct repository call
+        return ctx.db.workspaces.findActive()
       },
       {
         response: {
-          200: WorkspaceListResponse,
+          200: t.Array(z2e(WorkspaceSchema)),
         },
         detail: {
           summary: "List active workspaces",
@@ -72,19 +73,20 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/:id",
       async ({ params, set }) => {
-        const workspace = await ctx.db.workspaces.findById(params.id);
+        // Direct repository call
+        const workspace = await ctx.db.workspaces.findById(params.id)
         if (!workspace) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
-        return workspace;
+        return workspace
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -96,19 +98,20 @@ export function workspacesRoutes(ctx: AppContext) {
     .post(
       "/:id/touch",
       async ({ params, set }) => {
-        const existing = await ctx.db.workspaces.findById(params.id);
+        // Direct repository call
+        const existing = await ctx.db.workspaces.findById(params.id)
         if (!existing) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
-        return ctx.db.workspaces.touch(params.id);
+        return ctx.db.workspaces.touch(params.id)
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -120,19 +123,20 @@ export function workspacesRoutes(ctx: AppContext) {
     .post(
       "/:id/stop",
       async ({ params, set }) => {
-        const existing = await ctx.db.workspaces.findById(params.id);
+        // Direct repository call
+        const existing = await ctx.db.workspaces.findById(params.id)
         if (!existing) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
-        return ctx.db.workspaces.update(params.id, { status: "stopped" });
+        return ctx.db.workspaces.update(params.id, { status: "stopped" })
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -144,13 +148,14 @@ export function workspacesRoutes(ctx: AppContext) {
     .delete(
       "/:id",
       async ({ params, set }) => {
-        const existing = await ctx.db.workspaces.findById(params.id);
+        // Direct repository call
+        const existing = await ctx.db.workspaces.findById(params.id)
         if (!existing) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
-        await ctx.db.workspaces.delete(params.id);
-        return { success: true };
+        await ctx.db.workspaces.delete(params.id)
+        return { success: true }
       },
       {
         params: t.Object({
@@ -165,5 +170,5 @@ export function workspacesRoutes(ctx: AppContext) {
           tags: ["Workspaces"],
         },
       }
-    );
+    )
 }
