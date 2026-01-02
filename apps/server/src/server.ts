@@ -1,19 +1,19 @@
-import { Elysia } from "elysia"
-import { openapi } from "@elysiajs/openapi"
-import { cors } from "@elysiajs/cors"
-import { zodToJsonSchema } from "zod-to-json-schema"
-import { createAppContext } from "./context"
-import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface"
+import { Elysia } from "elysia";
+import { openapi } from "@elysiajs/openapi";
+import { cors } from "@elysiajs/cors";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import { createAppContext } from "./context";
+import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface";
 import {
   projectsRoutes,
   workspacesRoutes,
   filesRoutes,
   conversationRoutes,
   terminalRoutes,
-} from "./routes"
+} from "./routes";
 
 // Create app context
-const ctx = await createAppContext()
+const ctx = await createAppContext();
 
 // Create Elysia app
 const app = new Elysia()
@@ -21,6 +21,7 @@ const app = new Elysia()
   .use(
     openapi({
       path: "/swagger",
+      provider: "swagger-ui",
       specPath: "/swagger/json",
       documentation: {
         info: {
@@ -39,7 +40,11 @@ const app = new Elysia()
       },
       // Map Zod schemas to JSON Schema for OpenAPI docs
       mapJsonSchema: {
-        zod: (schema: unknown) => zodToJsonSchema(schema as Parameters<typeof zodToJsonSchema>[0], { target: "openApi3", $refStrategy: "root" }),
+        zod: (schema: unknown) =>
+          zodToJsonSchema(schema as Parameters<typeof zodToJsonSchema>[0], {
+            target: "openApi3",
+            $refStrategy: "root",
+          }),
       },
     })
   )
@@ -83,23 +88,23 @@ const app = new Elysia()
   .use(filesRoutes(ctx))
   .use(conversationRoutes(ctx))
   .use(terminalRoutes(ctx))
-  .listen(process.env.PORT ?? 3000)
+  .listen(process.env.PORT ?? 3000);
 
-console.log(`API is running at ${app.server?.hostname}:${app.server?.port}`)
-console.log(`Swagger docs: http://localhost:${app.server?.port}/swagger`)
+console.log(`API is running at ${app.server?.hostname}:${app.server?.port}`);
+console.log(`Swagger docs: http://localhost:${app.server?.port}/swagger`);
 
 // Export app type for Eden treaty SDK generation
-export type App = typeof app
+export type App = typeof app;
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
-  console.log("Shutting down...")
-  await ctx.dispose()
-  process.exit(0)
-})
+  console.log("Shutting down...");
+  await ctx.dispose();
+  process.exit(0);
+});
 
 process.on("SIGINT", async () => {
-  console.log("Shutting down...")
-  await ctx.dispose()
-  process.exit(0)
-})
+  console.log("Shutting down...");
+  await ctx.dispose();
+  process.exit(0);
+});

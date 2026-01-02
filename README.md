@@ -42,7 +42,6 @@ packages/
   interface/          # DTOs and HTTP controllers
   infrastructure/     # Database, storage, compute adapters
   ifc-viewer/         # 3D viewer (Three.js + web-ifc)
-  realtime/           # SSE utilities
   sdk/                # Type-safe API client
   ui/                 # Shared UI components
 ```
@@ -75,13 +74,13 @@ This project follows **Clean Architecture** principles with clear separation of 
 
 ### Layer Responsibilities
 
-| Layer | Package | Responsibility |
-|-------|---------|----------------|
-| **Domain** | `core` | Entities, value objects, domain errors, port interfaces |
-| **Application** | `core` | Services that orchestrate use cases |
-| **Interface** | `interface` | DTOs (Zod schemas), HTTP controllers |
-| **Infrastructure** | `infrastructure` | Database, storage, compute implementations |
-| **Presentation** | `server` | HTTP routes, WebSocket handlers |
+| Layer              | Package          | Responsibility                                          |
+| ------------------ | ---------------- | ------------------------------------------------------- |
+| **Domain**         | `core`           | Entities, value objects, domain errors, port interfaces |
+| **Application**    | `core`           | Services that orchestrate use cases                     |
+| **Interface**      | `interface`      | DTOs (Zod schemas), HTTP controllers                    |
+| **Infrastructure** | `infrastructure` | Database, storage, compute implementations              |
+| **Presentation**   | `server`         | HTTP routes, WebSocket handlers                         |
 
 ### Key Concepts
 
@@ -120,12 +119,12 @@ cp .env.example .env
 
 Key variables:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for AI features |
-| `DATABASE_URL` | No | Postgres connection string (defaults to SQLite) |
-| `STORAGE_LOCAL_BASE_DIR` | No | Storage directory (defaults to `.data/storage`) |
-| `PORT` | No | Server port (defaults to `3000`) |
+| Variable                 | Required | Description                                     |
+| ------------------------ | -------- | ----------------------------------------------- |
+| `ANTHROPIC_API_KEY`      | Yes      | Anthropic API key for AI features               |
+| `DATABASE_URL`           | No       | Postgres connection string (defaults to SQLite) |
+| `STORAGE_LOCAL_BASE_DIR` | No       | Storage directory (defaults to `.data/storage`) |
+| `PORT`                   | No       | Server port (defaults to `3000`)                |
 
 See `.env.example` for all available options.
 

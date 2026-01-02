@@ -292,7 +292,7 @@ function Home() {
 
 export default function App() {
   return (
-    <ThemeProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-theme">
       <ViewerProvider
         workerUrl="/worker.mjs"
         config={{
