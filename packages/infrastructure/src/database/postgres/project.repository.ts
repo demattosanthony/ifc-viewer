@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { NotFoundError } from "@ifc-viewer/core";
 import type { Project, ProjectRepository } from "@ifc-viewer/core";
 import { projects, type ProjectRow } from "./schema";
 import type { DrizzleDB } from "./db";
@@ -21,6 +22,7 @@ export function createProjectRepository(db: DrizzleDB): ProjectRepository {
         updatedAt: now,
       });
       const [row] = await db.select().from(projects).where(eq(projects.id, input.id));
+      if (!row) throw new NotFoundError("Project", input.id);
       return rowToEntity(row);
     },
 
@@ -39,6 +41,7 @@ export function createProjectRepository(db: DrizzleDB): ProjectRepository {
       if (input.description !== undefined) updates.description = input.description;
       await db.update(projects).set(updates).where(eq(projects.id, id));
       const [row] = await db.select().from(projects).where(eq(projects.id, id));
+      if (!row) throw new NotFoundError("Project", id);
       return rowToEntity(row);
     },
 

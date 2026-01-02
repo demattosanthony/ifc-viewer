@@ -16,7 +16,8 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tooling/*"
   ],
   "devDependencies": {
     "@types/stats.js": "^0.17.4"

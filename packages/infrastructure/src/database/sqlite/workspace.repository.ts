@@ -1,5 +1,6 @@
 import { eq, ne } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
+import { NotFoundError } from "@ifc-viewer/core"
 import type { Workspace, WorkspaceRepository } from "@ifc-viewer/core"
 import { workspaces, type WorkspaceRow } from "./schema"
 import type { DrizzleDB } from "./db"
@@ -25,6 +26,7 @@ export function createWorkspaceRepository(db: DrizzleDB): WorkspaceRepository {
         lastAccessedAt: now,
       })
       const [row] = await db.select().from(workspaces).where(eq(workspaces.id, id))
+      if (!row) throw new NotFoundError("Workspace", id)
       return rowToEntity(row)
     },
 
@@ -54,6 +56,7 @@ export function createWorkspaceRepository(db: DrizzleDB): WorkspaceRepository {
       if (input.lastAccessedAt !== undefined) updates.lastAccessedAt = input.lastAccessedAt
       await db.update(workspaces).set(updates).where(eq(workspaces.id, id))
       const [row] = await db.select().from(workspaces).where(eq(workspaces.id, id))
+      if (!row) throw new NotFoundError("Workspace", id)
       return rowToEntity(row)
     },
 
@@ -65,6 +68,7 @@ export function createWorkspaceRepository(db: DrizzleDB): WorkspaceRepository {
       const now = new Date()
       await db.update(workspaces).set({ lastAccessedAt: now }).where(eq(workspaces.id, id))
       const [row] = await db.select().from(workspaces).where(eq(workspaces.id, id))
+      if (!row) throw new NotFoundError("Workspace", id)
       return rowToEntity(row)
     },
   }

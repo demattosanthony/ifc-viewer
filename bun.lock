@@ -198,6 +198,10 @@
         "react-dom": "^18.0.0 || ^19.0.0",
       },
     },
+    "tooling/tsconfig": {
+      "name": "@ifc-viewer/tsconfig",
+      "version": "0.0.0",
+    },
   },
   "packages": {
     "@ai-sdk/anthropic": ["@ai-sdk/anthropic@3.0.0-beta.98", "", { "dependencies": { "@ai-sdk/provider": "3.0.0-beta.32", "@ai-sdk/provider-utils": "4.0.0-beta.59" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-XMWhml/fplgixqitIvOYFO+A9EsXiU2Kh6+b+F5AH7ILhVuJiQ3yPzaZ9ca4WcY/7NPnlLYmoUd2XcaF2qOopQ=="],
@@ -387,6 +391,8 @@
     "@ifc-viewer/sdk": ["@ifc-viewer/sdk@workspace:packages/sdk"],
 
     "@ifc-viewer/server": ["@ifc-viewer/server@workspace:apps/server"],
+
+    "@ifc-viewer/tsconfig": ["@ifc-viewer/tsconfig@workspace:tooling/tsconfig"],
 
     "@ifc-viewer/ui": ["@ifc-viewer/ui@workspace:packages/ui"],
 

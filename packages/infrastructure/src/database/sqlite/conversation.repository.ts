@@ -1,5 +1,6 @@
 import { eq, and } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
+import { NotFoundError } from "@ifc-viewer/core"
 import type { Conversation, ConversationRepository } from "@ifc-viewer/core"
 import { conversations, type ConversationRow } from "./schema"
 import type { DrizzleDB } from "./db"
@@ -25,6 +26,7 @@ export function createConversationRepository(db: DrizzleDB): ConversationReposit
         updatedAt: now,
       })
       const [row] = await db.select().from(conversations).where(eq(conversations.id, id))
+      if (!row) throw new NotFoundError("Conversation", id)
       return rowToEntity(row)
     },
 
@@ -41,6 +43,7 @@ export function createConversationRepository(db: DrizzleDB): ConversationReposit
       if (input.status !== undefined) updates.status = input.status
       await db.update(conversations).set(updates).where(eq(conversations.id, id))
       const [row] = await db.select().from(conversations).where(eq(conversations.id, id))
+      if (!row) throw new NotFoundError("Conversation", id)
       return rowToEntity(row)
     },
 
