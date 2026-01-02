@@ -2,10 +2,10 @@
   "name": "@ifc-viewer/monorepo",
   "private": true,
   "scripts": {
-    "dev": "bun run db:start && bun run --filter='@ifc-viewer/api' --filter='@ifc-viewer/web' dev",
-    "dev:api": "bun --filter=@ifc-viewer/api run start",
+    "dev": "bun run db:start && bun run --filter='@ifc-viewer/server' --filter='@ifc-viewer/web' dev",
+    "dev:server": "bun --filter=@ifc-viewer/server run start",
     "dev:web": "bun --filter=@ifc-viewer/web run dev",
-    "build": "bun --filter=@ifc-viewer/api run build && bun --filter=@ifc-viewer/web run build",
+    "build": "bun --filter=@ifc-viewer/server run build && bun --filter=@ifc-viewer/web run build",
     "typecheck": "bun --filter=* run typecheck",
     "generate:sdk": "bun --filter=@ifc-viewer/sdk run generate",
     "fetch:openapi": "bun --filter=@ifc-viewer/sdk run fetch-spec",

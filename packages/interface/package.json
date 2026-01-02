@@ -1,0 +1,25 @@
+{
+  "name": "@ifc-viewer/interface",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interface adapters layer - DTOs, HTTP controllers, and presenters",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dto": "./src/dto/index.ts",
+    "./http": "./src/http/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ifc-viewer/core": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}

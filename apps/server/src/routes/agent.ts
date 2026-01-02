@@ -1,18 +1,20 @@
-import { Elysia, t } from "elysia"
-import {
-  runAgentChat,
-  getConversation,
-  clearConversation,
-  type Context,
-  type AIEvent,
-} from "@ifc-viewer/core"
+import { Elysia } from "elysia"
+import { runAgentChat, type Context, type AIEvent } from "@ifc-viewer/core"
 import { createSSEStream, sseResponse } from "@ifc-viewer/realtime"
-import { ErrorResponse, SuccessResponse } from "../../schemas"
-import { ConversationWithMessagesResponse } from "./agent.schemas"
+import {
+  AgentController,
+  StartChatRequest,
+  ConversationWithMessagesResponse,
+  ErrorResponse,
+  SuccessResponse,
+} from "@ifc-viewer/interface"
+import { z } from "zod"
 
 const abortControllers = new Map<string, AbortController>()
 
 export function agentRoutes(ctx: Context) {
+  const controller = new AgentController(ctx)
+
   return new Elysia({ prefix: "/api/workspaces/:id/agent" })
     .post(
       "/chat",
@@ -35,7 +37,7 @@ export function agentRoutes(ctx: Context) {
               workspaceId: params.id,
               content: body.content,
               history: body.history?.map((m) => ({
-                role: m.role as "user" | "assistant",
+                role: m.role,
                 content: m.content,
               })),
               signal: abortController.signal,
@@ -65,20 +67,10 @@ export function agentRoutes(ctx: Context) {
         return sseResponse(stream)
       },
       {
-        params: t.Object({
-          id: t.String(),
+        params: z.object({
+          id: z.string(),
         }),
-        body: t.Object({
-          content: t.String(),
-          history: t.Optional(
-            t.Array(
-              t.Object({
-                role: t.String(),
-                content: t.String(),
-              })
-            )
-          ),
-        }),
+        body: StartChatRequest,
         detail: {
           summary: "Start agent chat with SSE streaming",
           tags: ["Agent"],
@@ -98,8 +90,8 @@ export function agentRoutes(ctx: Context) {
         return { success: true }
       },
       {
-        params: t.Object({
-          id: t.String(),
+        params: z.object({
+          id: z.string(),
         }),
         response: {
           200: SuccessResponse,
@@ -114,17 +106,16 @@ export function agentRoutes(ctx: Context) {
     .get(
       "/conversation",
       async ({ params, set }) => {
-        const conversation = await getConversation(ctx, params.id)
-        if (!conversation) {
-          set.status = 404
-          return { error: "No conversation found" }
+        const result = await controller.getConversation(params.id)
+        if (!result.success) {
+          set.status = result.status
+          return { error: result.error }
         }
-
-        return conversation
+        return result.data
       },
       {
-        params: t.Object({
-          id: t.String(),
+        params: z.object({
+          id: z.string(),
         }),
         response: {
           200: ConversationWithMessagesResponse,
@@ -139,12 +130,15 @@ export function agentRoutes(ctx: Context) {
     .delete(
       "/history",
       async ({ params }) => {
-        await clearConversation(ctx, params.id)
-        return { success: true }
+        const result = await controller.clearHistory(params.id)
+        if (!result.success) {
+          return { success: false }
+        }
+        return result.data
       },
       {
-        params: t.Object({
-          id: t.String(),
+        params: z.object({
+          id: z.string(),
         }),
         response: {
           200: SuccessResponse,

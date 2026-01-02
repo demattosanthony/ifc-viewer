@@ -8,14 +8,15 @@
         "@types/stats.js": "^0.17.4",
       },
     },
-    "apps/api": {
-      "name": "@ifc-viewer/api",
+    "apps/server": {
+      "name": "@ifc-viewer/server",
       "version": "0.1.0",
       "dependencies": {
         "@elysiajs/cors": "^1.2.0",
         "@elysiajs/swagger": "^1.2.0",
         "@ifc-viewer/core": "workspace:*",
         "@ifc-viewer/infrastructure": "workspace:*",
+        "@ifc-viewer/interface": "workspace:*",
         "@ifc-viewer/realtime": "workspace:*",
         "elysia": "^1.2.0",
       },
@@ -103,6 +104,18 @@
         "@types/bun": "latest",
         "@types/uuid": "^11.0.0",
         "drizzle-kit": "^0.30.1",
+        "typescript": "^5",
+      },
+    },
+    "packages/interface": {
+      "name": "@ifc-viewer/interface",
+      "version": "0.1.0",
+      "dependencies": {
+        "@ifc-viewer/core": "workspace:*",
+        "zod": "^3.24.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
         "typescript": "^5",
       },
     },
@@ -363,15 +376,17 @@
 
     "@humanwhocodes/object-schema": ["@humanwhocodes/object-schema@2.0.3", "", {}, "sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA=="],
 
-    "@ifc-viewer/api": ["@ifc-viewer/api@workspace:apps/api"],
-
     "@ifc-viewer/core": ["@ifc-viewer/core@workspace:packages/core"],
 
     "@ifc-viewer/infrastructure": ["@ifc-viewer/infrastructure@workspace:packages/infrastructure"],
 
+    "@ifc-viewer/interface": ["@ifc-viewer/interface@workspace:packages/interface"],
+
     "@ifc-viewer/realtime": ["@ifc-viewer/realtime@workspace:packages/realtime"],
 
     "@ifc-viewer/sdk": ["@ifc-viewer/sdk@workspace:packages/sdk"],
+
+    "@ifc-viewer/server": ["@ifc-viewer/server@workspace:apps/server"],
 
     "@ifc-viewer/ui": ["@ifc-viewer/ui@workspace:packages/ui"],
 

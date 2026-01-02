@@ -1,0 +1,5 @@
+export { projectsRoutes } from "./projects"
+export { workspacesRoutes } from "./workspaces"
+export { filesRoutes } from "./files"
+export { agentRoutes } from "./agent"
+export { terminalRoutes } from "./terminal"

@@ -22,84 +22,93 @@ cp .env.example .env
 # Start Postgres (required for persistence)
 bun run db:start
 
-# Start development servers (API + Web)
+# Start development servers
 bun run dev
 
 # Or run individually
-bun run dev:api    # API on port 3000
-bun run dev:web    # Web frontend
+bun run dev:server    # Server on port 3000
+bun run dev:web       # Web frontend
 ```
 
 ## Project Structure
 
 ```
 apps/
-  api/              # Elysia backend server (port 3000)
-  web/              # React + Vite frontend
+  server/             # Elysia server (HTTP + WebSocket)
+  web/                # React + Vite frontend
+
 packages/
-  agent/            # AI agent with tool capabilities
-  core/             # Domain entities, errors, and port interfaces
-  ifc-viewer/       # IFC 3D viewer components (Three.js + web-ifc)
-  infrastructure/   # Database, storage, and compute implementations
-  realtime/         # SSE client/server utilities
-  sdk/              # Type-safe API client (Eden treaty)
-  ui/               # Shared UI components (shadcn/ui style)
+  core/               # Domain entities, services, ports
+  interface/          # DTOs and HTTP controllers
+  infrastructure/     # Database, storage, compute adapters
+  ifc-viewer/         # 3D viewer (Three.js + web-ifc)
+  realtime/           # SSE utilities
+  sdk/                # Type-safe API client
+  ui/                 # Shared UI components
 ```
+
+## Architecture
+
+This project follows **Clean Architecture** principles with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        apps/server                          │
+│                     (Elysia routes)                         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ uses
+┌─────────────────────────▼───────────────────────────────────┐
+│                   packages/interface                         │
+│              (DTOs, Controllers, Presenters)                 │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ uses
+┌─────────────────────────▼───────────────────────────────────┐
+│                     packages/core                            │
+│         (Domain Entities, Services, Port Interfaces)         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ implemented by
+┌─────────────────────────▼───────────────────────────────────┐
+│                 packages/infrastructure                      │
+│           (Database, Storage, Compute Adapters)              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Layer Responsibilities
+
+| Layer | Package | Responsibility |
+|-------|---------|----------------|
+| **Domain** | `core` | Entities, value objects, domain errors, port interfaces |
+| **Application** | `core` | Services that orchestrate use cases |
+| **Interface** | `interface` | DTOs (Zod schemas), HTTP controllers |
+| **Infrastructure** | `infrastructure` | Database, storage, compute implementations |
+| **Presentation** | `server` | HTTP routes, WebSocket handlers |
+
+### Key Concepts
+
+- **Ports & Adapters**: Core defines interfaces (ports), infrastructure implements them (adapters)
+- **Dependency Inversion**: Core has no dependencies on infrastructure
+- **DTOs**: Zod schemas for request/response validation, framework-agnostic
+- **Controllers**: Business logic handlers that return `HttpResult<T>` types
 
 ## Scripts
 
 ```bash
 # Development
-bun run dev                # Start API + web servers
-bun run dev:api            # API server only
-bun run dev:web            # Web frontend only
+bun run dev              # Start server + web
+bun run dev:server       # Server only (port 3000)
+bun run dev:web          # Web frontend only
 
 # Build & Typecheck
-bun run build              # Build all packages
-bun run typecheck          # Type check all packages
+bun run build            # Build all packages
+bun run typecheck        # Type check all packages
 
 # Database
-bun run db:start           # Start Postgres via Docker
-bun run db:stop            # Stop Postgres
-bun run db:logs            # View Postgres logs
+bun run db:start         # Start Postgres via Docker
+bun run db:stop          # Stop Postgres
 
-# SDK Generation
-bun run generate:sdk       # Generate SDK from OpenAPI
-bun run fetch:openapi      # Fetch OpenAPI spec from running server
-
-# Testing
-bun test                   # Run all tests
-bun test path/to/file.ts   # Run single test file
-
-# UI Components
-bun run ui:add             # Add shadcn components to apps/web
+# SDK
+bun run generate:sdk     # Generate SDK from OpenAPI
 ```
-
-## Architecture
-
-### Core Package (`@ifc-viewer/core`)
-
-Domain-driven design with entities, value objects, and port interfaces:
-
-- **Entities:** `Project`, `Workspace`, `Conversation`, `Message`
-- **Errors:** `DomainError` base class with `NotFoundError`, `ValidationError`, etc.
-- **Ports:** `Database`, `Storage`, `Compute` interfaces for dependency inversion
-
-### Infrastructure Package (`@ifc-viewer/infrastructure`)
-
-Implements core ports with concrete adapters:
-
-- **Database:** SQLite, Postgres, and in-memory implementations
-- **Storage:** Local filesystem, S3, and in-memory implementations
-- **Compute:** Local shell execution for agent tools
-
-### Agent Package (`@ifc-viewer/agent`)
-
-AI agent powered by Anthropic Claude with tool capabilities:
-
-- File operations (read, write, list, search)
-- Shell command execution
-- IFC model analysis
 
 ## Environment Variables
 
@@ -110,12 +119,10 @@ See `.env.example` for all available options:
 ANTHROPIC_API_KEY=sk-ant-...
 
 # Database (defaults to SQLite)
-DATABASE_PROVIDER=sqlite  # sqlite | postgres | memory
-DATABASE_URL=./data/ifc-viewer.db
+DATABASE_URL=postgres://...  # or omit for SQLite
 
 # Storage (defaults to local)
-STORAGE_PROVIDER=local  # local | s3 | memory
-STORAGE_PATH=./data/storage
+STORAGE_LOCAL_BASE_DIR=./.data/storage
 ```
 
 ## License

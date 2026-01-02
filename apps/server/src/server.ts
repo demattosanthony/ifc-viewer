@@ -1,16 +1,18 @@
-import { Elysia } from "elysia";
-import { swagger } from "@elysiajs/swagger";
-import { cors } from "@elysiajs/cors";
-import { createAppContext } from "./context";
-import { ApiInfoResponse, HealthResponse } from "./schemas";
-import { projectsRoutes } from "./features/projects/projects.routes";
-import { workspacesRoutes } from "./features/workspaces/workspaces.routes";
-import { filesRoutes } from "./features/files";
-import { agentRoutes } from "./features/agent";
-import { terminalRoutes } from "./features/terminal/terminal.routes";
+import { Elysia } from "elysia"
+import { swagger } from "@elysiajs/swagger"
+import { cors } from "@elysiajs/cors"
+import { createAppContext } from "./context"
+import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface"
+import {
+  projectsRoutes,
+  workspacesRoutes,
+  filesRoutes,
+  agentRoutes,
+  terminalRoutes,
+} from "./routes"
 
 // Create app context
-const ctx = await createAppContext();
+const ctx = await createAppContext()
 
 // Create Elysia app
 const app = new Elysia()
@@ -72,23 +74,23 @@ const app = new Elysia()
   .use(filesRoutes(ctx))
   .use(agentRoutes(ctx))
   .use(terminalRoutes(ctx))
-  .listen(process.env.PORT ?? 3000);
+  .listen(process.env.PORT ?? 3000)
 
-console.log(`API is running at ${app.server?.hostname}:${app.server?.port}`);
-console.log(`Swagger docs: http://localhost:${app.server?.port}/swagger`);
+console.log(`API is running at ${app.server?.hostname}:${app.server?.port}`)
+console.log(`Swagger docs: http://localhost:${app.server?.port}/swagger`)
 
 // Export app type for Eden treaty SDK generation
-export type App = typeof app;
+export type App = typeof app
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
-  console.log("Shutting down...");
-  await ctx.dispose();
-  process.exit(0);
-});
+  console.log("Shutting down...")
+  await ctx.dispose()
+  process.exit(0)
+})
 
 process.on("SIGINT", async () => {
-  console.log("Shutting down...");
-  await ctx.dispose();
-  process.exit(0);
-});
+  console.log("Shutting down...")
+  await ctx.dispose()
+  process.exit(0)
+})

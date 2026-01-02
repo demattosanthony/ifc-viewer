@@ -8,15 +8,15 @@ Monorepo for an IFC (Industry Foundation Classes) viewer platform with AI agent 
 
 ```
 apps/
-  api/              # Elysia backend server (port 3000)
+  server/           # Elysia server - HTTP + WebSocket (port 3000)
   web/              # React + Vite frontend
 packages/
-  agent/            # AI agent with Anthropic SDK
-  core/             # Domain entities, errors, and port interfaces
-  ifc-viewer/       # IFC 3D viewer components (Three.js + web-ifc)
+  core/             # Domain entities, services, and port interfaces
+  interface/        # DTOs and HTTP controllers
   infrastructure/   # Database, storage, and compute implementations
+  ifc-viewer/       # IFC 3D viewer components (Three.js + web-ifc)
   realtime/         # SSE client/server utilities
-  sdk/              # Type-safe API client (Eden treaty)
+  sdk/              # Type-safe API client
   ui/               # Shared UI components (shadcn/ui style)
 ```
 
@@ -35,15 +35,15 @@ Prefer Bun APIs: `Bun.file()` over fs, `Bun.$\`cmd\`` over execa, `bun:sqlite` o
 ## Commands
 
 ```bash
-bun run dev                                 # Start API + web servers
-bun run dev:api                             # API server only (port 3000)
-bun run dev:web                             # Web frontend only
-bun run build                               # Build all packages
-bun run typecheck                           # Type check all packages
-bun --filter=@ifc-viewer/api run typecheck  # Single package typecheck
-bun run generate:sdk                        # Generate SDK from OpenAPI
-bun run db:start                            # Start Postgres via Docker
-bun run db:stop                             # Stop Postgres
+bun run dev                                    # Start server + web
+bun run dev:server                             # Server only (port 3000)
+bun run dev:web                                # Web frontend only
+bun run build                                  # Build all packages
+bun run typecheck                              # Type check all packages
+bun --filter=@ifc-viewer/server run typecheck  # Single package typecheck
+bun run generate:sdk                           # Generate SDK from OpenAPI
+bun run db:start                               # Start Postgres via Docker
+bun run db:stop                                # Stop Postgres
 ```
 
 ## Testing
