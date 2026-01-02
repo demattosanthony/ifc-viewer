@@ -112,18 +112,22 @@ bun run generate:sdk     # Generate SDK from OpenAPI
 
 ## Environment Variables
 
-See `.env.example` for all available options:
+All configuration is done via a single `.env` file at the repository root. Copy `.env.example` to get started:
 
 ```bash
-# Required
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Database (defaults to SQLite)
-DATABASE_URL=postgres://...  # or omit for SQLite
-
-# Storage (defaults to local)
-STORAGE_LOCAL_BASE_DIR=./.data/storage
+cp .env.example .env
 ```
+
+Key variables:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for AI features |
+| `DATABASE_URL` | No | Postgres connection string (defaults to SQLite) |
+| `STORAGE_LOCAL_BASE_DIR` | No | Storage directory (defaults to `.data/storage`) |
+| `PORT` | No | Server port (defaults to `3000`) |
+
+See `.env.example` for all available options.
 
 ## License
 

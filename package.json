@@ -2,9 +2,9 @@
   "name": "@ifc-viewer/monorepo",
   "private": true,
   "scripts": {
-    "dev": "bun run db:start && bun run --filter='@ifc-viewer/server' --filter='@ifc-viewer/web' dev",
-    "dev:server": "bun --filter=@ifc-viewer/server run start",
-    "dev:web": "bun --filter=@ifc-viewer/web run dev",
+    "dev": "bun run db:start && bun run --env-file=.env --filter='@ifc-viewer/server' --filter='@ifc-viewer/web' dev",
+    "dev:server": "bun --env-file=.env --filter=@ifc-viewer/server run start",
+    "dev:web": "bun --env-file=.env --filter=@ifc-viewer/web run dev",
     "build": "bun --filter=@ifc-viewer/server run build && bun --filter=@ifc-viewer/web run build",
     "typecheck": "bun --filter=* run typecheck",
     "generate:sdk": "bun --filter=@ifc-viewer/sdk run generate",
