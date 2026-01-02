@@ -1,6 +1,6 @@
-import { Elysia, t } from "elysia";
-import type { Context, Compute } from "@ifc-viewer/core";
-import { ErrorResponse, SuccessWithPathResponse } from "../../schemas";
+import { Elysia, t } from "elysia"
+import type { Context, FileEntry } from "@ifc-viewer/core"
+import { ErrorResponse, SuccessWithPathResponse } from "../../schemas"
 
 const FileEntrySchema = t.Object({
   name: t.String(),
@@ -8,19 +8,19 @@ const FileEntrySchema = t.Object({
   type: t.Union([t.Literal("file"), t.Literal("directory"), t.Literal("symlink")]),
   size: t.Number(),
   modifiedAt: t.Number(),
-});
+})
 
 export function filesRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/workspaces/:id/files" })
     .get(
       "/",
       async ({ params, query }) => {
-        const computer = ctx.getCompute(params.id);
-        const path = query.path ?? ".";
-        const files = await computer.files.list(path);
+        const computer = ctx.getCompute(params.id)
+        const path = query.path ?? "."
+        const files = await computer.files.list(path)
 
         return {
-          files: files.map((f: Compute.FileEntry) => ({
+          files: files.map((f: FileEntry) => ({
             name: f.name,
             path: f.path,
             type: f.type,
@@ -28,7 +28,7 @@ export function filesRoutes(ctx: Context) {
             modifiedAt: f.modifiedAt,
           })),
           path,
-        };
+        }
       },
       {
         params: t.Object({
@@ -52,15 +52,15 @@ export function filesRoutes(ctx: Context) {
     .get(
       "/content",
       async ({ params, query, set }) => {
-        const computer = ctx.getCompute(params.id);
+        const computer = ctx.getCompute(params.id)
 
         if (!query.path) {
-          set.status = 400;
-          return { error: "Path is required" };
+          set.status = 400
+          return { error: "Path is required" }
         }
 
         try {
-          const result = await computer.files.read(query.path);
+          const result = await computer.files.read(query.path)
           return {
             path: query.path,
             type: result.type,
@@ -68,10 +68,10 @@ export function filesRoutes(ctx: Context) {
               result.type === "text"
                 ? result.content
                 : Buffer.from(result.content).toString("base64"),
-          };
+          }
         } catch {
-          set.status = 404;
-          return { error: "File not found" };
+          set.status = 404
+          return { error: "File not found" }
         }
       },
       {
@@ -99,19 +99,19 @@ export function filesRoutes(ctx: Context) {
     .post(
       "/content",
       async ({ params, body, set }) => {
-        const computer = ctx.getCompute(params.id);
+        const computer = ctx.getCompute(params.id)
 
         try {
           const content = body.isBinary
             ? new Uint8Array(Buffer.from(body.content, "base64"))
-            : body.content;
+            : body.content
 
-          await computer.files.write(body.path, content);
+          await computer.files.write(body.path, content)
 
-          return { success: true, path: body.path };
+          return { success: true, path: body.path }
         } catch {
-          set.status = 500;
-          return { error: "Failed to write file" };
+          set.status = 500
+          return { error: "Failed to write file" }
         }
       },
       {
@@ -136,19 +136,19 @@ export function filesRoutes(ctx: Context) {
     .delete(
       "/",
       async ({ params, query, set }) => {
-        const computer = ctx.getCompute(params.id);
+        const computer = ctx.getCompute(params.id)
 
         if (!query.path) {
-          set.status = 400;
-          return { error: "Path is required" };
+          set.status = 400
+          return { error: "Path is required" }
         }
 
         try {
-          await computer.files.delete(query.path, { recursive: true });
-          return { success: true, path: query.path };
+          await computer.files.delete(query.path, { recursive: true })
+          return { success: true, path: query.path }
         } catch {
-          set.status = 500;
-          return { error: "Failed to delete file" };
+          set.status = 500
+          return { error: "Failed to delete file" }
         }
       },
       {
@@ -172,14 +172,14 @@ export function filesRoutes(ctx: Context) {
     .post(
       "/directory",
       async ({ params, body, set }) => {
-        const computer = ctx.getCompute(params.id);
+        const computer = ctx.getCompute(params.id)
 
         try {
-          await computer.files.mkdir(body.path, { recursive: true });
-          return { success: true, path: body.path };
+          await computer.files.mkdir(body.path, { recursive: true })
+          return { success: true, path: body.path }
         } catch {
-          set.status = 500;
-          return { error: "Failed to create directory" };
+          set.status = 500
+          return { error: "Failed to create directory" }
         }
       },
       {
@@ -198,5 +198,5 @@ export function filesRoutes(ctx: Context) {
           tags: ["Files"],
         },
       }
-    );
+    )
 }

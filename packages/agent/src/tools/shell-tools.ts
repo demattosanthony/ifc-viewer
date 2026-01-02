@@ -1,6 +1,6 @@
 import { tool } from "ai"
 import { z } from "zod"
-import type { Compute } from "@ifc-viewer/core"
+import type { TerminalSession } from "@ifc-viewer/core"
 import type { AgentEvent } from "../events"
 import { getErrorMessage } from "../utils"
 
@@ -9,7 +9,7 @@ const MARKER_SUFFIX = ">>";
 const MARKER_REGEX = /<<CMD_DONE:(-?\d+)>>/;
 
 export function createShellTools(
-  getTerminal: () => Promise<Compute.TerminalSession>,
+  getTerminal: () => Promise<TerminalSession>,
   emit: (event: AgentEvent) => void
 ) {
   return {
@@ -68,14 +68,14 @@ Commands run sequentially and share environment/state between calls.`,
               reject(new Error(`Command timed out after ${timeout}ms`));
             }, timeout);
 
-            cleanup = terminal.onData((data) => {
+            cleanup = terminal.onData((data: string) => {
               if (!skippedEcho) {
                 const lines = data.split("\n");
                 const hasEchoLine = lines.some(isEchoLine);
                 if (hasEchoLine) {
                   skippedEcho = true;
                   const filteredLines = lines.filter(
-                    (line) => !isEchoLine(line)
+                    (line: string) => !isEchoLine(line)
                   );
                   const cleanData = filteredLines.join("\n");
                   if (cleanData && cleanData.trim()) {
@@ -91,7 +91,7 @@ Commands run sequentially and share environment/state between calls.`,
                 exitCode = parseInt(match[1], 10);
                 const lines = data.split("\n");
                 const cleanLines = lines.filter(
-                  (line) => !MARKER_REGEX.test(line)
+                  (line: string) => !MARKER_REGEX.test(line)
                 );
                 const cleanData = cleanLines.join("\n");
                 if (cleanData && cleanData.trim()) {

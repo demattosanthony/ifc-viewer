@@ -1,5 +1,10 @@
 import { Elysia, t } from "elysia"
-import { Workspace, isDomainError, type Context } from "@ifc-viewer/core"
+import {
+  WorkspaceSchema,
+  isDomainError,
+  createWorkspaceWithFiles,
+  type Context
+} from "@ifc-viewer/core"
 import { ErrorResponse, SuccessResponse } from "../../schemas"
 import { z2e } from "../../schemas/zod-to-elysia"
 
@@ -9,7 +14,8 @@ export function workspacesRoutes(ctx: Context) {
       "/",
       async ({ body, set }) => {
         try {
-          return await Workspace.create(ctx, body)
+          // Use service for create (loads files into compute)
+          return await createWorkspaceWithFiles(ctx, body)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -23,7 +29,7 @@ export function workspacesRoutes(ctx: Context) {
           projectId: t.String(),
         }),
         response: {
-          200: z2e(Workspace.Entity),
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -35,11 +41,12 @@ export function workspacesRoutes(ctx: Context) {
     .get(
       "/",
       async () => {
-        return Workspace.list(ctx)
+        // Direct repository call
+        return ctx.db.workspaces.findAll()
       },
       {
         response: {
-          200: t.Array(z2e(Workspace.Entity)),
+          200: t.Array(z2e(WorkspaceSchema)),
         },
         detail: {
           summary: "List all workspaces",
@@ -50,11 +57,12 @@ export function workspacesRoutes(ctx: Context) {
     .get(
       "/active",
       async () => {
-        return Workspace.listActive(ctx)
+        // Direct repository call
+        return ctx.db.workspaces.findActive()
       },
       {
         response: {
-          200: t.Array(z2e(Workspace.Entity)),
+          200: t.Array(z2e(WorkspaceSchema)),
         },
         detail: {
           summary: "List active workspaces",
@@ -65,22 +73,20 @@ export function workspacesRoutes(ctx: Context) {
     .get(
       "/:id",
       async ({ params, set }) => {
-        try {
-          return await Workspace.get(ctx, params.id)
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode
-            return { error: error.message }
-          }
-          throw error
+        // Direct repository call
+        const workspace = await ctx.db.workspaces.findById(params.id)
+        if (!workspace) {
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
+        return workspace
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: z2e(Workspace.Entity),
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -92,22 +98,20 @@ export function workspacesRoutes(ctx: Context) {
     .post(
       "/:id/touch",
       async ({ params, set }) => {
-        try {
-          return await Workspace.touch(ctx, params.id)
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode
-            return { error: error.message }
-          }
-          throw error
+        // Direct repository call
+        const existing = await ctx.db.workspaces.findById(params.id)
+        if (!existing) {
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
+        return ctx.db.workspaces.touch(params.id)
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: z2e(Workspace.Entity),
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -119,22 +123,20 @@ export function workspacesRoutes(ctx: Context) {
     .post(
       "/:id/stop",
       async ({ params, set }) => {
-        try {
-          return await Workspace.stop(ctx, params.id)
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode
-            return { error: error.message }
-          }
-          throw error
+        // Direct repository call
+        const existing = await ctx.db.workspaces.findById(params.id)
+        if (!existing) {
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
+        return ctx.db.workspaces.update(params.id, { status: "stopped" })
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: z2e(Workspace.Entity),
+          200: z2e(WorkspaceSchema),
           404: ErrorResponse,
         },
         detail: {
@@ -146,16 +148,14 @@ export function workspacesRoutes(ctx: Context) {
     .delete(
       "/:id",
       async ({ params, set }) => {
-        try {
-          await Workspace.remove(ctx, params.id)
-          return { success: true }
-        } catch (error) {
-          if (isDomainError(error)) {
-            set.status = error.statusCode
-            return { error: error.message }
-          }
-          throw error
+        // Direct repository call
+        const existing = await ctx.db.workspaces.findById(params.id)
+        if (!existing) {
+          set.status = 404
+          return { error: `Workspace ${params.id} not found` }
         }
+        await ctx.db.workspaces.delete(params.id)
+        return { success: true }
       },
       {
         params: t.Object({

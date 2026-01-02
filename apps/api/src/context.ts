@@ -1,6 +1,4 @@
-import { createDatabase, type DatabaseConfig } from "@ifc-viewer/database"
-import { createStorageProvider } from "@ifc-viewer/storage"
-import { createLocalComputer } from "@ifc-viewer/compute"
+import { createDatabase, createStorage, createLocalComputer, type DatabaseConfig } from "@ifc-viewer/infrastructure"
 import { createContext, type Context } from "@ifc-viewer/core"
 import { mkdir, readFile } from "node:fs/promises"
 import { resolve, dirname } from "node:path"
@@ -57,7 +55,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
   }
 
   const db = await createDatabase(dbConfig)
-  const storage = createStorageProvider({ type: "local", baseDir: storageDirectory })
+  const storage = createStorage({ type: "local", baseDir: storageDirectory })
   const compute = await createLocalComputer({ workingDirectory, cleanup: false })
 
   const ctx = createContext({ db, storage, compute })

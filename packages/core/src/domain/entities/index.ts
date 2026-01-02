@@ -1,29 +1,35 @@
 /**
- * Domain Layer
- *
- * Contains entities, value objects, and domain errors.
+ * Domain Entities
  */
 
-// Entities
+// Project
 export {
-  // Project
   type Project,
   ProjectSchema,
   createProject,
   isValidProjectId,
-  // Workspace
+} from "./project"
+
+// Workspace
+export {
   type Workspace,
   type WorkspaceStatus,
   WorkspaceSchema,
   WorkspaceStatusSchema,
   isWorkspaceActive,
-  // Conversation
+} from "./workspace"
+
+// Conversation
+export {
   type Conversation,
   type ConversationStatus,
   ConversationSchema,
   ConversationStatusSchema,
   isConversationActive,
-  // Message
+} from "./conversation"
+
+// Message
+export {
   type Message,
   type MessageRole,
   MessageSchema,
@@ -31,10 +37,4 @@ export {
   isUserMessage,
   isAssistantMessage,
   isSystemMessage,
-} from "./entities"
-
-// Value Objects
-export { Slug } from "./value-objects"
-
-// Errors
-export * from "./errors"
+} from "./message"

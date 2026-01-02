@@ -1,11 +1,11 @@
 import { tool } from "ai"
 import { z } from "zod"
-import type { Compute } from "@ifc-viewer/core"
+import type { Computer } from "@ifc-viewer/core"
 import type { AgentEvent } from "../events"
 import { getErrorMessage } from "../utils"
 
 export function createFileTools(
-  computer: Compute.Provider,
+  computer: Computer,
   emit: (event: AgentEvent) => void
 ) {
   return {
@@ -28,7 +28,7 @@ export function createFileTools(
             };
           }
           return { success: true, content: result.content, type: "text", path };
-        } catch (error) {
+        } catch (error: unknown) {
           return {
             success: false,
             error: getErrorMessage(error),

@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia"
 import { createAgent, type AgentEvent } from "@ifc-viewer/agent"
 import { createSSEStream, sseResponse } from "@ifc-viewer/realtime"
-import { Conversation, Message, type Context } from "@ifc-viewer/core"
+import type { Context, ConversationStatus } from "@ifc-viewer/core"
 import { ErrorResponse, SuccessResponse } from "../../schemas"
 import { ConversationWithMessagesResponse } from "./agent.schemas"
 
@@ -15,7 +15,10 @@ export function agentRoutes(ctx: Context) {
         const computer = ctx.getCompute(params.id)
 
         // Get or create conversation for workspace
-        const conversation = await Conversation.getOrCreate(ctx, params.id)
+        let conversation = await ctx.db.conversations.findActiveByWorkspaceId(params.id)
+        if (!conversation) {
+          conversation = await ctx.db.conversations.create({ workspaceId: params.id })
+        }
 
         const existingController = abortControllers.get(params.id)
         if (existingController) {
@@ -32,13 +35,13 @@ export function agentRoutes(ctx: Context) {
         }>
 
         if (body.history && body.history.length > 0) {
-          messageHistory = body.history.map((m) => ({
+          messageHistory = body.history.map((m: { role: string; content: string }) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
           }))
         } else {
           // Fetch messages from DB
-          const messages = await Message.listByConversation(ctx, conversation.id)
+          const messages = await ctx.db.messages.findByConversationId(conversation.id)
           messageHistory = messages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
@@ -48,13 +51,13 @@ export function agentRoutes(ctx: Context) {
         messageHistory.push({ role: "user", content: body.content })
 
         // Save user message
-        await Message.add(ctx, {
+        await ctx.db.messages.create({
           conversationId: conversation.id,
           role: "user",
           content: body.content,
         })
 
-        await Conversation.updateStatus(ctx, conversation.id, "streaming")
+        await ctx.db.conversations.update(conversation.id, { status: "streaming" as ConversationStatus })
 
         const agent = createAgent({
           computer,
@@ -86,14 +89,14 @@ export function agentRoutes(ctx: Context) {
             }
 
             if (assistantMessage) {
-              await Message.add(ctx, {
+              await ctx.db.messages.create({
                 conversationId,
                 role: "assistant",
                 content: assistantMessage,
               })
             }
 
-            await Conversation.updateStatus(ctx, conversationId, "active")
+            await ctx.db.conversations.update(conversationId, { status: "active" as ConversationStatus })
           } catch (err) {
             if (err instanceof Error && err.name !== "AbortError") {
               sseCtx.send("message", {
@@ -101,7 +104,7 @@ export function agentRoutes(ctx: Context) {
                 message: err.message,
               })
             } else if (err instanceof Error && err.name === "AbortError") {
-              await Conversation.abort(ctx, conversationId)
+              await ctx.db.conversations.update(conversationId, { status: "aborted" as ConversationStatus })
             }
             sseCtx.send("message", {
               type: "finish",
@@ -165,14 +168,14 @@ export function agentRoutes(ctx: Context) {
     .get(
       "/conversation",
       async ({ params, set }) => {
-        const conversation = await Conversation.getActive(ctx, params.id)
+        const conversation = await ctx.db.conversations.findActiveByWorkspaceId(params.id)
         if (!conversation) {
           set.status = 404
           return { error: "No conversation found" }
         }
 
         // Include messages
-        const messages = await Message.listByConversation(ctx, conversation.id)
+        const messages = await ctx.db.messages.findByConversationId(conversation.id)
 
         return {
           ...conversation,
@@ -196,7 +199,7 @@ export function agentRoutes(ctx: Context) {
     .delete(
       "/history",
       async ({ params }) => {
-        await Conversation.clearHistory(ctx, params.id)
+        await ctx.db.conversations.deleteByWorkspaceId(params.id)
         return { success: true }
       },
       {

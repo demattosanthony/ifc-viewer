@@ -23,9 +23,7 @@
     "@elysiajs/cors": "^1.2.0",
     "@elysiajs/swagger": "^1.2.0",
     "@ifc-viewer/core": "workspace:*",
-    "@ifc-viewer/database": "workspace:*",
-    "@ifc-viewer/storage": "workspace:*",
-    "@ifc-viewer/compute": "workspace:*",
+    "@ifc-viewer/infrastructure": "workspace:*",
     "@ifc-viewer/agent": "workspace:*",
     "@ifc-viewer/realtime": "workspace:*"
   },
