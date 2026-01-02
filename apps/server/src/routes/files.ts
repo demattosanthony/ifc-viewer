@@ -38,6 +38,7 @@ export function filesRoutes(ctx: Context) {
         detail: {
           summary: "List files in a directory",
           tags: ["Files"],
+          operationId: "listFiles",
         },
       }
     )
@@ -64,6 +65,7 @@ export function filesRoutes(ctx: Context) {
         detail: {
           summary: "Read file content",
           tags: ["Files"],
+          operationId: "readFile",
         },
       }
     )
@@ -89,6 +91,7 @@ export function filesRoutes(ctx: Context) {
         detail: {
           summary: "Write file content",
           tags: ["Files"],
+          operationId: "writeFile",
         },
       }
     )
@@ -115,6 +118,7 @@ export function filesRoutes(ctx: Context) {
         detail: {
           summary: "Delete a file or directory",
           tags: ["Files"],
+          operationId: "deleteFile",
         },
       }
     )
@@ -140,6 +144,7 @@ export function filesRoutes(ctx: Context) {
         detail: {
           summary: "Create a directory",
           tags: ["Files"],
+          operationId: "createDirectory",
         },
       }
     )

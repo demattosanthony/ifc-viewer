@@ -7,7 +7,7 @@ import {
   ViewerProvider,
   type ElementSelectedEvent,
 } from "@ifc-viewer/viewer";
-import { postApiWorkspacesMutation } from "@ifc-viewer/sdk/hooks";
+import { createWorkspaceMutation } from "@ifc-viewer/sdk/hooks";
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
 import Terminal, {
@@ -210,8 +210,8 @@ function Home() {
   const terminalRef = useRef<TerminalHandle | null>(null);
   const fileBrowserRef = useRef<FileBrowserHandle | null>(null);
 
-  const createWorkspaceMutation = useMutation({
-    ...postApiWorkspacesMutation(),
+  const workspaceMutation = useMutation({
+    ...createWorkspaceMutation(),
     onSuccess: (data) => {
       setWorkspaceId(data.id);
       workspaceIdRef.current = data.id;
@@ -227,7 +227,7 @@ function Home() {
 
   useEffect(() => {
     // Create workspace for the sample project (auto-created by API on startup)
-    createWorkspaceMutation.mutate({
+    workspaceMutation.mutate({
       body: { projectId: "sample-project" },
     });
 

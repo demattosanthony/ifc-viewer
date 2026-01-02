@@ -39,7 +39,7 @@ const app = new Elysia()
       },
       // Map Zod schemas to JSON Schema for OpenAPI docs
       mapJsonSchema: {
-        zod: (schema: unknown) => zodToJsonSchema(schema as Parameters<typeof zodToJsonSchema>[0], { target: "openApi3", $refStrategy: "none" }),
+        zod: (schema: unknown) => zodToJsonSchema(schema as Parameters<typeof zodToJsonSchema>[0], { target: "openApi3", $refStrategy: "root" }),
       },
     })
   )
@@ -57,6 +57,7 @@ const app = new Elysia()
       detail: {
         summary: "API info",
         tags: ["General"],
+        operationId: "getApiInfo",
       },
     }
   )
@@ -73,6 +74,7 @@ const app = new Elysia()
       detail: {
         summary: "Health check",
         tags: ["General"],
+        operationId: "healthCheck",
       },
     }
   )

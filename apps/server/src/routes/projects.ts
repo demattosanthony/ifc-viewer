@@ -34,6 +34,7 @@ export function projectsRoutes(ctx: Context) {
         detail: {
           summary: "Create a new project",
           tags: ["Projects"],
+          operationId: "createProject",
         },
       }
     )
@@ -51,6 +52,7 @@ export function projectsRoutes(ctx: Context) {
         detail: {
           summary: "List all projects",
           tags: ["Projects"],
+          operationId: "listProjects",
         },
       }
     )
@@ -75,6 +77,7 @@ export function projectsRoutes(ctx: Context) {
         detail: {
           summary: "Get a project by ID",
           tags: ["Projects"],
+          operationId: "getProject",
         },
       }
     )
@@ -100,6 +103,7 @@ export function projectsRoutes(ctx: Context) {
         detail: {
           summary: "Update a project",
           tags: ["Projects"],
+          operationId: "updateProject",
         },
       }
     )
@@ -124,6 +128,7 @@ export function projectsRoutes(ctx: Context) {
         detail: {
           summary: "Delete a project",
           tags: ["Projects"],
+          operationId: "deleteProject",
         },
       }
     )
@@ -144,6 +149,7 @@ export function projectsRoutes(ctx: Context) {
         detail: {
           summary: "List workspaces for a project",
           tags: ["Projects"],
+          operationId: "listProjectWorkspaces",
         },
       }
     )

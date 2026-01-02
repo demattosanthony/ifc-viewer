@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
-  postApiWorkspacesByIdFilesContentMutation,
-  postApiWorkspacesByIdFilesDirectoryMutation,
-  deleteApiWorkspacesByIdFilesMutation,
+  writeFileMutation,
+  createDirectoryMutation,
+  deleteFileMutation,
 } from "@ifc-viewer/sdk/hooks";
 
 interface UseFileOperationsOptions {
@@ -22,16 +22,16 @@ export function useFileOperations({
 }: UseFileOperationsOptions) {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
-  const writeFileMutation = useMutation({
-    ...postApiWorkspacesByIdFilesContentMutation(),
+  const writeFile = useMutation({
+    ...writeFileMutation(),
   });
 
-  const createDirectoryMutation = useMutation({
-    ...postApiWorkspacesByIdFilesDirectoryMutation(),
+  const createDirectory = useMutation({
+    ...createDirectoryMutation(),
   });
 
-  const deleteFileMutation = useMutation({
-    ...deleteApiWorkspacesByIdFilesMutation(),
+  const deleteFile = useMutation({
+    ...deleteFileMutation(),
   });
 
   const uploadFiles = useCallback(
@@ -45,7 +45,7 @@ export function useFileOperations({
             targetPath === "." ? file.name : `${targetPath}/${file.name}`;
 
           try {
-            await writeFileMutation.mutateAsync({
+            await writeFile.mutateAsync({
               path: { id: workspaceId },
               body: { path: filePath, content: base64, isBinary: true },
             });
@@ -57,7 +57,7 @@ export function useFileOperations({
         reader.readAsDataURL(file);
       }
     },
-    [workspaceId, onRefresh, writeFileMutation]
+    [workspaceId, onRefresh, writeFile]
   );
 
   const createItem = useCallback(
@@ -73,12 +73,12 @@ export function useFileOperations({
 
       try {
         if (type === "folder") {
-          await createDirectoryMutation.mutateAsync({
+          await createDirectory.mutateAsync({
             path: { id: workspaceId },
             body: { path: newPath },
           });
         } else {
-          await writeFileMutation.mutateAsync({
+          await writeFile.mutateAsync({
             path: { id: workspaceId },
             body: { path: newPath, content: "" },
           });
@@ -90,13 +90,13 @@ export function useFileOperations({
         return false;
       }
     },
-    [workspaceId, onRefresh, writeFileMutation, createDirectoryMutation]
+    [workspaceId, onRefresh, writeFile, createDirectory]
   );
 
   const deleteItem = useCallback(
     async (path: string, onTabClose?: () => void): Promise<boolean> => {
       try {
-        await deleteFileMutation.mutateAsync({
+        await deleteFile.mutateAsync({
           path: { id: workspaceId },
           query: { path },
         });
@@ -113,7 +113,7 @@ export function useFileOperations({
         return false;
       }
     },
-    [workspaceId, onRefresh, deleteFileMutation]
+    [workspaceId, onRefresh, deleteFile]
   );
 
   const initiateDelete = useCallback(
@@ -143,9 +143,9 @@ export function useFileOperations({
     initiateDelete,
     confirmDelete,
     cancelDelete,
-    isUploading: writeFileMutation.isPending,
+    isUploading: writeFile.isPending,
     isCreating:
-      writeFileMutation.isPending || createDirectoryMutation.isPending,
-    isDeleting: deleteFileMutation.isPending,
+      writeFile.isPending || createDirectory.isPending,
+    isDeleting: deleteFile.isPending,
   };
 }

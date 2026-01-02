@@ -32,6 +32,7 @@ export function workspacesRoutes(ctx: Context) {
         detail: {
           summary: "Create a new workspace",
           tags: ["Workspaces"],
+          operationId: "createWorkspace",
         },
       }
     )
@@ -49,6 +50,7 @@ export function workspacesRoutes(ctx: Context) {
         detail: {
           summary: "List all workspaces",
           tags: ["Workspaces"],
+          operationId: "listWorkspaces",
         },
       }
     )
@@ -66,6 +68,7 @@ export function workspacesRoutes(ctx: Context) {
         detail: {
           summary: "List active workspaces",
           tags: ["Workspaces"],
+          operationId: "listActiveWorkspaces",
         },
       }
     )
@@ -90,6 +93,7 @@ export function workspacesRoutes(ctx: Context) {
         detail: {
           summary: "Get a workspace by ID",
           tags: ["Workspaces"],
+          operationId: "getWorkspace",
         },
       }
     )
@@ -114,6 +118,7 @@ export function workspacesRoutes(ctx: Context) {
         detail: {
           summary: "Touch a workspace (update last accessed time)",
           tags: ["Workspaces"],
+          operationId: "touchWorkspace",
         },
       }
     )
@@ -138,6 +143,7 @@ export function workspacesRoutes(ctx: Context) {
         detail: {
           summary: "Stop a workspace",
           tags: ["Workspaces"],
+          operationId: "stopWorkspace",
         },
       }
     )
@@ -162,6 +168,7 @@ export function workspacesRoutes(ctx: Context) {
         detail: {
           summary: "Delete a workspace",
           tags: ["Workspaces"],
+          operationId: "deleteWorkspace",
         },
       }
     )

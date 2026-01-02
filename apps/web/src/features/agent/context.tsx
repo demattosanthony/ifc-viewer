@@ -14,17 +14,17 @@ import { fetchSSE } from "@ifc-viewer/realtime";
 import type { AgentEvent } from "@ifc-viewer/realtime";
 import type { AgentMessage, ToolInvocation, MessagePart } from "@ifc-viewer/core";
 import {
-  getApiProjectsByIdConversationsOptions,
-  getApiProjectsByIdConversationsQueryKey,
-  getApiProjectsByIdConversationsByConversationIdOptions,
-  postApiProjectsByIdConversationsMutation,
-  deleteApiProjectsByIdConversationsByConversationIdMutation,
-  postApiProjectsByIdConversationsByConversationIdStopMutation,
+  listConversationsOptions,
+  listConversationsQueryKey,
+  getConversationOptions,
+  createConversationMutation,
+  deleteConversationMutation,
+  stopGenerationMutation,
 } from "@ifc-viewer/sdk/hooks";
 import type {
-  GetApiProjectsByIdConversationsResponse,
-  PostApiProjectsByIdConversationsResponse,
-  GetApiProjectsByIdConversationsByConversationIdResponse,
+  ListConversationsResponse,
+  CreateConversationResponse,
+  GetConversationResponse,
 } from "@ifc-viewer/sdk";
 
 // ============================================================================
@@ -32,10 +32,10 @@ import type {
 // ============================================================================
 
 /** Conversation type from API (derived from SDK) */
-type Conversation = GetApiProjectsByIdConversationsResponse[number];
+type Conversation = ListConversationsResponse[number];
 
 /** Conversation with messages from API (derived from SDK) */
-type ConversationWithMessages = GetApiProjectsByIdConversationsByConversationIdResponse;
+type ConversationWithMessages = GetConversationResponse;
 
 interface StreamingToolState {
   id: string;
@@ -157,24 +157,24 @@ export function AgentProvider({
 
   // Fetch conversations list
   const conversationsQuery = useQuery({
-    ...getApiProjectsByIdConversationsOptions({ path: { id: projectId } }),
+    ...listConversationsOptions({ path: { id: projectId } }),
   })
 
   const conversations = conversationsQuery.data ?? EMPTY_CONVERSATIONS
 
   // Create conversation mutation
-  const createConversationMutation = useMutation({
-    ...postApiProjectsByIdConversationsMutation(),
+  const createConvMutation = useMutation({
+    ...createConversationMutation(),
   });
 
   // Delete conversation mutation
-  const deleteConversationMutation = useMutation({
-    ...deleteApiProjectsByIdConversationsByConversationIdMutation(),
+  const deleteConvMutation = useMutation({
+    ...deleteConversationMutation(),
   });
 
   // Stop generation mutation
   const stopMutation = useMutation({
-    ...postApiProjectsByIdConversationsByConversationIdStopMutation(),
+    ...stopGenerationMutation(),
   });
 
   // Clear messages when no conversation selected
@@ -206,7 +206,7 @@ export function AgentProvider({
     const fetchMessages = async () => {
       try {
         const data = await queryClient.fetchQuery(
-          getApiProjectsByIdConversationsByConversationIdOptions({
+          getConversationOptions({
             path: { id: projectId, conversationId },
           })
         )
@@ -628,7 +628,7 @@ export function AgentProvider({
 
   const createNewConversation = useCallback(async () => {
     try {
-      const result = await createConversationMutation.mutateAsync({
+      const result = await createConvMutation.mutateAsync({
         path: { id: projectId },
         body: {},
       });
@@ -639,17 +639,17 @@ export function AgentProvider({
     } catch (error) {
       console.error("[Agent] Failed to create conversation:", error);
     }
-  }, [createConversationMutation, projectId]);
+  }, [createConvMutation, projectId]);
 
   const deleteConversationHandler = useCallback(
     async (convId: string) => {
       try {
-        await deleteConversationMutation.mutateAsync({
+        await deleteConvMutation.mutateAsync({
           path: { id: projectId, conversationId: convId },
         });
         // Invalidate conversations list to update UI
         queryClient.invalidateQueries({
-          queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+          queryKey: listConversationsQueryKey({ path: { id: projectId } }),
         });
         // If deleting active conversation, clear state
         if (convId === conversationId) {
@@ -660,7 +660,7 @@ export function AgentProvider({
         console.error("[Agent] Failed to delete conversation:", error);
       }
     },
-    [deleteConversationMutation, projectId, conversationId, queryClient]
+    [deleteConvMutation, projectId, conversationId, queryClient]
   );
 
   // ============================================================================
@@ -680,7 +680,7 @@ export function AgentProvider({
       let activeConvId = conversationId;
       if (!activeConvId) {
         try {
-          const conv = await createConversationMutation.mutateAsync({
+          const conv = await createConvMutation.mutateAsync({
             path: { id: projectId },
             body: {},
           });
@@ -692,7 +692,7 @@ export function AgentProvider({
           setConversationId(activeConvId);
           // Invalidate conversations list so new conversation appears in list
           queryClient.invalidateQueries({
-            queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+            queryKey: listConversationsQueryKey({ path: { id: projectId } }),
           });
         } catch (error) {
           console.error("[Agent] Failed to create conversation:", error);
@@ -735,7 +735,7 @@ export function AgentProvider({
           abortControllerRef.current = null;
           // Refresh conversations to update the title (auto-generated from first message)
           queryClient.invalidateQueries({
-            queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+            queryKey: listConversationsQueryKey({ path: { id: projectId } }),
           });
         },
         onError: (err: Error) => {
@@ -753,7 +753,7 @@ export function AgentProvider({
       workspaceId,
       conversationId,
       messages,
-      createConversationMutation,
+      createConvMutation,
       handleAgentEvent,
       queryClient,
     ]
@@ -785,12 +785,12 @@ export function AgentProvider({
   const clearMessages = useCallback(async () => {
     if (conversationId) {
       try {
-        await deleteConversationMutation.mutateAsync({
+        await deleteConvMutation.mutateAsync({
           path: { id: projectId, conversationId },
         });
         // Invalidate conversations list to update UI
         queryClient.invalidateQueries({
-          queryKey: getApiProjectsByIdConversationsQueryKey({ path: { id: projectId } }),
+          queryKey: listConversationsQueryKey({ path: { id: projectId } }),
         });
       } catch (error) {
         console.error("[Agent] Failed to delete conversation:", error);
@@ -798,7 +798,7 @@ export function AgentProvider({
     }
     setConversationId(null);
     setMessages([]);
-  }, [deleteConversationMutation, projectId, conversationId, queryClient]);
+  }, [deleteConvMutation, projectId, conversationId, queryClient]);
 
   const onPresenceEvent = useCallback(
     (callback: (event: AgentEvent) => void) => {

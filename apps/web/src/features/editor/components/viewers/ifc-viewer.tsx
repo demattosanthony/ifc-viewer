@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useViewer } from "@ifc-viewer/viewer";
-import { getApiWorkspacesByIdFilesContent } from "@ifc-viewer/sdk";
-import { getApiWorkspacesByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
+import { readFile } from "@ifc-viewer/sdk";
+import { readFileQueryKey } from "@ifc-viewer/sdk/hooks";
 
 export interface IFCViewerProps {
   workspaceId: string;
@@ -17,12 +17,12 @@ export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
 
   // Query for IFC file content
   const contentQuery = useQuery({
-    queryKey: getApiWorkspacesByIdFilesContentQueryKey({
+    queryKey: readFileQueryKey({
       path: { id: workspaceId },
       query: { path: filePath },
     }),
     queryFn: async () => {
-      const { data } = await getApiWorkspacesByIdFilesContent({
+      const { data } = await readFile({
         path: { id: workspaceId },
         query: { path: filePath },
       });

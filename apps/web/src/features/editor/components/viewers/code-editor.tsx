@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { postApiWorkspacesByIdFilesContentMutation } from "@ifc-viewer/sdk/hooks";
+import { writeFileMutation } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../../context";
 import Editor, { type OnMount } from "@monaco-editor/react";
 
@@ -47,7 +47,7 @@ export function CodeEditor({
   const saveRef = useRef<() => Promise<void> | undefined>(undefined);
 
   const saveMutation = useMutation({
-    ...postApiWorkspacesByIdFilesContentMutation(),
+    ...writeFileMutation(),
     onSuccess: () => {
       const currentContent = getFileContent(path);
       if (currentContent) {

@@ -8,10 +8,10 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getApiWorkspacesByIdFiles,
-  type GetApiWorkspacesByIdFilesResponse,
+  listFiles,
+  type ListFilesResponse,
 } from "@ifc-viewer/sdk";
-import { getApiWorkspacesByIdFilesQueryKey } from "@ifc-viewer/sdk/hooks";
+import { listFilesQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "@/features/editor/context";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
 import { useFileOperations } from "../hooks/use-file-operations";
@@ -20,7 +20,7 @@ import { FileTreeItem } from "./file-tree-item";
 import { NewItemInput } from "./new-item-input";
 import { DeleteDialog } from "./delete-dialog";
 
-type FileEntry = GetApiWorkspacesByIdFilesResponse["files"][number];
+type FileEntry = ListFilesResponse["files"][number];
 
 interface FileBrowserProps {
   workspaceId: string;
@@ -67,12 +67,12 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
     // Query for root files
     const rootFilesQuery = useQuery({
-      queryKey: getApiWorkspacesByIdFilesQueryKey({
+      queryKey: listFilesQueryKey({
         path: { id: workspaceId },
         query: { path: "." },
       }),
       queryFn: async () => {
-        const { data } = await getApiWorkspacesByIdFiles({
+        const { data } = await listFiles({
           path: { id: workspaceId },
           query: { path: "." },
         });
@@ -96,7 +96,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
         setLoadingPaths((prev) => new Set(prev).add(path));
         try {
-          const { data } = await getApiWorkspacesByIdFiles({
+          const { data } = await listFiles({
             path: { id: workspaceId },
             query: { path },
           });
@@ -118,7 +118,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
       (path: string) => {
         // Invalidate the query cache for this path
         queryClient.invalidateQueries({
-          queryKey: getApiWorkspacesByIdFilesQueryKey({
+          queryKey: listFilesQueryKey({
             path: { id: workspaceId },
             query: { path },
           }),

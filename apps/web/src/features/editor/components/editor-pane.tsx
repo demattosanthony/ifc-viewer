@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getApiWorkspacesByIdFilesContent } from "@ifc-viewer/sdk";
-import { getApiWorkspacesByIdFilesContentQueryKey } from "@ifc-viewer/sdk/hooks";
+import { readFile } from "@ifc-viewer/sdk";
+import { readFileQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../context";
 import { CodeEditor } from "./viewers/code-editor";
 import { IFCViewer } from "./viewers/ifc-viewer";
@@ -41,12 +41,12 @@ export function EditorPane({ workspaceId }: EditorPaneProps) {
 
   // Query for file content (non-IFC files only)
   const contentQuery = useQuery({
-    queryKey: getApiWorkspacesByIdFilesContentQueryKey({
+    queryKey: readFileQueryKey({
       path: { id: workspaceId },
       query: { path: activeTab?.path ?? "" },
     }),
     queryFn: async () => {
-      const { data } = await getApiWorkspacesByIdFilesContent({
+      const { data } = await readFile({
         path: { id: workspaceId },
         query: { path: activeTab!.path },
       });

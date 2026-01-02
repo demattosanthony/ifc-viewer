@@ -8,10 +8,10 @@ import {
   FolderPlus,
   Trash2,
 } from "lucide-react";
-import type { GetApiWorkspacesByIdFilesResponse } from "@ifc-viewer/sdk";
+import type { ListFilesResponse } from "@ifc-viewer/sdk";
 import { FileIcon } from "../utils/file-icons";
 
-type FileEntry = GetApiWorkspacesByIdFilesResponse["files"][number];
+type FileEntry = ListFilesResponse["files"][number];
 
 interface FileTreeItemProps {
   file: FileEntry;

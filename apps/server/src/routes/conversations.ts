@@ -59,6 +59,7 @@ export function conversationRoutes(ctx: Context) {
         detail: {
           summary: "Create a new conversation",
           tags: ["Conversations"],
+          operationId: "createConversation",
         },
       }
     )
@@ -90,6 +91,7 @@ export function conversationRoutes(ctx: Context) {
         detail: {
           summary: "List conversations for project",
           tags: ["Conversations"],
+          operationId: "listConversations",
         },
       }
     )
@@ -116,6 +118,7 @@ export function conversationRoutes(ctx: Context) {
         detail: {
           summary: "Get conversation with messages",
           tags: ["Conversations"],
+          operationId: "getConversation",
         },
       }
     )
@@ -140,6 +143,7 @@ export function conversationRoutes(ctx: Context) {
         detail: {
           summary: "Delete conversation",
           tags: ["Conversations"],
+          operationId: "deleteConversation",
         },
       }
     )
@@ -163,6 +167,7 @@ export function conversationRoutes(ctx: Context) {
         detail: {
           summary: "Clear all conversations for project",
           tags: ["Conversations"],
+          operationId: "clearConversations",
         },
       }
     )
@@ -230,6 +235,7 @@ export function conversationRoutes(ctx: Context) {
         detail: {
           summary: "Chat within conversation (SSE streaming)",
           tags: ["Conversations"],
+          operationId: "sendMessage",
         },
       }
     )
@@ -258,6 +264,7 @@ export function conversationRoutes(ctx: Context) {
         detail: {
           summary: "Stop ongoing chat generation",
           tags: ["Conversations"],
+          operationId: "stopGeneration",
         },
       }
     )

@@ -22,10 +22,10 @@ import {
   Plus,
   ChevronLeft,
 } from "lucide-react";
-import type { GetApiProjectsByIdConversationsResponse } from "@ifc-viewer/sdk";
+import type { ListConversationsResponse } from "@ifc-viewer/sdk";
 
 /** Conversation type from API (derived from SDK) */
-type Conversation = GetApiProjectsByIdConversationsResponse[number];
+type Conversation = ListConversationsResponse[number];
 
 interface ChatPanelProps {
   onClose?: () => void;
