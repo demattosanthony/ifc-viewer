@@ -252,6 +252,57 @@ export type AIClientMessage =
   | AIApproveToolMessage
   | AIRejectToolMessage
 
+// ============================================================================
+// Terminal WebSocket Events (for direct terminal connections)
+// ============================================================================
+
+/** Terminal ready event - connection established */
+export interface TerminalReadyEvent {
+  type: "ready"
+  terminalId: string
+}
+
+/** Terminal output event - data from PTY */
+export interface TerminalDataEvent {
+  type: "output"
+  data: string
+}
+
+/** Terminal exit event - process terminated */
+export interface TerminalExitEvent {
+  type: "exit"
+  code: number
+}
+
+/** Terminal error event */
+export interface TerminalErrorEvent {
+  type: "error"
+  message: string
+}
+
+/** Server -> Client terminal events */
+export type TerminalServerEvent =
+  | TerminalReadyEvent
+  | TerminalDataEvent
+  | TerminalExitEvent
+  | TerminalErrorEvent
+
+/** Client -> Server terminal input */
+export interface TerminalInputMessage {
+  type: "input"
+  data: string
+}
+
+/** Client -> Server terminal resize */
+export interface TerminalResizeMessage {
+  type: "resize"
+  cols: number
+  rows: number
+}
+
+/** Client -> Server terminal messages */
+export type TerminalClientMessage = TerminalInputMessage | TerminalResizeMessage
+
 /**
  * AI Provider Port
  *

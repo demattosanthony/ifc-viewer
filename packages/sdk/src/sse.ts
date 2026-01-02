@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 /**
  * Fetch-based SSE client for POST requests with streaming responses.
@@ -8,19 +8,19 @@
 
 export interface FetchSSEOptions<T> {
   /** URL to POST to */
-  url: string;
+  url: string
   /** Request body (will be JSON stringified) */
-  body: unknown;
+  body: unknown
   /** Callback for each received event */
-  onEvent: (event: T) => void;
+  onEvent: (event: T) => void
   /** Callback when stream completes */
-  onComplete?: () => void;
+  onComplete?: () => void
   /** Callback on error */
-  onError?: (error: Error) => void;
+  onError?: (error: Error) => void
   /** AbortSignal for cancellation */
-  signal?: AbortSignal;
+  signal?: AbortSignal
   /** SSE event name to listen for (default: "message") */
-  eventName?: string;
+  eventName?: string
 }
 
 /**
@@ -28,25 +28,25 @@ export interface FetchSSEOptions<T> {
  * SSE format: "event: name\ndata: json\n\n"
  */
 function parseSSEChunk(chunk: string): Array<{ event: string; data: string }> {
-  const events: Array<{ event: string; data: string }> = [];
-  const lines = chunk.split("\n");
+  const events: Array<{ event: string; data: string }> = []
+  const lines = chunk.split("\n")
 
-  let currentEvent = "message";
-  let currentData = "";
+  let currentEvent = "message"
+  let currentData = ""
 
   for (const line of lines) {
     if (line.startsWith("event: ")) {
-      currentEvent = line.slice(7).trim();
+      currentEvent = line.slice(7).trim()
     } else if (line.startsWith("data: ")) {
-      currentData = line.slice(6);
+      currentData = line.slice(6)
     } else if (line === "" && currentData) {
-      events.push({ event: currentEvent, data: currentData });
-      currentEvent = "message";
-      currentData = "";
+      events.push({ event: currentEvent, data: currentData })
+      currentEvent = "message"
+      currentData = ""
     }
   }
 
-  return events;
+  return events
 }
 
 /**
@@ -70,15 +70,7 @@ function parseSSEChunk(chunk: string): Array<{ event: string; data: string }> {
  * ```
  */
 export async function fetchSSE<T>(options: FetchSSEOptions<T>): Promise<void> {
-  const {
-    url,
-    body,
-    onEvent,
-    onComplete,
-    onError,
-    signal,
-    eventName = "message",
-  } = options;
+  const { url, body, onEvent, onComplete, onError, signal, eventName = "message" } = options
 
   try {
     const response = await fetch(url, {
@@ -89,70 +81,70 @@ export async function fetchSSE<T>(options: FetchSSEOptions<T>): Promise<void> {
       },
       body: JSON.stringify(body),
       signal,
-    });
+    })
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
     }
 
     if (!response.body) {
-      throw new Error("No response body");
+      throw new Error("No response body")
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ""
 
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await reader.read()
 
       if (done) {
         // Process any remaining buffer content
         if (buffer.trim()) {
-          const events = parseSSEChunk(buffer);
+          const events = parseSSEChunk(buffer)
           for (const { event, data } of events) {
             if (event === eventName && data) {
               try {
-                onEvent(JSON.parse(data) as T);
+                onEvent(JSON.parse(data) as T)
               } catch {
-                console.error("[SSE] Failed to parse event data:", data);
+                console.error("[SSE] Failed to parse event data:", data)
               }
             }
           }
         }
-        break;
+        break
       }
 
-      buffer += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true })
 
       // Process complete events (ending with double newline)
-      const parts = buffer.split("\n\n");
-      buffer = parts.pop() || ""; // Keep incomplete chunk in buffer
+      const parts = buffer.split("\n\n")
+      buffer = parts.pop() || "" // Keep incomplete chunk in buffer
 
       for (const part of parts) {
-        if (!part.trim()) continue;
+        if (!part.trim()) continue
 
-        const events = parseSSEChunk(part + "\n\n");
+        const events = parseSSEChunk(part + "\n\n")
         for (const { event, data } of events) {
           if (event === eventName && data) {
             try {
-              onEvent(JSON.parse(data) as T);
+              onEvent(JSON.parse(data) as T)
             } catch {
-              console.error("[SSE] Failed to parse event data:", data);
+              console.error("[SSE] Failed to parse event data:", data)
             }
           }
         }
       }
     }
 
-    onComplete?.();
+    onComplete?.()
   } catch (error) {
     // Don't report abort errors
     if (error instanceof Error && error.name === "AbortError") {
-      onComplete?.();
-      return;
+      onComplete?.()
+      return
     }
-    onError?.(error instanceof Error ? error : new Error(String(error)));
+    onError?.(error instanceof Error ? error : new Error(String(error)))
   }
 }

@@ -164,6 +164,15 @@ export type {
   AIStopMessage,
   AIApproveToolMessage,
   AIRejectToolMessage,
+  // Terminal WebSocket events
+  TerminalServerEvent,
+  TerminalReadyEvent,
+  TerminalDataEvent,
+  TerminalExitEvent,
+  TerminalErrorEvent,
+  TerminalClientMessage,
+  TerminalInputMessage,
+  TerminalResizeMessage,
 } from "./ports"
 
 // Context - Dependency Injection

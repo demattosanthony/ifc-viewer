@@ -10,9 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchSSE } from "@ifc-viewer/realtime";
-import type { AgentEvent } from "@ifc-viewer/realtime";
-import type { AgentMessage, ToolInvocation, MessagePart } from "@ifc-viewer/core";
+import { fetchSSE } from "@ifc-viewer/sdk";
+import type { AgentMessage, ToolInvocation, MessagePart, AIEvent as AgentEvent } from "@ifc-viewer/core";
 import {
   listConversationsOptions,
   listConversationsQueryKey,

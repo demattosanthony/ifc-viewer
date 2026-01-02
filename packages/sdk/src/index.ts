@@ -35,3 +35,6 @@ export * from "./generated/types.gen";
 
 // Export generated SDK functions
 export * from "./generated/sdk.gen";
+
+// SSE client utilities
+export { fetchSSE, type FetchSSEOptions } from "./sse";

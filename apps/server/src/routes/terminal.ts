@@ -1,6 +1,5 @@
 import { Elysia, t } from "elysia"
-import type { Context } from "@ifc-viewer/core"
-import type { TerminalServerEvent, TerminalClientMessage } from "@ifc-viewer/realtime"
+import type { Context, TerminalServerEvent, TerminalClientMessage } from "@ifc-viewer/core"
 
 interface TerminalWSData {
   query: { workspaceId: string }

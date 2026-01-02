@@ -17,7 +17,6 @@
         "@ifc-viewer/core": "workspace:*",
         "@ifc-viewer/infrastructure": "workspace:*",
         "@ifc-viewer/interface": "workspace:*",
-        "@ifc-viewer/realtime": "workspace:*",
         "elysia": "^1.2.0",
         "zod-to-json-schema": "^3.25.1",
       },
@@ -31,7 +30,6 @@
       "version": "0.1.0",
       "dependencies": {
         "@ifc-viewer/core": "workspace:*",
-        "@ifc-viewer/realtime": "workspace:*",
         "@ifc-viewer/sdk": "workspace:*",
         "@ifc-viewer/ui": "workspace:*",
         "@ifc-viewer/viewer": "workspace:*",
@@ -119,24 +117,6 @@
         "@types/bun": "latest",
         "typescript": "^5",
       },
-    },
-    "packages/realtime": {
-      "name": "@ifc-viewer/realtime",
-      "version": "0.1.0",
-      "dependencies": {
-        "@ifc-viewer/core": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/react": "^19.2.0",
-        "react": "^19.2.0",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^18.0.0 || ^19.0.0",
-      },
-      "optionalPeers": [
-        "react",
-      ],
     },
     "packages/sdk": {
       "name": "@ifc-viewer/sdk",
@@ -386,8 +366,6 @@
     "@ifc-viewer/infrastructure": ["@ifc-viewer/infrastructure@workspace:packages/infrastructure"],
 
     "@ifc-viewer/interface": ["@ifc-viewer/interface@workspace:packages/interface"],
-
-    "@ifc-viewer/realtime": ["@ifc-viewer/realtime@workspace:packages/realtime"],
 
     "@ifc-viewer/sdk": ["@ifc-viewer/sdk@workspace:packages/sdk"],
 

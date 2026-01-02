@@ -15,8 +15,9 @@
 
 import { Elysia } from "elysia"
 import { runAgentChat, type Context, type AIEvent } from "@ifc-viewer/core"
-import { createSSEStream, sseResponse } from "@ifc-viewer/realtime"
 import {
+  createSSEStream,
+  sseResponse,
   ConversationController,
   CreateConversationRequest,
   StartChatRequest,
