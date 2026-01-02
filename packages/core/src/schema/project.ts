@@ -30,3 +30,8 @@ export const UpdateProjectInput = z.object({
   description: z.string().optional(),
 })
 export type UpdateProjectInput = z.infer<typeof UpdateProjectInput>
+
+/** Validate a project slug */
+export const isValidProjectSlug = (slug: string): boolean => {
+  return ProjectId.safeParse(slug).success
+}

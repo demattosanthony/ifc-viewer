@@ -6,8 +6,8 @@
  */
 
 import type { Context } from "../context"
+import { isValidProjectSlug } from "../schema/project"
 import type { Project, CreateProjectInput, UpdateProjectInput } from "../schema/project"
-import { isValidProjectSlug } from "../domain/project"
 import { NotFoundError, ValidationError } from "../errors"
 
 /** Create a new project (idempotent - returns existing if found) */

@@ -5,10 +5,9 @@
  *
  * ## Architecture
  *
- * - schema/     - Zod schemas (types + runtime validation)
- * - domain/     - Pure transformation functions (no I/O)
+ * - schema/     - Zod schemas (types + runtime validation + helpers)
  * - ops/        - Operation contracts (database, storage, compute)
- * - use-cases/  - Application logic (combines domain + ops)
+ * - use-cases/  - Application logic (orchestrates ops)
  * - context     - Dependency injection
  * - errors/     - Typed error definitions
  *
@@ -19,9 +18,6 @@
 
 // Schema - Zod schemas as source of truth
 export * from "./schema"
-
-// Domain - Pure transformation functions
-export * from "./domain"
 
 // Operations - Side-effect contracts
 export * from "./ops"
