@@ -12,7 +12,8 @@
     "ui:add": "bunx shadcn@latest add --cwd apps/web",
     "db:start": "docker compose up -d postgres",
     "db:stop": "docker compose down",
-    "db:logs": "docker compose logs -f postgres"
+    "db:logs": "docker compose logs -f postgres",
+    "docker:build:bim-ide": "docker build -t bim-ide:latest ./containers/bim-ide"
   },
   "workspaces": [
     "apps/*",

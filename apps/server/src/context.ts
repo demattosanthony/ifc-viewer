@@ -2,10 +2,11 @@ import {
   createDatabase,
   createStorage,
   createLocalComputer,
+  createDockerComputer,
   createAIProviderFromEnv,
   type DatabaseConfig,
 } from "@ifc-viewer/infrastructure"
-import { createContext, type Context } from "@ifc-viewer/core"
+import { createContext, type Context, type Computer } from "@ifc-viewer/core"
 import { mkdir, readFile } from "node:fs/promises"
 import { resolve, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -19,11 +20,19 @@ const SAMPLE_PROJECT_ID = "sample-project"
 const SAMPLE_IFC_PATH = resolve(__dirname, "..", "assets", "sample.ifc")
 const SAMPLE_PY_SCRIPT_PATH = resolve(__dirname, "..", "assets", "print_info.py")
 
+const DEFAULT_DOCKER_IMAGE = "bim-ide:latest"
+
+export type ComputeProvider = "local" | "docker"
+
 export type AppContextConfig = {
   workingDirectory?: string
   dataDirectory?: string
   storageDirectory?: string
   databaseUrl?: string
+  /** Compute provider to use: "local" or "docker" (default: from COMPUTE_PROVIDER env or "docker") */
+  computeProvider?: ComputeProvider
+  /** Docker image to use when computeProvider is "docker" */
+  dockerImage?: string
 }
 
 function getDatabaseConfig(config: AppContextConfig): DatabaseConfig {
@@ -41,6 +50,27 @@ function getDatabaseConfig(config: AppContextConfig): DatabaseConfig {
   return { type: "sqlite", dataDirectory }
 }
 
+/**
+ * Create compute provider based on configuration
+ */
+async function createCompute(
+  provider: ComputeProvider,
+  workingDirectory: string,
+  dockerImage?: string
+): Promise<Computer> {
+  if (provider === "docker") {
+    console.log(`[Context] Using Docker compute provider (image: ${dockerImage ?? DEFAULT_DOCKER_IMAGE})`)
+    return createDockerComputer({
+      workingDirectory,
+      image: dockerImage ?? DEFAULT_DOCKER_IMAGE,
+      cleanup: true, // Remove container on dispose
+    })
+  }
+
+  console.log("[Context] Using local compute provider")
+  return createLocalComputer({ workingDirectory, cleanup: false })
+}
+
 export async function createAppContext(config: AppContextConfig = {}): Promise<Context> {
   const workingDirectory =
     config.workingDirectory ??
@@ -52,6 +82,14 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     process.env.STORAGE_LOCAL_BASE_DIR ??
     resolve(MONOREPO_ROOT, ".data", "storage")
 
+  // Determine compute provider from config or environment
+  const computeProvider: ComputeProvider =
+    config.computeProvider ??
+    (process.env.COMPUTE_PROVIDER as ComputeProvider | undefined) ??
+    "docker"
+
+  const dockerImage = config.dockerImage ?? process.env.DOCKER_IMAGE
+
   await mkdir(workingDirectory, { recursive: true })
   await mkdir(storageDirectory, { recursive: true })
 
@@ -62,7 +100,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
 
   const db = await createDatabase(dbConfig)
   const storage = createStorage({ type: "local", baseDir: storageDirectory })
-  const compute = await createLocalComputer({ workingDirectory, cleanup: false })
+  const compute = await createCompute(computeProvider, workingDirectory, dockerImage)
   const ai = createAIProviderFromEnv()
 
   const ctx = createContext({ db, storage, compute, ai })
