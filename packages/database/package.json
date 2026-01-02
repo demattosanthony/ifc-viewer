@@ -13,12 +13,15 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
+    "db:generate:pg": "drizzle-kit generate --config=drizzle-pg.config.ts",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate:pg": "drizzle-kit migrate --config=drizzle-pg.config.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:studio:pg": "drizzle-kit studio --config=drizzle-pg.config.ts"
   },
   "dependencies": {
     "@ifc-viewer/core": "workspace:*",
-    "drizzle-orm": "^0.38.3",
+    "drizzle-orm": "^0.45.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

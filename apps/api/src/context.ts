@@ -1,4 +1,4 @@
-import { createDatabase } from "@ifc-viewer/database"
+import { createDatabase, type DatabaseConfig } from "@ifc-viewer/database"
 import { createStorageProvider } from "@ifc-viewer/storage"
 import { createLocalComputer } from "@ifc-viewer/compute"
 import { createContext, type Context } from "@ifc-viewer/core"
@@ -19,6 +19,22 @@ export type AppContextConfig = {
   workingDirectory?: string
   dataDirectory?: string
   storageDirectory?: string
+  databaseUrl?: string
+}
+
+function getDatabaseConfig(config: AppContextConfig): DatabaseConfig {
+  const databaseUrl = config.databaseUrl ?? process.env.DATABASE_URL
+
+  if (databaseUrl) {
+    return { type: "postgres", connectionString: databaseUrl }
+  }
+
+  const dataDirectory =
+    config.dataDirectory ??
+    process.env.DATA_DIR ??
+    resolve(MONOREPO_ROOT, ".data", "sqlite")
+
+  return { type: "sqlite", dataDirectory }
 }
 
 export async function createAppContext(config: AppContextConfig = {}): Promise<Context> {
@@ -27,21 +43,20 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     process.env.PLAYGROUND_WORKING_DIR ??
     resolve(MONOREPO_ROOT, ".data", "workspace")
 
-  const dataDirectory =
-    config.dataDirectory ??
-    process.env.DATA_DIR ??
-    resolve(MONOREPO_ROOT, ".data", "sqlite")
-
   const storageDirectory =
     config.storageDirectory ??
     process.env.STORAGE_LOCAL_BASE_DIR ??
     resolve(MONOREPO_ROOT, ".data", "storage")
 
   await mkdir(workingDirectory, { recursive: true })
-  await mkdir(dataDirectory, { recursive: true })
   await mkdir(storageDirectory, { recursive: true })
 
-  const db = await createDatabase({ dataDirectory })
+  const dbConfig = getDatabaseConfig(config)
+  if (dbConfig.type === "sqlite") {
+    await mkdir(dbConfig.dataDirectory, { recursive: true })
+  }
+
+  const db = await createDatabase(dbConfig)
   const storage = createStorageProvider({ type: "local", baseDir: storageDirectory })
   const compute = await createLocalComputer({ workingDirectory, cleanup: false })
 

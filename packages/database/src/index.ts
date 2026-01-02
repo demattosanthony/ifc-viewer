@@ -2,7 +2,7 @@
  * @ifc-viewer/database
  *
  * Database implementations for the IFC Viewer platform.
- * Provides SQLite (default) and memory-based implementations.
+ * Provides SQLite, Postgres, and memory-based implementations.
  *
  * @example
  * ```ts
@@ -11,6 +11,12 @@
  * // SQLite (default, persistent)
  * const db = await createDatabase({
  *   dataDirectory: './data',
+ * });
+ *
+ * // Postgres
+ * const db = await createDatabase({
+ *   type: 'postgres',
+ *   connectionString: 'postgresql://user:pass@localhost:5432/db',
  * });
  *
  * // Or in-memory (ephemeral)
@@ -29,4 +35,10 @@
  * ```
  */
 
-export { createDatabase, type DatabaseConfig, type SQLiteDatabaseConfig, type MemoryDatabaseConfig } from "./factory";
+export {
+  createDatabase,
+  type DatabaseConfig,
+  type SQLiteDatabaseConfig,
+  type MemoryDatabaseConfig,
+  type PostgresDatabaseConfig,
+} from "./factory";

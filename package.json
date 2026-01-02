@@ -2,14 +2,17 @@
   "name": "@ifc-viewer/monorepo",
   "private": true,
   "scripts": {
-    "dev": "bun run --filter='@ifc-viewer/api' --filter='@ifc-viewer/web' dev",
+    "dev": "bun run db:start && bun run --filter='@ifc-viewer/api' --filter='@ifc-viewer/web' dev",
     "dev:api": "bun --filter=@ifc-viewer/api run start",
     "dev:web": "bun --filter=@ifc-viewer/web run dev",
     "build": "bun --filter=@ifc-viewer/api run build && bun --filter=@ifc-viewer/web run build",
     "typecheck": "bun --filter=* run typecheck",
     "generate:sdk": "bun --filter=@ifc-viewer/sdk run generate",
     "fetch:openapi": "bun --filter=@ifc-viewer/sdk run fetch-spec",
-    "ui:add": "bunx shadcn@latest add --cwd apps/web"
+    "ui:add": "bunx shadcn@latest add --cwd apps/web",
+    "db:start": "docker compose up -d postgres",
+    "db:stop": "docker compose down",
+    "db:logs": "docker compose logs -f postgres"
   },
   "workspaces": [
     "apps/*",
