@@ -19,7 +19,7 @@
  * });
  *
  * // Create a project
- * const project = await db.projects.create({ name: 'my-project' });
+ * const project = await db.projects.create({ id: 'my-project' });
  *
  * // Create a workspace
  * const workspace = await db.workspaces.create({ projectId: project.id });
@@ -29,6 +29,4 @@
  * ```
  */
 
-export * from "./factory";
-export * from "./providers/memory";
-export * from "./providers/sqlite";
+export { createDatabase, type DatabaseConfig, type SQLiteDatabaseConfig, type MemoryDatabaseConfig } from "./factory";

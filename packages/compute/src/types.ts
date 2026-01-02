@@ -2,18 +2,7 @@
  * Compute Types
  *
  * Re-exports from @ifc-viewer/core.
- * The canonical types are in @ifc-viewer/core/ops.
+ * The canonical types are in @ifc-viewer/core/contracts.
  */
 
-export type {
-  ComputeOps,
-  ComputeConfig,
-  FileSystemOps,
-  ShellOps,
-  TerminalSession,
-  TerminalOptions,
-  FileEntry,
-  FileStat,
-  FileContent,
-  ReadOptions,
-} from "@ifc-viewer/core"
+export type { Compute } from "@ifc-viewer/core"

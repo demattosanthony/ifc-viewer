@@ -1,18 +1,18 @@
 import { eq } from "drizzle-orm"
-import type { Project, ProjectOps, CreateProjectInput, UpdateProjectInput } from "@ifc-viewer/core"
+import type { Project, Database } from "@ifc-viewer/core"
 import { projects, type ProjectRow } from "./schema"
 import type { DrizzleDB } from "./db"
 
-const rowToProject = (row: ProjectRow): Project => ({
+const rowToEntity = (row: ProjectRow): Project.Entity => ({
   id: row.id,
   description: row.description,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
 })
 
-export function createSqliteProjectOps(db: DrizzleDB): ProjectOps {
+export function createProjectRepository(db: DrizzleDB): Database.ProjectRepository {
   return {
-    async create(input: CreateProjectInput): Promise<Project> {
+    async create(input: Project.CreateInput): Promise<Project.Entity> {
       const now = new Date()
       await db.insert(projects).values({
         id: input.id,
@@ -21,25 +21,25 @@ export function createSqliteProjectOps(db: DrizzleDB): ProjectOps {
         updatedAt: now,
       })
       const [row] = await db.select().from(projects).where(eq(projects.id, input.id))
-      return rowToProject(row)
+      return rowToEntity(row)
     },
 
-    async findById(id: string): Promise<Project | null> {
+    async findById(id: string): Promise<Project.Entity | null> {
       const [row] = await db.select().from(projects).where(eq(projects.id, id))
-      return row ? rowToProject(row) : null
+      return row ? rowToEntity(row) : null
     },
 
-    async findAll(): Promise<Project[]> {
+    async findAll(): Promise<Project.Entity[]> {
       const rows = await db.select().from(projects)
-      return rows.map(rowToProject)
+      return rows.map(rowToEntity)
     },
 
-    async update(id: string, input: UpdateProjectInput): Promise<Project> {
+    async update(id: string, input: Project.UpdateInput): Promise<Project.Entity> {
       const updates: Partial<ProjectRow> = { updatedAt: new Date() }
       if (input.description !== undefined) updates.description = input.description
       await db.update(projects).set(updates).where(eq(projects.id, id))
       const [row] = await db.select().from(projects).where(eq(projects.id, id))
-      return rowToProject(row)
+      return rowToEntity(row)
     },
 
     async delete(id: string): Promise<void> {

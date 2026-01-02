@@ -11,20 +11,8 @@
  */
 
 import { S3Client } from "bun";
+import type { Storage } from "@ifc-viewer/core";
 import { BaseStorageObject, inferContentType, toBytes } from "../base";
-import type {
-  ListOptions,
-  PutOptions,
-  StorageEntry,
-  StorageInput,
-  StorageMetadata,
-  StorageObject,
-  StorageOps,
-  StorageResult,
-  UploadCredentials,
-  UploadUrlOptions,
-  UrlOptions,
-} from "@ifc-viewer/core";
 
 export interface S3StorageConfig {
   /** S3 bucket name */
@@ -41,7 +29,7 @@ export interface S3StorageConfig {
   prefix?: string;
 }
 
-export class S3StorageProvider implements StorageOps {
+export class S3StorageProvider implements Storage.Provider {
   readonly type = "s3" as const;
 
   private client: S3Client;
@@ -76,14 +64,14 @@ export class S3StorageProvider implements StorageOps {
     return fullKey;
   }
 
-  async get(key: string): Promise<StorageObject | null> {
+  async get(key: string): Promise<Storage.Object | null> {
     const s3Key = this.buildKey(key);
 
     try {
       const file = this.client.file(s3Key);
       const data = await file.bytes();
 
-      const metadata: StorageMetadata = {
+      const metadata: Storage.Metadata = {
         key,
         size: data.byteLength,
         contentType: file.type ?? inferContentType(key),
@@ -100,9 +88,9 @@ export class S3StorageProvider implements StorageOps {
 
   async put(
     key: string,
-    data: StorageInput,
-    options?: PutOptions
-  ): Promise<StorageResult> {
+    data: Storage.Input,
+    options?: Storage.PutOptions
+  ): Promise<Storage.Result> {
     const s3Key = this.buildKey(key);
     const bytes = await toBytes(data);
 
@@ -154,8 +142,8 @@ export class S3StorageProvider implements StorageOps {
   async putStream(
     key: string,
     stream: ReadableStream<Uint8Array>,
-    options?: PutOptions
-  ): Promise<StorageResult> {
+    options?: Storage.PutOptions
+  ): Promise<Storage.Result> {
     // Bun's S3 client can write from Response which wraps a stream
     const s3Key = this.buildKey(key);
     const file = this.client.file(s3Key);
@@ -174,7 +162,7 @@ export class S3StorageProvider implements StorageOps {
     };
   }
 
-  async getUrl(key: string, options?: UrlOptions): Promise<string | null> {
+  async getUrl(key: string, options?: Storage.UrlOptions): Promise<string | null> {
     const s3Key = this.buildKey(key);
 
     try {
@@ -197,8 +185,8 @@ export class S3StorageProvider implements StorageOps {
 
   async getUploadUrl(
     key: string,
-    options?: UploadUrlOptions
-  ): Promise<UploadCredentials | null> {
+    options?: Storage.UploadUrlOptions
+  ): Promise<Storage.UploadCredentials | null> {
     const s3Key = this.buildKey(key);
     const file = this.client.file(s3Key);
 
@@ -221,8 +209,8 @@ export class S3StorageProvider implements StorageOps {
 
   async *list(
     prefix: string,
-    options?: ListOptions
-  ): AsyncIterable<StorageEntry> {
+    options?: Storage.ListOptions
+  ): AsyncIterable<Storage.Entry> {
     const s3Prefix = this.buildKey(prefix);
     let startAfter = options?.startAfter
       ? this.buildKey(options.startAfter)

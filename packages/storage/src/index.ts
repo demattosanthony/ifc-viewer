@@ -28,20 +28,8 @@
  * ```
  */
 
-// Types
-export type {
-  StorageOps,
-  StorageObject,
-  StorageInput,
-  StorageMetadata,
-  StorageEntry,
-  StorageResult,
-  PutOptions,
-  ListOptions,
-  UrlOptions,
-  UploadUrlOptions,
-  UploadCredentials,
-} from "./types";
+// Types - re-export the Storage namespace from core
+export type { Storage } from "@ifc-viewer/core";
 
 // Base utilities
 export { BaseStorageObject, toBytes, streamToBytes, inferContentType } from "./base";

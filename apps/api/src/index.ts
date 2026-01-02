@@ -3,11 +3,11 @@ import { swagger } from "@elysiajs/swagger";
 import { cors } from "@elysiajs/cors";
 import { createAppContext } from "./context";
 import { ApiInfoResponse, HealthResponse } from "./schemas";
-import { projectsRoutes } from "./features/projects";
-import { workspacesRoutes } from "./features/workspaces";
+import { projectsRoutes } from "./features/projects/projects.routes";
+import { workspacesRoutes } from "./features/workspaces/workspaces.routes";
 import { filesRoutes } from "./features/files";
 import { agentRoutes } from "./features/agent";
-import { terminalRoutes } from "./features/terminal";
+import { terminalRoutes } from "./features/terminal/terminal.routes";
 
 // Create app context
 const ctx = await createAppContext();

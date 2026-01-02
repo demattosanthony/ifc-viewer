@@ -1,6 +1,6 @@
 import { tool } from "ai"
 import { z } from "zod"
-import type { TerminalSession } from "@ifc-viewer/core"
+import type { Compute } from "@ifc-viewer/core"
 import type { AgentEvent } from "../events"
 import { getErrorMessage } from "../utils"
 
@@ -9,7 +9,7 @@ const MARKER_SUFFIX = ">>";
 const MARKER_REGEX = /<<CMD_DONE:(-?\d+)>>/;
 
 export function createShellTools(
-  getTerminal: () => Promise<TerminalSession>,
+  getTerminal: () => Promise<Compute.TerminalSession>,
   emit: (event: AgentEvent) => void
 ) {
   return {

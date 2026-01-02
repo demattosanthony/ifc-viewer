@@ -1,50 +1,44 @@
-import { v4 as uuidv4 } from "uuid"
-import type {
-  Project,
-  ProjectOps,
-  CreateProjectInput,
-  UpdateProjectInput,
-} from "@ifc-viewer/core"
+import type { Project, Database } from "@ifc-viewer/core"
 
-export function createMemoryProjectOps(): ProjectOps {
-  const projects = new Map<string, Project>()
+export function createProjectRepository(): Database.ProjectRepository {
+  const store = new Map<string, Project.Entity>()
 
   return {
-    async create(input: CreateProjectInput): Promise<Project> {
+    async create(input: Project.CreateInput): Promise<Project.Entity> {
       const now = new Date()
-      const project: Project = {
+      const entity: Project.Entity = {
         id: input.id,
         description: input.description ?? null,
         createdAt: now,
         updatedAt: now,
       }
-      projects.set(project.id, project)
-      return project
+      store.set(entity.id, entity)
+      return entity
     },
 
-    async findById(id: string): Promise<Project | null> {
-      return projects.get(id) ?? null
+    async findById(id: string): Promise<Project.Entity | null> {
+      return store.get(id) ?? null
     },
 
-    async findAll(): Promise<Project[]> {
-      return Array.from(projects.values())
+    async findAll(): Promise<Project.Entity[]> {
+      return Array.from(store.values())
     },
 
-    async update(id: string, input: UpdateProjectInput): Promise<Project> {
-      const existing = projects.get(id)
+    async update(id: string, input: Project.UpdateInput): Promise<Project.Entity> {
+      const existing = store.get(id)
       if (!existing) throw new Error(`Project ${id} not found`)
 
-      const updated: Project = {
+      const updated: Project.Entity = {
         ...existing,
         description: input.description ?? existing.description,
         updatedAt: new Date(),
       }
-      projects.set(id, updated)
+      store.set(id, updated)
       return updated
     },
 
     async delete(id: string): Promise<void> {
-      projects.delete(id)
+      store.delete(id)
     },
   }
 }

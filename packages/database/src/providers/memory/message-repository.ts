@@ -1,24 +1,24 @@
 import { v4 as uuidv4 } from "uuid"
-import type { Message, MessageOps, CreateMessageInput } from "@ifc-viewer/core"
+import type { Message, Database } from "@ifc-viewer/core"
 
-export function createMemoryMessageOps(): MessageOps {
-  const messages = new Map<string, Message>()
+export function createMessageRepository(): Database.MessageRepository {
+  const store = new Map<string, Message.Entity>()
 
   return {
-    async create(input: CreateMessageInput): Promise<Message> {
-      const message: Message = {
+    async create(input: Message.CreateInput): Promise<Message.Entity> {
+      const entity: Message.Entity = {
         id: uuidv4(),
         conversationId: input.conversationId,
         role: input.role,
         content: input.content,
         createdAt: new Date(),
       }
-      messages.set(message.id, message)
-      return message
+      store.set(entity.id, entity)
+      return entity
     },
 
-    async findByConversationId(conversationId: string): Promise<Message[]> {
-      return Array.from(messages.values())
+    async findByConversationId(conversationId: string): Promise<Message.Entity[]> {
+      return Array.from(store.values())
         .filter((m) => m.conversationId === conversationId)
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
     },

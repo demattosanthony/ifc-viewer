@@ -1,8 +1,7 @@
 import { Elysia, t } from "elysia"
-import { useCases, isDomainError, type Context } from "@ifc-viewer/core"
+import { Project, Workspace, isDomainError, type Context } from "@ifc-viewer/core"
 import { ErrorResponse, SuccessResponse } from "../../schemas"
-import { ProjectResponse, ProjectListResponse } from "./projects.schemas"
-import { WorkspaceListResponse } from "../workspaces/workspaces.schemas"
+import { z2e } from "../../schemas/zod-to-elysia"
 
 export function projectsRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/projects" })
@@ -10,7 +9,7 @@ export function projectsRoutes(ctx: Context) {
       "/",
       async ({ body, set }) => {
         try {
-          return await useCases.createProject(ctx, body)
+          return await Project.create(ctx, body)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -25,7 +24,7 @@ export function projectsRoutes(ctx: Context) {
           description: t.Optional(t.String()),
         }),
         response: {
-          200: ProjectResponse,
+          200: z2e(Project.Entity),
           400: ErrorResponse,
         },
         detail: {
@@ -37,11 +36,11 @@ export function projectsRoutes(ctx: Context) {
     .get(
       "/",
       async () => {
-        return useCases.listProjects(ctx)
+        return Project.list(ctx)
       },
       {
         response: {
-          200: ProjectListResponse,
+          200: t.Array(z2e(Project.Entity)),
         },
         detail: {
           summary: "List all projects",
@@ -53,7 +52,7 @@ export function projectsRoutes(ctx: Context) {
       "/:id",
       async ({ params, set }) => {
         try {
-          return await useCases.getProject(ctx, params.id)
+          return await Project.get(ctx, params.id)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -67,7 +66,7 @@ export function projectsRoutes(ctx: Context) {
           id: t.String(),
         }),
         response: {
-          200: ProjectResponse,
+          200: z2e(Project.Entity),
           404: ErrorResponse,
         },
         detail: {
@@ -80,7 +79,7 @@ export function projectsRoutes(ctx: Context) {
       "/:id",
       async ({ params, body, set }) => {
         try {
-          return await useCases.updateProject(ctx, params.id, body)
+          return await Project.update(ctx, params.id, body)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -97,7 +96,7 @@ export function projectsRoutes(ctx: Context) {
           description: t.Optional(t.String()),
         }),
         response: {
-          200: ProjectResponse,
+          200: z2e(Project.Entity),
           404: ErrorResponse,
         },
         detail: {
@@ -110,7 +109,7 @@ export function projectsRoutes(ctx: Context) {
       "/:id",
       async ({ params, set }) => {
         try {
-          await useCases.deleteProject(ctx, params.id)
+          await Project.remove(ctx, params.id)
           return { success: true }
         } catch (error) {
           if (isDomainError(error)) {
@@ -137,14 +136,14 @@ export function projectsRoutes(ctx: Context) {
     .get(
       "/:id/workspaces",
       async ({ params }) => {
-        return useCases.listProjectWorkspaces(ctx, params.id)
+        return Workspace.listByProject(ctx, params.id)
       },
       {
         params: t.Object({
           id: t.String(),
         }),
         response: {
-          200: WorkspaceListResponse,
+          200: t.Array(z2e(Workspace.Entity)),
         },
         detail: {
           summary: "List workspaces for a project",

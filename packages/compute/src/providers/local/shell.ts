@@ -1,4 +1,4 @@
-import type { ShellOps, TerminalSession, TerminalOptions } from "@ifc-viewer/core";
+import type { Compute } from "@ifc-viewer/core";
 
 const isWindows = process.platform === "win32";
 const DEFAULT_SHELL = isWindows ? "powershell.exe" : "/bin/bash";
@@ -11,13 +11,13 @@ const baseEnv = Object.fromEntries(
   )
 );
 
-export class LocalShell implements ShellOps {
+export class LocalShell implements Compute.Shell {
   constructor(
     private workDir: string,
     private defaultEnv?: Record<string, string>
   ) {}
 
-  async startTerminal(options?: TerminalOptions): Promise<TerminalSession> {
+  async startTerminal(options?: Compute.TerminalOptions): Promise<Compute.TerminalSession> {
     const cwd = options?.cwd || this.workDir;
 
     const env: Record<string, string> = {

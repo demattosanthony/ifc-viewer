@@ -1,18 +1,18 @@
 import { resolve } from "node:path"
-import type { DatabaseOps } from "@ifc-viewer/core"
+import type { Database } from "@ifc-viewer/core"
 import {
-  createMemoryProjectOps,
-  createMemoryWorkspaceOps,
-  createMemoryConversationOps,
-  createMemoryMessageOps,
+  createProjectRepository as createMemoryProjectRepository,
+  createWorkspaceRepository as createMemoryWorkspaceRepository,
+  createConversationRepository as createMemoryConversationRepository,
+  createMessageRepository as createMemoryMessageRepository,
 } from "./providers/memory"
 import {
   createSQLiteConnection,
   runMigrations,
-  createSqliteProjectOps,
-  createSqliteWorkspaceOps,
-  createSqliteConversationOps,
-  createSqliteMessageOps,
+  createProjectRepository as createSqliteProjectRepository,
+  createWorkspaceRepository as createSqliteWorkspaceRepository,
+  createConversationRepository as createSqliteConversationRepository,
+  createMessageRepository as createSqliteMessageRepository,
 } from "./providers/sqlite"
 
 /** Configuration for SQLite database (default) */
@@ -29,35 +29,35 @@ export type MemoryDatabaseConfig = {
 
 export type DatabaseConfig = SQLiteDatabaseConfig | MemoryDatabaseConfig
 
-/** Create a database operations provider */
-export async function createDatabase(config: DatabaseConfig): Promise<DatabaseOps> {
+/** Create a database provider */
+export async function createDatabase(config: DatabaseConfig): Promise<Database.Provider> {
   if (config.type === "memory") {
     return createMemoryDatabase()
   }
   return createSQLiteDatabase(config)
 }
 
-function createMemoryDatabase(): DatabaseOps {
+function createMemoryDatabase(): Database.Provider {
   return {
-    projects: createMemoryProjectOps(),
-    workspaces: createMemoryWorkspaceOps(),
-    conversations: createMemoryConversationOps(),
-    messages: createMemoryMessageOps(),
+    projects: createMemoryProjectRepository(),
+    workspaces: createMemoryWorkspaceRepository(),
+    conversations: createMemoryConversationRepository(),
+    messages: createMemoryMessageRepository(),
     dispose: async () => {},
   }
 }
 
-async function createSQLiteDatabase(config: SQLiteDatabaseConfig): Promise<DatabaseOps> {
+async function createSQLiteDatabase(config: SQLiteDatabaseConfig): Promise<Database.Provider> {
   const filename = config.filename ?? resolve(config.dataDirectory, "ifc-viewer.db")
   const { db, close } = await createSQLiteConnection({ filename })
 
   runMigrations(db)
 
   return {
-    projects: createSqliteProjectOps(db),
-    workspaces: createSqliteWorkspaceOps(db),
-    conversations: createSqliteConversationOps(db),
-    messages: createSqliteMessageOps(db),
+    projects: createSqliteProjectRepository(db),
+    workspaces: createSqliteWorkspaceRepository(db),
+    conversations: createSqliteConversationRepository(db),
+    messages: createSqliteMessageRepository(db),
     dispose: async () => close(),
   }
 }

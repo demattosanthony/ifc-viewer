@@ -1,11 +1,11 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { createLocalComputer } from "../src";
-import type { ComputeOps } from "@ifc-viewer/core";
+import type { Compute } from "@ifc-viewer/core";
 import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 
 describe("LocalComputer", () => {
-  let computer: ComputeOps;
+  let computer: Compute.Provider;
   const testWorkspace = "/tmp/bim-test-workspace";
 
   beforeEach(async () => {
@@ -292,7 +292,7 @@ describe("LocalComputer", () => {
 });
 
 describe("LocalComputer terminal management", () => {
-  let computer: ComputeOps;
+  let computer: Compute.Provider;
   const testWorkspace = "/tmp/bim-terminal-mgmt-test";
 
   beforeEach(async () => {
@@ -374,7 +374,7 @@ describe("LocalComputer terminal management", () => {
 });
 
 describe("LocalShell", () => {
-  let computer: ComputeOps;
+  let computer: Compute.Provider;
   const testWorkspace = "/tmp/bim-shell-test-workspace";
 
   beforeEach(async () => {

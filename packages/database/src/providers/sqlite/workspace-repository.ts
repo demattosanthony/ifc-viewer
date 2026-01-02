@@ -1,10 +1,10 @@
 import { eq, ne } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
-import type { Workspace, WorkspaceOps, CreateWorkspaceInput, UpdateWorkspaceInput } from "@ifc-viewer/core"
+import type { Workspace, Database } from "@ifc-viewer/core"
 import { workspaces, type WorkspaceRow } from "./schema"
 import type { DrizzleDB } from "./db"
 
-const rowToWorkspace = (row: WorkspaceRow): Workspace => ({
+const rowToEntity = (row: WorkspaceRow): Workspace.Entity => ({
   id: row.id,
   projectId: row.projectId,
   status: row.status,
@@ -12,9 +12,9 @@ const rowToWorkspace = (row: WorkspaceRow): Workspace => ({
   lastAccessedAt: row.lastAccessedAt,
 })
 
-export function createSqliteWorkspaceOps(db: DrizzleDB): WorkspaceOps {
+export function createWorkspaceRepository(db: DrizzleDB): Database.WorkspaceRepository {
   return {
-    async create(input: CreateWorkspaceInput): Promise<Workspace> {
+    async create(input: Workspace.CreateInput): Promise<Workspace.Entity> {
       const now = new Date()
       const id = uuidv4()
       await db.insert(workspaces).values({
@@ -25,47 +25,47 @@ export function createSqliteWorkspaceOps(db: DrizzleDB): WorkspaceOps {
         lastAccessedAt: now,
       })
       const [row] = await db.select().from(workspaces).where(eq(workspaces.id, id))
-      return rowToWorkspace(row)
+      return rowToEntity(row)
     },
 
-    async findById(id: string): Promise<Workspace | null> {
+    async findById(id: string): Promise<Workspace.Entity | null> {
       const [row] = await db.select().from(workspaces).where(eq(workspaces.id, id))
-      return row ? rowToWorkspace(row) : null
+      return row ? rowToEntity(row) : null
     },
 
-    async findAll(): Promise<Workspace[]> {
+    async findAll(): Promise<Workspace.Entity[]> {
       const rows = await db.select().from(workspaces)
-      return rows.map(rowToWorkspace)
+      return rows.map(rowToEntity)
     },
 
-    async findByProjectId(projectId: string): Promise<Workspace[]> {
+    async findByProjectId(projectId: string): Promise<Workspace.Entity[]> {
       const rows = await db.select().from(workspaces).where(eq(workspaces.projectId, projectId))
-      return rows.map(rowToWorkspace)
+      return rows.map(rowToEntity)
     },
 
-    async findActive(): Promise<Workspace[]> {
+    async findActive(): Promise<Workspace.Entity[]> {
       const rows = await db.select().from(workspaces).where(ne(workspaces.status, "stopped"))
-      return rows.map(rowToWorkspace)
+      return rows.map(rowToEntity)
     },
 
-    async update(id: string, input: UpdateWorkspaceInput): Promise<Workspace> {
+    async update(id: string, input: Workspace.UpdateInput): Promise<Workspace.Entity> {
       const updates: Partial<WorkspaceRow> = {}
       if (input.status !== undefined) updates.status = input.status
       if (input.lastAccessedAt !== undefined) updates.lastAccessedAt = input.lastAccessedAt
       await db.update(workspaces).set(updates).where(eq(workspaces.id, id))
       const [row] = await db.select().from(workspaces).where(eq(workspaces.id, id))
-      return rowToWorkspace(row)
+      return rowToEntity(row)
     },
 
     async delete(id: string): Promise<void> {
       await db.delete(workspaces).where(eq(workspaces.id, id))
     },
 
-    async touch(id: string): Promise<Workspace> {
+    async touch(id: string): Promise<Workspace.Entity> {
       const now = new Date()
       await db.update(workspaces).set({ lastAccessedAt: now }).where(eq(workspaces.id, id))
       const [row] = await db.select().from(workspaces).where(eq(workspaces.id, id))
-      return rowToWorkspace(row)
+      return rowToEntity(row)
     },
   }
 }

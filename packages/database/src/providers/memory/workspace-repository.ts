@@ -1,70 +1,65 @@
 import { v4 as uuidv4 } from "uuid"
-import type {
-  Workspace,
-  WorkspaceOps,
-  CreateWorkspaceInput,
-  UpdateWorkspaceInput,
-} from "@ifc-viewer/core"
+import type { Workspace, Database } from "@ifc-viewer/core"
 
-export function createMemoryWorkspaceOps(): WorkspaceOps {
-  const workspaces = new Map<string, Workspace>()
+export function createWorkspaceRepository(): Database.WorkspaceRepository {
+  const store = new Map<string, Workspace.Entity>()
 
   return {
-    async create(input: CreateWorkspaceInput): Promise<Workspace> {
+    async create(input: Workspace.CreateInput): Promise<Workspace.Entity> {
       const now = new Date()
-      const workspace: Workspace = {
+      const entity: Workspace.Entity = {
         id: uuidv4(),
         projectId: input.projectId,
         status: "active",
         createdAt: now,
         lastAccessedAt: now,
       }
-      workspaces.set(workspace.id, workspace)
-      return workspace
+      store.set(entity.id, entity)
+      return entity
     },
 
-    async findById(id: string): Promise<Workspace | null> {
-      return workspaces.get(id) ?? null
+    async findById(id: string): Promise<Workspace.Entity | null> {
+      return store.get(id) ?? null
     },
 
-    async findAll(): Promise<Workspace[]> {
-      return Array.from(workspaces.values())
+    async findAll(): Promise<Workspace.Entity[]> {
+      return Array.from(store.values())
     },
 
-    async findByProjectId(projectId: string): Promise<Workspace[]> {
-      return Array.from(workspaces.values()).filter((w) => w.projectId === projectId)
+    async findByProjectId(projectId: string): Promise<Workspace.Entity[]> {
+      return Array.from(store.values()).filter((w) => w.projectId === projectId)
     },
 
-    async findActive(): Promise<Workspace[]> {
-      return Array.from(workspaces.values()).filter((w) => w.status !== "stopped")
+    async findActive(): Promise<Workspace.Entity[]> {
+      return Array.from(store.values()).filter((w) => w.status !== "stopped")
     },
 
-    async update(id: string, input: UpdateWorkspaceInput): Promise<Workspace> {
-      const existing = workspaces.get(id)
+    async update(id: string, input: Workspace.UpdateInput): Promise<Workspace.Entity> {
+      const existing = store.get(id)
       if (!existing) throw new Error(`Workspace ${id} not found`)
 
-      const updated: Workspace = {
+      const updated: Workspace.Entity = {
         ...existing,
         status: input.status ?? existing.status,
         lastAccessedAt: input.lastAccessedAt ?? existing.lastAccessedAt,
       }
-      workspaces.set(id, updated)
+      store.set(id, updated)
       return updated
     },
 
     async delete(id: string): Promise<void> {
-      workspaces.delete(id)
+      store.delete(id)
     },
 
-    async touch(id: string): Promise<Workspace> {
-      const existing = workspaces.get(id)
+    async touch(id: string): Promise<Workspace.Entity> {
+      const existing = store.get(id)
       if (!existing) throw new Error(`Workspace ${id} not found`)
 
-      const updated: Workspace = {
+      const updated: Workspace.Entity = {
         ...existing,
         lastAccessedAt: new Date(),
       }
-      workspaces.set(id, updated)
+      store.set(id, updated)
       return updated
     },
   }

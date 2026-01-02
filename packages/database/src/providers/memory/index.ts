@@ -1,4 +1,4 @@
-export { createMemoryProjectOps } from "./project-repository"
-export { createMemoryWorkspaceOps } from "./workspace-repository"
-export { createMemoryConversationOps } from "./conversation-repository"
-export { createMemoryMessageOps } from "./message-repository"
+export { createProjectRepository } from "./project-repository"
+export { createWorkspaceRepository } from "./workspace-repository"
+export { createConversationRepository } from "./conversation-repository"
+export { createMessageRepository } from "./message-repository"

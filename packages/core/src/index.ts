@@ -5,28 +5,24 @@
  *
  * ## Architecture
  *
- * - schema/     - Zod schemas (types + runtime validation + helpers)
- * - ops/        - Operation contracts (database, storage, compute)
- * - use-cases/  - Application logic (orchestrates ops)
+ * - domain/     - Business entities (schemas, types, use cases)
+ * - contracts/  - Infrastructure contracts (database, storage, compute)
  * - context     - Dependency injection
- * - errors/     - Typed error definitions
+ * - errors      - Domain error types
  *
  * ## Domain Model
  *
  * Project (persistent) -> Workspace (ephemeral) -> Conversation -> Message
  */
 
-// Schema - Zod schemas as source of truth
-export * from "./schema"
+// Domain - Business entities
+export { Project, Workspace, Conversation, Message } from "./domain"
 
-// Operations - Side-effect contracts
-export * from "./ops"
-
-// Use Cases - Application logic
-export * as useCases from "./use-cases"
+// Contracts - Infrastructure interfaces
+export type { Database, Storage, Compute } from "./contracts"
 
 // Context - Dependency injection
 export * from "./context"
 
-// Errors - Typed error definitions
+// Errors - Domain error types
 export * from "./errors"

@@ -1,79 +1,79 @@
-import { Elysia, t } from "elysia";
-import { createAgent, type AgentEvent } from "@ifc-viewer/agent";
-import { createSSEStream, sseResponse } from "@ifc-viewer/realtime";
-import { useCases, type Context, type Message } from "@ifc-viewer/core";
-import { ErrorResponse, SuccessResponse } from "../../schemas";
-import { ConversationWithMessagesResponse } from "./agent.schemas";
+import { Elysia, t } from "elysia"
+import { createAgent, type AgentEvent } from "@ifc-viewer/agent"
+import { createSSEStream, sseResponse } from "@ifc-viewer/realtime"
+import { Conversation, Message, type Context } from "@ifc-viewer/core"
+import { ErrorResponse, SuccessResponse } from "../../schemas"
+import { ConversationWithMessagesResponse } from "./agent.schemas"
 
-const abortControllers = new Map<string, AbortController>();
+const abortControllers = new Map<string, AbortController>()
 
 export function agentRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/workspaces/:id/agent" })
     .post(
       "/chat",
       async ({ params, body }) => {
-        const computer = ctx.getCompute(params.id);
+        const computer = ctx.getCompute(params.id)
 
         // Get or create conversation for workspace
-        const conversation = await useCases.getOrCreateConversation(ctx, params.id);
+        const conversation = await Conversation.getOrCreate(ctx, params.id)
 
-        const existingController = abortControllers.get(params.id);
+        const existingController = abortControllers.get(params.id)
         if (existingController) {
-          existingController.abort();
+          existingController.abort()
         }
 
-        const abortController = new AbortController();
-        abortControllers.set(params.id, abortController);
+        const abortController = new AbortController()
+        abortControllers.set(params.id, abortController)
 
         // Get message history
         let messageHistory: Array<{
-          role: "user" | "assistant";
-          content: string;
-        }>;
+          role: "user" | "assistant"
+          content: string
+        }>
 
         if (body.history && body.history.length > 0) {
           messageHistory = body.history.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
-          }));
+          }))
         } else {
           // Fetch messages from DB
-          const messages = await useCases.getConversationMessages(ctx, conversation.id);
-          messageHistory = messages.map((m: Message) => ({
+          const messages = await Message.listByConversation(ctx, conversation.id)
+          messageHistory = messages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
-          }));
+          }))
         }
 
-        messageHistory.push({ role: "user", content: body.content });
+        messageHistory.push({ role: "user", content: body.content })
 
         // Save user message
-        await useCases.addMessage(ctx, {
+        await Message.add(ctx, {
           conversationId: conversation.id,
           role: "user",
           content: body.content,
-        });
+        })
 
-        await useCases.updateConversationStatus(ctx, conversation.id, "streaming");
+        await Conversation.updateStatus(ctx, conversation.id, "streaming")
 
         const agent = createAgent({
           computer,
           getTerminal: () => computer.getOrCreateAgentTerminal(),
-        });
+        })
 
-        const conversationId = conversation.id;
+        const conversationId = conversation.id
 
         const stream = createSSEStream(async (sseCtx) => {
-          sseCtx.send("message", { type: "ready" });
+          sseCtx.send("message", { type: "ready" })
 
-          let assistantMessage = "";
+          let assistantMessage = ""
 
           try {
             const emit = (event: AgentEvent) => {
               if (sseCtx.isOpen) {
-                sseCtx.send("message", event);
+                sseCtx.send("message", event)
               }
-            };
+            }
 
             for await (const event of agent.streamChat(
               messageHistory,
@@ -81,39 +81,39 @@ export function agentRoutes(ctx: Context) {
               abortController.signal
             )) {
               if (event.type === "text-delta") {
-                assistantMessage += event.content;
+                assistantMessage += event.content
               }
             }
 
             if (assistantMessage) {
-              await useCases.addMessage(ctx, {
+              await Message.add(ctx, {
                 conversationId,
                 role: "assistant",
                 content: assistantMessage,
-              });
+              })
             }
 
-            await useCases.updateConversationStatus(ctx, conversationId, "active");
+            await Conversation.updateStatus(ctx, conversationId, "active")
           } catch (err) {
             if (err instanceof Error && err.name !== "AbortError") {
               sseCtx.send("message", {
                 type: "error",
                 message: err.message,
-              });
+              })
             } else if (err instanceof Error && err.name === "AbortError") {
-              await useCases.abortConversation(ctx, conversationId);
+              await Conversation.abort(ctx, conversationId)
             }
             sseCtx.send("message", {
               type: "finish",
               usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-            });
+            })
           } finally {
-            abortControllers.delete(params.id);
-            sseCtx.close();
+            abortControllers.delete(params.id)
+            sseCtx.close()
           }
-        });
+        })
 
-        return sseResponse(stream);
+        return sseResponse(stream)
       },
       {
         params: t.Object({
@@ -139,14 +139,14 @@ export function agentRoutes(ctx: Context) {
     .post(
       "/stop",
       async ({ params, set }) => {
-        const abortController = abortControllers.get(params.id);
+        const abortController = abortControllers.get(params.id)
         if (!abortController) {
-          set.status = 404;
-          return { error: "No active generation" };
+          set.status = 404
+          return { error: "No active generation" }
         }
 
-        abortController.abort();
-        return { success: true };
+        abortController.abort()
+        return { success: true }
       },
       {
         params: t.Object({
@@ -165,19 +165,19 @@ export function agentRoutes(ctx: Context) {
     .get(
       "/conversation",
       async ({ params, set }) => {
-        const conversation = await useCases.getActiveConversation(ctx, params.id);
+        const conversation = await Conversation.getActive(ctx, params.id)
         if (!conversation) {
-          set.status = 404;
-          return { error: "No conversation found" };
+          set.status = 404
+          return { error: "No conversation found" }
         }
 
         // Include messages
-        const messages = await useCases.getConversationMessages(ctx, conversation.id);
+        const messages = await Message.listByConversation(ctx, conversation.id)
 
         return {
           ...conversation,
           messages,
-        };
+        }
       },
       {
         params: t.Object({
@@ -196,8 +196,8 @@ export function agentRoutes(ctx: Context) {
     .delete(
       "/history",
       async ({ params }) => {
-        await useCases.clearConversationHistory(ctx, params.id);
-        return { success: true };
+        await Conversation.clearHistory(ctx, params.id)
+        return { success: true }
       },
       {
         params: t.Object({
@@ -211,5 +211,5 @@ export function agentRoutes(ctx: Context) {
           tags: ["Agent"],
         },
       }
-    );
+    )
 }

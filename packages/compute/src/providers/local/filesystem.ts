@@ -10,15 +10,9 @@ import {
   lstat,
   unlink,
 } from "node:fs/promises";
-import type {
-  FileContent,
-  FileEntry,
-  FileStat,
-  FileSystemOps,
-  ReadOptions,
-} from "@ifc-viewer/core";
+import type { Compute } from "@ifc-viewer/core";
 
-export class LocalFileSystem implements FileSystemOps {
+export class LocalFileSystem implements Compute.FileSystem {
   constructor(private baseDir: string) {}
 
   private resolvePath(path: string): string {
@@ -34,7 +28,7 @@ export class LocalFileSystem implements FileSystemOps {
     return resolved;
   }
 
-  async read(path: string, options?: ReadOptions): Promise<FileContent> {
+  async read(path: string, options?: Compute.ReadOptions): Promise<Compute.FileContent> {
     if (options?.encoding === "binary") {
       const fullPath = this.resolvePath(path);
       const file = Bun.file(fullPath);
@@ -59,11 +53,11 @@ export class LocalFileSystem implements FileSystemOps {
     await Bun.write(fullPath, content);
   }
 
-  async list(path: string): Promise<FileEntry[]> {
+  async list(path: string): Promise<Compute.FileEntry[]> {
     const fullPath = this.resolvePath(path);
     const entries = await readdir(fullPath, { withFileTypes: true });
 
-    const results: FileEntry[] = [];
+    const results: Compute.FileEntry[] = [];
 
     for (const entry of entries) {
       const entryPath = join(fullPath, entry.name);
@@ -110,11 +104,11 @@ export class LocalFileSystem implements FileSystemOps {
     }
   }
 
-  async stat(path: string): Promise<FileStat> {
+  async stat(path: string): Promise<Compute.FileStat> {
     const fullPath = this.resolvePath(path);
     const stats = await lstat(fullPath);
 
-    let type: FileStat["type"] = "file";
+    let type: Compute.FileStat["type"] = "file";
     if (stats.isDirectory()) {
       type = "directory";
     } else if (stats.isSymbolicLink()) {

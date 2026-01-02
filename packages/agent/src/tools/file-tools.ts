@@ -1,11 +1,11 @@
 import { tool } from "ai"
 import { z } from "zod"
-import type { ComputeOps } from "@ifc-viewer/core"
+import type { Compute } from "@ifc-viewer/core"
 import type { AgentEvent } from "../events"
 import { getErrorMessage } from "../utils"
 
 export function createFileTools(
-  computer: ComputeOps,
+  computer: Compute.Provider,
   emit: (event: AgentEvent) => void
 ) {
   return {

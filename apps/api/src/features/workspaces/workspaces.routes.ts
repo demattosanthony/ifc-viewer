@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia"
-import { useCases, isDomainError, type Context } from "@ifc-viewer/core"
+import { Workspace, isDomainError, type Context } from "@ifc-viewer/core"
 import { ErrorResponse, SuccessResponse } from "../../schemas"
-import { WorkspaceResponse, WorkspaceListResponse } from "./workspaces.schemas"
+import { z2e } from "../../schemas/zod-to-elysia"
 
 export function workspacesRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/workspaces" })
@@ -9,7 +9,7 @@ export function workspacesRoutes(ctx: Context) {
       "/",
       async ({ body, set }) => {
         try {
-          return await useCases.createWorkspace(ctx, body)
+          return await Workspace.create(ctx, body)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -23,7 +23,7 @@ export function workspacesRoutes(ctx: Context) {
           projectId: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(Workspace.Entity),
           404: ErrorResponse,
         },
         detail: {
@@ -35,11 +35,11 @@ export function workspacesRoutes(ctx: Context) {
     .get(
       "/",
       async () => {
-        return useCases.listWorkspaces(ctx)
+        return Workspace.list(ctx)
       },
       {
         response: {
-          200: WorkspaceListResponse,
+          200: t.Array(z2e(Workspace.Entity)),
         },
         detail: {
           summary: "List all workspaces",
@@ -50,11 +50,11 @@ export function workspacesRoutes(ctx: Context) {
     .get(
       "/active",
       async () => {
-        return useCases.listActiveWorkspaces(ctx)
+        return Workspace.listActive(ctx)
       },
       {
         response: {
-          200: WorkspaceListResponse,
+          200: t.Array(z2e(Workspace.Entity)),
         },
         detail: {
           summary: "List active workspaces",
@@ -66,7 +66,7 @@ export function workspacesRoutes(ctx: Context) {
       "/:id",
       async ({ params, set }) => {
         try {
-          return await useCases.getWorkspace(ctx, params.id)
+          return await Workspace.get(ctx, params.id)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -80,7 +80,7 @@ export function workspacesRoutes(ctx: Context) {
           id: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(Workspace.Entity),
           404: ErrorResponse,
         },
         detail: {
@@ -93,7 +93,7 @@ export function workspacesRoutes(ctx: Context) {
       "/:id/touch",
       async ({ params, set }) => {
         try {
-          return await useCases.touchWorkspace(ctx, params.id)
+          return await Workspace.touch(ctx, params.id)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -107,7 +107,7 @@ export function workspacesRoutes(ctx: Context) {
           id: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(Workspace.Entity),
           404: ErrorResponse,
         },
         detail: {
@@ -120,7 +120,7 @@ export function workspacesRoutes(ctx: Context) {
       "/:id/stop",
       async ({ params, set }) => {
         try {
-          return await useCases.stopWorkspace(ctx, params.id)
+          return await Workspace.stop(ctx, params.id)
         } catch (error) {
           if (isDomainError(error)) {
             set.status = error.statusCode
@@ -134,7 +134,7 @@ export function workspacesRoutes(ctx: Context) {
           id: t.String(),
         }),
         response: {
-          200: WorkspaceResponse,
+          200: z2e(Workspace.Entity),
           404: ErrorResponse,
         },
         detail: {
@@ -147,7 +147,7 @@ export function workspacesRoutes(ctx: Context) {
       "/:id",
       async ({ params, set }) => {
         try {
-          await useCases.deleteWorkspace(ctx, params.id)
+          await Workspace.remove(ctx, params.id)
           return { success: true }
         } catch (error) {
           if (isDomainError(error)) {

@@ -1,6 +1,6 @@
 import { ToolLoopAgent, type ModelMessage } from "ai"
 import { createAnthropic } from "@ai-sdk/anthropic"
-import type { ComputeOps, TerminalSession } from "@ifc-viewer/core"
+import type { Compute } from "@ifc-viewer/core"
 import { createFileTools } from "./tools/file-tools"
 import { createShellTools } from "./tools/shell-tools"
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
@@ -15,15 +15,15 @@ const anthropic = createAnthropic({
 })
 
 export type BimAgentConfig = {
-  computer: ComputeOps
-  getTerminal: () => Promise<TerminalSession>
+  computer: Compute.Provider
+  getTerminal: () => Promise<Compute.TerminalSession>
   model?: string
   systemPrompt?: string
 }
 
 export class BimAgent {
-  private computer: ComputeOps
-  private getTerminal: () => Promise<TerminalSession>
+  private computer: Compute.Provider
+  private getTerminal: () => Promise<Compute.TerminalSession>
   private model: string
   private systemPrompt: string
 

@@ -4,7 +4,7 @@
  * Creates storage provider instances from configuration objects.
  */
 
-import type { StorageOps } from "./types";
+import type { Storage } from "@ifc-viewer/core";
 import { LocalStorageProvider, type LocalStorageConfig } from "./providers/local";
 import { MemoryStorageProvider } from "./providers/memory";
 import { S3StorageProvider, type S3StorageConfig } from "./providers/s3";
@@ -39,7 +39,7 @@ export type StorageConfig =
  * });
  * ```
  */
-export function createStorageProvider(config: StorageConfig): StorageOps {
+export function createStorageProvider(config: StorageConfig): Storage.Provider {
   switch (config.type) {
     case "local":
       return new LocalStorageProvider(config);
@@ -75,7 +75,7 @@ export function createStorageProvider(config: StorageConfig): StorageOps {
  * - S3_ACCESS_KEY_ID: Access key (optional, falls back to AWS SDK defaults)
  * - S3_SECRET_ACCESS_KEY: Secret key (optional, falls back to AWS SDK defaults)
  */
-export function createStorageProviderFromEnv(): StorageOps {
+export function createStorageProviderFromEnv(): Storage.Provider {
   const type = process.env.STORAGE_TYPE || "local";
 
   switch (type) {

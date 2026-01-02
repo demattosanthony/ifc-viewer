@@ -1,10 +1,10 @@
 import { eq, asc } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
-import type { Message, MessageOps, CreateMessageInput } from "@ifc-viewer/core"
+import type { Message, Database } from "@ifc-viewer/core"
 import { messages } from "./schema"
 import type { DrizzleDB } from "./db"
 
-const rowToMessage = (row: typeof messages.$inferSelect): Message => ({
+const rowToEntity = (row: typeof messages.$inferSelect): Message.Entity => ({
   id: row.id,
   conversationId: row.conversationId,
   role: row.role,
@@ -12,9 +12,9 @@ const rowToMessage = (row: typeof messages.$inferSelect): Message => ({
   createdAt: row.createdAt,
 })
 
-export function createSqliteMessageOps(db: DrizzleDB): MessageOps {
+export function createMessageRepository(db: DrizzleDB): Database.MessageRepository {
   return {
-    async create(input: CreateMessageInput): Promise<Message> {
+    async create(input: Message.CreateInput): Promise<Message.Entity> {
       const id = uuidv4()
       const now = new Date()
       await db.insert(messages).values({
@@ -25,16 +25,16 @@ export function createSqliteMessageOps(db: DrizzleDB): MessageOps {
         createdAt: now,
       })
       const [row] = await db.select().from(messages).where(eq(messages.id, id))
-      return rowToMessage(row)
+      return rowToEntity(row)
     },
 
-    async findByConversationId(conversationId: string): Promise<Message[]> {
+    async findByConversationId(conversationId: string): Promise<Message.Entity[]> {
       const rows = await db
         .select()
         .from(messages)
         .where(eq(messages.conversationId, conversationId))
         .orderBy(asc(messages.createdAt))
-      return rows.map(rowToMessage)
+      return rows.map(rowToEntity)
     },
   }
 }

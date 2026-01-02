@@ -1,7 +1,14 @@
 import { Elysia, t } from "elysia";
-import type { Context, FileEntry } from "@ifc-viewer/core";
+import type { Context, Compute } from "@ifc-viewer/core";
 import { ErrorResponse, SuccessWithPathResponse } from "../../schemas";
-import { FileListResponse, FileContentResponse } from "./files.schemas";
+
+const FileEntrySchema = t.Object({
+  name: t.String(),
+  path: t.String(),
+  type: t.Union([t.Literal("file"), t.Literal("directory"), t.Literal("symlink")]),
+  size: t.Number(),
+  modifiedAt: t.Number(),
+});
 
 export function filesRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/workspaces/:id/files" })
@@ -13,7 +20,7 @@ export function filesRoutes(ctx: Context) {
         const files = await computer.files.list(path);
 
         return {
-          files: files.map((f: FileEntry) => ({
+          files: files.map((f: Compute.FileEntry) => ({
             name: f.name,
             path: f.path,
             type: f.type,
@@ -31,7 +38,10 @@ export function filesRoutes(ctx: Context) {
           path: t.Optional(t.String()),
         }),
         response: {
-          200: FileListResponse,
+          200: t.Object({
+            files: t.Array(FileEntrySchema),
+            path: t.String(),
+          }),
         },
         detail: {
           summary: "List files in a directory",
@@ -72,7 +82,11 @@ export function filesRoutes(ctx: Context) {
           path: t.String(),
         }),
         response: {
-          200: FileContentResponse,
+          200: t.Object({
+            path: t.String(),
+            type: t.Union([t.Literal("text"), t.Literal("binary")]),
+            content: t.String(),
+          }),
           400: ErrorResponse,
           404: ErrorResponse,
         },
