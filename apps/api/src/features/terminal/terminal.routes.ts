@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import type { AppContext } from "../../context";
+import type { Context } from "@ifc-viewer/core";
 import type {
   TerminalServerEvent,
   TerminalClientMessage,
@@ -12,7 +12,7 @@ interface TerminalWSData {
   unsubExit?: () => void;
 }
 
-export function terminalRoutes(ctx: AppContext) {
+export function terminalRoutes(ctx: Context) {
   return new Elysia({ prefix: "/ws" }).ws("/terminal", {
     query: t.Object({
       workspaceId: t.String(),
@@ -21,7 +21,7 @@ export function terminalRoutes(ctx: AppContext) {
     async open(ws) {
       const data = ws.data as TerminalWSData;
       const workspaceId = data.query.workspaceId;
-      const computer = ctx.getComputer(workspaceId);
+      const computer = ctx.getCompute(workspaceId);
 
       try {
         const terminal = await computer.createTerminal();
@@ -86,7 +86,7 @@ export function terminalRoutes(ctx: AppContext) {
         return;
       }
 
-      const computer = ctx.getComputer(workspaceId);
+      const computer = ctx.getCompute(workspaceId);
       const terminal = computer.getTerminal(terminalId);
 
       if (!terminal) {
@@ -136,7 +136,7 @@ export function terminalRoutes(ctx: AppContext) {
       data.unsubExit?.();
 
       if (terminalId) {
-        const computer = ctx.getComputer(workspaceId);
+        const computer = ctx.getCompute(workspaceId);
         await computer.disposeTerminal(terminalId);
       }
     },

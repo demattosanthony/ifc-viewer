@@ -1,26 +1,26 @@
 import type {
-  Computer,
-  ComputerConfig,
-  FileSystem,
-  Shell,
+  ComputeOps,
+  ComputeConfig,
+  FileSystemOps,
+  ShellOps,
   TerminalSession,
-} from "../../types";
+} from "@ifc-viewer/core";
 import { mkdir, rm } from "node:fs/promises";
 import { LocalFileSystem } from "./filesystem";
 import { LocalShell } from "./shell";
 
-export class LocalComputer implements Computer {
+export class LocalComputer implements ComputeOps {
   readonly id: string;
   readonly workingDirectory: string;
 
   private readonly cleanup: boolean;
-  private _files: FileSystem;
-  private _shell: Shell;
+  private _files: FileSystemOps;
+  private _shell: ShellOps;
 
   private terminals = new Map<string, TerminalSession>();
   private agentTerminal: TerminalSession | null = null;
 
-  constructor(config: ComputerConfig) {
+  constructor(config: ComputeConfig) {
     this.id = `computer-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     this.workingDirectory = config.workingDirectory;
     this.cleanup = config.cleanup ?? false;
@@ -33,11 +33,11 @@ export class LocalComputer implements Computer {
     await mkdir(this.workingDirectory, { recursive: true });
   }
 
-  get files(): FileSystem {
+  get files(): FileSystemOps {
     return this._files;
   }
 
-  get shell(): Shell {
+  get shell(): ShellOps {
     return this._shell;
   }
 
@@ -97,8 +97,8 @@ export class LocalComputer implements Computer {
 }
 
 export async function createLocalComputer(
-  config: ComputerConfig
-): Promise<Computer> {
+  config: ComputeConfig
+): Promise<ComputeOps> {
   const computer = new LocalComputer(config);
   await computer.init();
   return computer;

@@ -1,48 +1,50 @@
-import {
-  type Project,
-  type ProjectRepository,
-  type CreateProjectInput,
-  type UpdateProjectInput,
-  createProject,
-} from "@ifc-viewer/core";
+import { v4 as uuidv4 } from "uuid"
+import type {
+  Project,
+  ProjectOps,
+  CreateProjectInput,
+  UpdateProjectInput,
+} from "@ifc-viewer/core"
 
-export function createMemoryProjectRepository(): ProjectRepository {
-  const projects = new Map<string, Project>();
+export function createMemoryProjectOps(): ProjectOps {
+  const projects = new Map<string, Project>()
 
   return {
     async create(input: CreateProjectInput): Promise<Project> {
-      const project = createProject({
+      const now = new Date()
+      const project: Project = {
         id: input.id,
-        description: input.description,
-      });
-      projects.set(project.id, project);
-      return project;
+        description: input.description ?? null,
+        createdAt: now,
+        updatedAt: now,
+      }
+      projects.set(project.id, project)
+      return project
     },
 
     async findById(id: string): Promise<Project | null> {
-      return projects.get(id) ?? null;
+      return projects.get(id) ?? null
     },
 
     async findAll(): Promise<Project[]> {
-      return Array.from(projects.values());
+      return Array.from(projects.values())
     },
 
     async update(id: string, input: UpdateProjectInput): Promise<Project> {
-      const existing = projects.get(id);
-      if (!existing) {
-        throw new Error(`Project ${id} not found`);
-      }
-      const updated = createProject({
+      const existing = projects.get(id)
+      if (!existing) throw new Error(`Project ${id} not found`)
+
+      const updated: Project = {
         ...existing,
-        description: input.description !== undefined ? input.description : existing.description,
+        description: input.description ?? existing.description,
         updatedAt: new Date(),
-      });
-      projects.set(id, updated);
-      return updated;
+      }
+      projects.set(id, updated)
+      return updated
     },
 
     async delete(id: string): Promise<void> {
-      projects.delete(id);
+      projects.delete(id)
     },
-  };
+  }
 }

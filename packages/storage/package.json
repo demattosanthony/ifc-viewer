@@ -12,6 +12,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "@ifc-viewer/core": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

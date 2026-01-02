@@ -72,13 +72,16 @@
         "@types/bun": "latest",
       },
       "peerDependencies": {
-        "@ifc-viewer/compute": "workspace:*",
+        "@ifc-viewer/core": "workspace:*",
         "typescript": "^5",
       },
     },
     "packages/compute": {
       "name": "@ifc-viewer/compute",
       "version": "0.1.0",
+      "dependencies": {
+        "@ifc-viewer/core": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -89,6 +92,9 @@
     "packages/core": {
       "name": "@ifc-viewer/core",
       "version": "0.1.0",
+      "dependencies": {
+        "zod": "^3.24.0",
+      },
       "devDependencies": {
         "typescript": "^5",
       },
@@ -172,6 +178,9 @@
     "packages/storage": {
       "name": "@ifc-viewer/storage",
       "version": "0.0.1",
+      "dependencies": {
+        "@ifc-viewer/core": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },

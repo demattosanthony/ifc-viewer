@@ -1,31 +1,31 @@
-import { ToolLoopAgent, type ModelMessage } from "ai";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import type { Computer, TerminalSession } from "@ifc-viewer/compute";
-import { createFileTools } from "./tools/file-tools";
-import { createShellTools } from "./tools/shell-tools";
-import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt";
-import type { UsageStats } from "./types";
-import type { AgentEvent } from "./events";
-import { getErrorMessage, formatUsageStats } from "./utils";
+import { ToolLoopAgent, type ModelMessage } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import type { ComputeOps, TerminalSession } from "@ifc-viewer/core"
+import { createFileTools } from "./tools/file-tools"
+import { createShellTools } from "./tools/shell-tools"
+import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
+import type { UsageStats } from "./types"
+import type { AgentEvent } from "./events"
+import { getErrorMessage, formatUsageStats } from "./utils"
 
 const anthropic = createAnthropic({
   headers: {
     "anthropic-beta": "fine-grained-tool-streaming-2025-05-14",
   },
-});
+})
 
-export interface BimAgentConfig {
-  computer: Computer;
-  getTerminal: () => Promise<TerminalSession>;
-  model?: string;
-  systemPrompt?: string;
+export type BimAgentConfig = {
+  computer: ComputeOps
+  getTerminal: () => Promise<TerminalSession>
+  model?: string
+  systemPrompt?: string
 }
 
 export class BimAgent {
-  private computer: Computer;
-  private getTerminal: () => Promise<TerminalSession>;
-  private model: string;
-  private systemPrompt: string;
+  private computer: ComputeOps
+  private getTerminal: () => Promise<TerminalSession>
+  private model: string
+  private systemPrompt: string
 
   constructor(config: BimAgentConfig) {
     this.computer = config.computer;

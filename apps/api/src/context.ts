@@ -1,200 +1,129 @@
-import { createDatabase, type DatabaseProvider } from "@ifc-viewer/database";
-import { createLocalComputer, type Computer } from "@ifc-viewer/compute";
-import {
-  createStorageProvider,
-  type StorageProvider,
-} from "@ifc-viewer/storage";
-import { mkdir, readFile } from "node:fs/promises";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { createDatabase } from "@ifc-viewer/database"
+import { createStorageProvider } from "@ifc-viewer/storage"
+import { createLocalComputer } from "@ifc-viewer/compute"
+import { createContext, type Context } from "@ifc-viewer/core"
+import { mkdir, readFile } from "node:fs/promises"
+import { resolve, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
-// Monorepo root (apps/api/src -> apps/api -> apps -> root)
-const MONOREPO_ROOT = resolve(__dirname, "..", "..", "..");
+const MONOREPO_ROOT = resolve(__dirname, "..", "..", "..")
 
-// Sample project assets
-const SAMPLE_PROJECT_ID = "sample-project";
-const SAMPLE_IFC_PATH = resolve(__dirname, "..", "assets", "sample.ifc");
-const SAMPLE_PY_SCRIPT_PATH = resolve(__dirname, "..", "assets", "print_info.py");
+const SAMPLE_PROJECT_ID = "sample-project"
+const SAMPLE_IFC_PATH = resolve(__dirname, "..", "assets", "sample.ifc")
+const SAMPLE_PY_SCRIPT_PATH = resolve(__dirname, "..", "assets", "print_info.py")
 
-export interface AppContext {
-  db: DatabaseProvider;
-  storage: StorageProvider;
-  computer: Computer;
-  getComputer(workspaceId: string): Computer;
-  
-  /**
-   * Copy project files from storage to compute working directory
-   */
-  loadProjectIntoCompute(projectId: string): Promise<void>;
-  
-  dispose(): Promise<void>;
+export type AppContextConfig = {
+  workingDirectory?: string
+  dataDirectory?: string
+  storageDirectory?: string
 }
 
-export interface AppContextConfig {
-  workingDirectory?: string;
-  dataDirectory?: string;
-  storageDirectory?: string;
-}
-
-export async function createAppContext(
-  config: AppContextConfig = {}
-): Promise<AppContext> {
+export async function createAppContext(config: AppContextConfig = {}): Promise<Context> {
   const workingDirectory =
     config.workingDirectory ??
     process.env.PLAYGROUND_WORKING_DIR ??
-    resolve(MONOREPO_ROOT, ".data", "workspace");
+    resolve(MONOREPO_ROOT, ".data", "workspace")
 
   const dataDirectory =
     config.dataDirectory ??
     process.env.DATA_DIR ??
-    resolve(MONOREPO_ROOT, ".data", "sqlite");
+    resolve(MONOREPO_ROOT, ".data", "sqlite")
 
   const storageDirectory =
     config.storageDirectory ??
     process.env.STORAGE_LOCAL_BASE_DIR ??
-    resolve(MONOREPO_ROOT, ".data", "storage");
+    resolve(MONOREPO_ROOT, ".data", "storage")
 
-  // Ensure directories exist
-  await mkdir(workingDirectory, { recursive: true });
-  await mkdir(dataDirectory, { recursive: true });
-  await mkdir(storageDirectory, { recursive: true });
+  await mkdir(workingDirectory, { recursive: true })
+  await mkdir(dataDirectory, { recursive: true })
+  await mkdir(storageDirectory, { recursive: true })
 
-  // Create database
-  const db = await createDatabase({ dataDirectory });
+  const db = await createDatabase({ dataDirectory })
+  const storage = createStorageProvider({ type: "local", baseDir: storageDirectory })
+  const compute = await createLocalComputer({ workingDirectory, cleanup: false })
 
-  // Create storage provider
-  const storage = createStorageProvider({
-    type: "local",
-    baseDir: storageDirectory,
-  });
-
-  // Create compute environment
-  const computer = await createLocalComputer({
-    workingDirectory,
-    cleanup: false,
-  });
+  const ctx = createContext({ db, storage, compute })
 
   // Bootstrap sample project
-  await bootstrapSampleProject(db, storage);
+  await bootstrapSampleProject(ctx)
 
-  // Load sample project files into compute for initial state
-  const ctx: AppContext = {
-    db,
-    storage,
-    computer,
-
-    getComputer(_workspaceId: string) {
-      // For now, return the single shared computer
-      // In the future, each workspace will have its own computer (Docker container)
-      return computer;
-    },
-
-    async loadProjectIntoCompute(projectId: string) {
-      await copyProjectFilesToCompute(storage, computer, projectId);
-    },
-
-    async dispose() {
-      await computer.dispose();
-      await db.dispose();
-      if (storage.dispose) {
-        await storage.dispose();
-      }
-    },
-  };
-
-  // Load sample project files into compute
-  await ctx.loadProjectIntoCompute(SAMPLE_PROJECT_ID);
-
-  return ctx;
+  return ctx
 }
 
-/**
- * Bootstrap the sample project if it doesn't exist
- */
-async function bootstrapSampleProject(
-  db: DatabaseProvider,
-  storage: StorageProvider
-): Promise<void> {
-  // Check if sample project exists in DB
-  const existing = await db.projects.findById(SAMPLE_PROJECT_ID);
+async function bootstrapSampleProject(ctx: Context): Promise<void> {
+  const existing = await ctx.db.projects.findById(SAMPLE_PROJECT_ID)
   if (existing) {
-    return;
+    // Load existing project files into compute
+    await loadProjectFiles(ctx, SAMPLE_PROJECT_ID)
+    return
   }
 
-  console.log("[Context] Creating sample project...");
+  console.log("[Context] Creating sample project...")
 
-  // Create sample project in DB
-  await db.projects.create({
+  await ctx.db.projects.create({
     id: SAMPLE_PROJECT_ID,
     description: "A sample BIM project with IFC files for demonstration",
-  });
+  })
 
-  // Upload sample files to storage
-  const projectPrefix = `projects/${SAMPLE_PROJECT_ID}`;
+  const prefix = `projects/${SAMPLE_PROJECT_ID}`
 
   try {
-    const ifcContent = await readFile(SAMPLE_IFC_PATH);
-    await storage.put(`${projectPrefix}/sample.ifc`, new Uint8Array(ifcContent), {
+    const ifcContent = await readFile(SAMPLE_IFC_PATH)
+    await ctx.storage.put(`${prefix}/sample.ifc`, new Uint8Array(ifcContent), {
       contentType: "application/x-step",
-    });
-    console.log("[Context] Uploaded sample.ifc to storage");
+    })
+    console.log("[Context] Uploaded sample.ifc to storage")
   } catch (err) {
-    console.warn("[Context] Could not upload sample.ifc:", err);
+    console.warn("[Context] Could not upload sample.ifc:", err)
   }
 
   try {
-    const pyContent = await readFile(SAMPLE_PY_SCRIPT_PATH);
-    await storage.put(`${projectPrefix}/print_info.py`, new Uint8Array(pyContent), {
+    const pyContent = await readFile(SAMPLE_PY_SCRIPT_PATH)
+    await ctx.storage.put(`${prefix}/print_info.py`, new Uint8Array(pyContent), {
       contentType: "text/x-python",
-    });
-    console.log("[Context] Uploaded print_info.py to storage");
+    })
+    console.log("[Context] Uploaded print_info.py to storage")
   } catch (err) {
-    console.warn("[Context] Could not upload print_info.py:", err);
+    console.warn("[Context] Could not upload print_info.py:", err)
   }
 
-  await storage.put(
-    `${projectPrefix}/README.md`,
+  await ctx.storage.put(
+    `${prefix}/README.md`,
     "# Sample Project\n\nWelcome to the Sample BIM Project!\n\nThis project contains sample IFC files for demonstration.\n",
     { contentType: "text/markdown" }
-  );
+  )
 
-  console.log("[Context] Sample project created successfully");
+  console.log("[Context] Sample project created successfully")
+
+  // Load into compute
+  await loadProjectFiles(ctx, SAMPLE_PROJECT_ID)
 }
 
-/**
- * Copy all project files from storage to compute working directory
- */
-async function copyProjectFilesToCompute(
-  storage: StorageProvider,
-  computer: Computer,
-  projectId: string
-): Promise<void> {
-  const projectPrefix = `projects/${projectId}/`;
+async function loadProjectFiles(ctx: Context, projectId: string): Promise<void> {
+  const prefix = `projects/${projectId}/`
 
-  // List all files in project storage
-  for await (const entry of storage.list(projectPrefix)) {
-    // Get relative path (remove project prefix)
-    const relativePath = entry.key.slice(projectPrefix.length);
-    if (!relativePath) continue;
+  for await (const entry of ctx.storage.list(prefix)) {
+    const relativePath = entry.key.slice(prefix.length)
+    if (!relativePath) continue
 
-    // Get file content from storage
-    const obj = await storage.get(entry.key);
-    if (!obj) continue;
+    const obj = await ctx.storage.get(entry.key)
+    if (!obj) continue
 
-    // Ensure parent directory exists in compute
-    const parentDir = dirname(relativePath);
-    if (parentDir && parentDir !== ".") {
+    const parentDir = relativePath.includes("/")
+      ? relativePath.slice(0, relativePath.lastIndexOf("/"))
+      : null
+
+    if (parentDir) {
       try {
-        await computer.files.mkdir(parentDir, { recursive: true });
+        await ctx.compute.files.mkdir(parentDir, { recursive: true })
       } catch {
         // Directory might already exist
       }
     }
 
-    // Write file to compute
-    await computer.files.write(relativePath, obj.data);
+    await ctx.compute.files.write(relativePath, obj.data)
   }
 }

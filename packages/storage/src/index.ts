@@ -30,7 +30,7 @@
 
 // Types
 export type {
-  StorageProvider,
+  StorageOps,
   StorageObject,
   StorageInput,
   StorageMetadata,

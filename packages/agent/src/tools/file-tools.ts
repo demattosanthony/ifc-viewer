@@ -1,11 +1,11 @@
-import { tool } from "ai";
-import { z } from "zod";
-import type { Computer } from "@ifc-viewer/compute";
-import type { AgentEvent } from "../events";
-import { getErrorMessage } from "../utils";
+import { tool } from "ai"
+import { z } from "zod"
+import type { ComputeOps } from "@ifc-viewer/core"
+import type { AgentEvent } from "../events"
+import { getErrorMessage } from "../utils"
 
 export function createFileTools(
-  computer: Computer,
+  computer: ComputeOps,
   emit: (event: AgentEvent) => void
 ) {
   return {

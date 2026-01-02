@@ -1,11 +1,11 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { createLocalComputer } from "../src";
-import type { Computer } from "../src/types";
+import type { ComputeOps } from "@ifc-viewer/core";
 import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 
 describe("LocalComputer", () => {
-  let computer: Computer;
+  let computer: ComputeOps;
   const testWorkspace = "/tmp/bim-test-workspace";
 
   beforeEach(async () => {
@@ -98,7 +98,7 @@ describe("LocalComputer", () => {
       await computer.files.write("/file2.txt", "two");
 
       const entries = await computer.files.list("/");
-      const names = entries.map((e) => e.name);
+      const names = entries.map((e: { name: string }) => e.name);
 
       expect(names).toContain("file1.txt");
       expect(names).toContain("file2.txt");
@@ -108,7 +108,7 @@ describe("LocalComputer", () => {
       await computer.files.write("/src/index.ts", "export {}");
 
       const entries = await computer.files.list("/");
-      const srcDir = entries.find((e) => e.name === "src");
+      const srcDir = entries.find((e: { name: string }) => e.name === "src");
 
       expect(srcDir).toBeDefined();
       expect(srcDir?.type).toBe("directory");
@@ -120,7 +120,7 @@ describe("LocalComputer", () => {
       await computer.files.mkdir("/new-dir");
 
       const entries = await computer.files.list("/");
-      const dir = entries.find((e) => e.name === "new-dir");
+      const dir = entries.find((e: { name: string }) => e.name === "new-dir");
 
       expect(dir).toBeDefined();
       expect(dir?.type).toBe("directory");
@@ -130,7 +130,7 @@ describe("LocalComputer", () => {
       await computer.files.mkdir("/a/b/c", { recursive: true });
 
       const entries = await computer.files.list("/a/b");
-      const dir = entries.find((e) => e.name === "c");
+      const dir = entries.find((e: { name: string }) => e.name === "c");
 
       expect(dir).toBeDefined();
       expect(dir?.type).toBe("directory");
@@ -150,7 +150,7 @@ describe("LocalComputer", () => {
       await computer.files.delete("/empty-dir");
 
       const entries = await computer.files.list("/");
-      expect(entries.find((e) => e.name === "empty-dir")).toBeUndefined();
+      expect(entries.find((e: { name: string }) => e.name === "empty-dir")).toBeUndefined();
     });
 
     test("fails on non-empty directory without recursive", async () => {
@@ -164,7 +164,7 @@ describe("LocalComputer", () => {
       await computer.files.delete("/dir", { recursive: true });
 
       const entries = await computer.files.list("/");
-      expect(entries.find((e) => e.name === "dir")).toBeUndefined();
+      expect(entries.find((e: { name: string }) => e.name === "dir")).toBeUndefined();
     });
   });
 
@@ -292,7 +292,7 @@ describe("LocalComputer", () => {
 });
 
 describe("LocalComputer terminal management", () => {
-  let computer: Computer;
+  let computer: ComputeOps;
   const testWorkspace = "/tmp/bim-terminal-mgmt-test";
 
   beforeEach(async () => {
@@ -374,7 +374,7 @@ describe("LocalComputer terminal management", () => {
 });
 
 describe("LocalShell", () => {
-  let computer: Computer;
+  let computer: ComputeOps;
   const testWorkspace = "/tmp/bim-shell-test-workspace";
 
   beforeEach(async () => {
@@ -413,7 +413,7 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
       const output: string[] = [];
 
-      session.onData((data) => {
+      session.onData((data: string) => {
         output.push(data);
       });
 
@@ -432,7 +432,7 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
       const output: string[] = [];
 
-      session.onData((data) => {
+      session.onData((data: string) => {
         output.push(data);
       });
 
@@ -452,7 +452,7 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
       const output: string[] = [];
 
-      session.onData((data) => {
+      session.onData((data: string) => {
         output.push(data);
       });
 
@@ -473,8 +473,8 @@ describe("LocalShell", () => {
       const output1: string[] = [];
       const output2: string[] = [];
 
-      session.onData((data) => output1.push(data));
-      session.onData((data) => output2.push(data));
+      session.onData((data: string) => output1.push(data));
+      session.onData((data: string) => output2.push(data));
 
       await session.write("echo 'multi-callback'\n");
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -490,8 +490,8 @@ describe("LocalShell", () => {
       const output1: string[] = [];
       const output2: string[] = [];
 
-      const unsub1 = session.onData((data) => output1.push(data));
-      session.onData((data) => output2.push(data));
+      const unsub1 = session.onData((data: string) => output1.push(data));
+      session.onData((data: string) => output2.push(data));
 
       // Unsubscribe first callback
       unsub1();
@@ -513,7 +513,7 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
 
       const exitPromise = new Promise<number>((resolve) => {
-        session.onExit((code) => resolve(code));
+        session.onExit((code: number) => resolve(code));
       });
 
       await session.write("exit 0\n");
@@ -526,7 +526,7 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
 
       const exitPromise = new Promise<number>((resolve) => {
-        session.onExit((code) => resolve(code));
+        session.onExit((code: number) => resolve(code));
       });
 
       await session.write("exit 42\n");
@@ -539,8 +539,8 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
       const exitCodes: number[] = [];
 
-      session.onExit((code) => exitCodes.push(code));
-      session.onExit((code) => exitCodes.push(code * 2));
+      session.onExit((code: number) => exitCodes.push(code));
+      session.onExit((code: number) => exitCodes.push(code * 2));
 
       await session.write("exit 5\n");
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -553,8 +553,8 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
       const exitCodes: number[] = [];
 
-      const unsub = session.onExit((code) => exitCodes.push(code));
-      session.onExit((code) => exitCodes.push(code * 10));
+      const unsub = session.onExit((code: number) => exitCodes.push(code));
+      session.onExit((code: number) => exitCodes.push(code * 10));
 
       unsub();
 
@@ -586,7 +586,7 @@ describe("LocalShell", () => {
       const session = await computer.shell.startTerminal();
       let exitCode: number | null = null;
 
-      session.onExit((code) => {
+      session.onExit((code: number) => {
         exitCode = code;
       });
 
@@ -607,7 +607,7 @@ describe("LocalShell", () => {
       });
       const output: string[] = [];
 
-      session.onData((data) => output.push(data));
+      session.onData((data: string) => output.push(data));
 
       await session.write("cat marker.txt\n");
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -623,7 +623,7 @@ describe("LocalShell", () => {
       });
       const output: string[] = [];
 
-      session.onData((data) => output.push(data));
+      session.onData((data: string) => output.push(data));
 
       await session.write("echo $CUSTOM_VAR\n");
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -645,7 +645,7 @@ describe("LocalShell", () => {
       const session = await computerWithEnv.shell.startTerminal();
       const output: string[] = [];
 
-      session.onData((data) => output.push(data));
+      session.onData((data: string) => output.push(data));
 
       await session.write("echo $DEFAULT_VAR\n");
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -668,7 +668,7 @@ describe("LocalShell", () => {
       });
       const output: string[] = [];
 
-      session.onData((data) => output.push(data));
+      session.onData((data: string) => output.push(data));
 
       await session.write("echo $OVERRIDE_VAR\n");
       await new Promise((resolve) => setTimeout(resolve, 200));

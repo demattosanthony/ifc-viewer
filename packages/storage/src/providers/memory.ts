@@ -17,19 +17,19 @@ import type {
   StorageInput,
   StorageMetadata,
   StorageObject,
-  StorageProvider,
+  StorageOps,
   StorageResult,
   UploadCredentials,
   UploadUrlOptions,
   UrlOptions,
-} from "../types";
+} from "@ifc-viewer/core";
 
 interface StoredObject {
   data: Uint8Array;
   metadata: StorageMetadata;
 }
 
-export class MemoryStorageProvider implements StorageProvider {
+export class MemoryStorageProvider implements StorageOps {
   readonly type = "memory" as const;
 
   private store = new Map<string, StoredObject>();

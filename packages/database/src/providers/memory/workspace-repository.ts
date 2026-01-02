@@ -1,74 +1,71 @@
-import { v4 as uuidv4 } from "uuid";
-import {
-  type Workspace,
-  type WorkspaceRepository,
-  type CreateWorkspaceInput,
-  type UpdateWorkspaceInput,
-  createWorkspace,
-} from "@ifc-viewer/core";
+import { v4 as uuidv4 } from "uuid"
+import type {
+  Workspace,
+  WorkspaceOps,
+  CreateWorkspaceInput,
+  UpdateWorkspaceInput,
+} from "@ifc-viewer/core"
 
-export function createMemoryWorkspaceRepository(): WorkspaceRepository {
-  const workspaces = new Map<string, Workspace>();
+export function createMemoryWorkspaceOps(): WorkspaceOps {
+  const workspaces = new Map<string, Workspace>()
 
   return {
     async create(input: CreateWorkspaceInput): Promise<Workspace> {
-      const workspace = createWorkspace({
+      const now = new Date()
+      const workspace: Workspace = {
         id: uuidv4(),
         projectId: input.projectId,
-      });
-      workspaces.set(workspace.id, workspace);
-      return workspace;
+        status: "active",
+        createdAt: now,
+        lastAccessedAt: now,
+      }
+      workspaces.set(workspace.id, workspace)
+      return workspace
     },
 
     async findById(id: string): Promise<Workspace | null> {
-      return workspaces.get(id) ?? null;
+      return workspaces.get(id) ?? null
     },
 
     async findAll(): Promise<Workspace[]> {
-      return Array.from(workspaces.values());
+      return Array.from(workspaces.values())
     },
 
     async findByProjectId(projectId: string): Promise<Workspace[]> {
-      return Array.from(workspaces.values()).filter(
-        (w) => w.projectId === projectId
-      );
+      return Array.from(workspaces.values()).filter((w) => w.projectId === projectId)
     },
 
     async findActive(): Promise<Workspace[]> {
-      return Array.from(workspaces.values()).filter(
-        (w) => w.status !== "stopped"
-      );
+      return Array.from(workspaces.values()).filter((w) => w.status !== "stopped")
     },
 
     async update(id: string, input: UpdateWorkspaceInput): Promise<Workspace> {
-      const existing = workspaces.get(id);
-      if (!existing) {
-        throw new Error(`Workspace ${id} not found`);
-      }
-      const updated = createWorkspace({
+      const existing = workspaces.get(id)
+      if (!existing) throw new Error(`Workspace ${id} not found`)
+
+      const updated: Workspace = {
         ...existing,
         status: input.status ?? existing.status,
         lastAccessedAt: input.lastAccessedAt ?? existing.lastAccessedAt,
-      });
-      workspaces.set(id, updated);
-      return updated;
+      }
+      workspaces.set(id, updated)
+      return updated
     },
 
     async delete(id: string): Promise<void> {
-      workspaces.delete(id);
+      workspaces.delete(id)
     },
 
     async touch(id: string): Promise<Workspace> {
-      const existing = workspaces.get(id);
-      if (!existing) {
-        throw new Error(`Workspace ${id} not found`);
-      }
-      const updated = createWorkspace({
+      const existing = workspaces.get(id)
+      if (!existing) throw new Error(`Workspace ${id} not found`)
+
+      const updated: Workspace = {
         ...existing,
         lastAccessedAt: new Date(),
-      });
-      workspaces.set(id, updated);
-      return updated;
+      }
+      workspaces.set(id, updated)
+      return updated
     },
-  };
+  }
 }

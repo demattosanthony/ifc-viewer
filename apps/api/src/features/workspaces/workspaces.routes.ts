@@ -1,29 +1,22 @@
-import { Elysia, t } from "elysia";
-import type { AppContext } from "../../context";
-import { ErrorResponse, SuccessResponse } from "../../schemas";
-import { WorkspaceResponse, WorkspaceListResponse } from "./workspaces.schemas";
+import { Elysia, t } from "elysia"
+import { useCases, isDomainError, type Context } from "@ifc-viewer/core"
+import { ErrorResponse, SuccessResponse } from "../../schemas"
+import { WorkspaceResponse, WorkspaceListResponse } from "./workspaces.schemas"
 
-export function workspacesRoutes(ctx: AppContext) {
+export function workspacesRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/workspaces" })
     .post(
       "/",
       async ({ body, set }) => {
-        // Verify project exists
-        const project = await ctx.db.projects.findById(body.projectId);
-        if (!project) {
-          set.status = 404;
-          return { error: "Project not found" };
+        try {
+          return await useCases.createWorkspace(ctx, body)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-
-        // Create workspace
-        const workspace = await ctx.db.workspaces.create({
-          projectId: body.projectId,
-        });
-
-        // Load project files into compute
-        await ctx.loadProjectIntoCompute(body.projectId);
-
-        return workspace;
       },
       {
         body: t.Object({
@@ -42,7 +35,7 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/",
       async () => {
-        return ctx.db.workspaces.findAll();
+        return useCases.listWorkspaces(ctx)
       },
       {
         response: {
@@ -57,7 +50,7 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/active",
       async () => {
-        return ctx.db.workspaces.findActive();
+        return useCases.listActiveWorkspaces(ctx)
       },
       {
         response: {
@@ -72,12 +65,15 @@ export function workspacesRoutes(ctx: AppContext) {
     .get(
       "/:id",
       async ({ params, set }) => {
-        const workspace = await ctx.db.workspaces.findById(params.id);
-        if (!workspace) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+        try {
+          return await useCases.getWorkspace(ctx, params.id)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-        return workspace;
       },
       {
         params: t.Object({
@@ -96,12 +92,15 @@ export function workspacesRoutes(ctx: AppContext) {
     .post(
       "/:id/touch",
       async ({ params, set }) => {
-        const existing = await ctx.db.workspaces.findById(params.id);
-        if (!existing) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+        try {
+          return await useCases.touchWorkspace(ctx, params.id)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-        return ctx.db.workspaces.touch(params.id);
       },
       {
         params: t.Object({
@@ -120,12 +119,15 @@ export function workspacesRoutes(ctx: AppContext) {
     .post(
       "/:id/stop",
       async ({ params, set }) => {
-        const existing = await ctx.db.workspaces.findById(params.id);
-        if (!existing) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+        try {
+          return await useCases.stopWorkspace(ctx, params.id)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-        return ctx.db.workspaces.update(params.id, { status: "stopped" });
       },
       {
         params: t.Object({
@@ -144,13 +146,16 @@ export function workspacesRoutes(ctx: AppContext) {
     .delete(
       "/:id",
       async ({ params, set }) => {
-        const existing = await ctx.db.workspaces.findById(params.id);
-        if (!existing) {
-          set.status = 404;
-          return { error: "Workspace not found" };
+        try {
+          await useCases.deleteWorkspace(ctx, params.id)
+          return { success: true }
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-        await ctx.db.workspaces.delete(params.id);
-        return { success: true };
       },
       {
         params: t.Object({
@@ -165,5 +170,5 @@ export function workspacesRoutes(ctx: AppContext) {
           tags: ["Workspaces"],
         },
       }
-    );
+    )
 }

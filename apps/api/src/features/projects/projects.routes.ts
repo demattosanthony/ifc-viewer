@@ -1,42 +1,23 @@
-import { Elysia, t } from "elysia";
-import { isValidProjectSlug } from "@ifc-viewer/core";
-import type { AppContext } from "../../context";
-import { ErrorResponse, SuccessResponse } from "../../schemas";
-import { ProjectResponse, ProjectListResponse } from "./projects.schemas";
-import { WorkspaceListResponse } from "../workspaces/workspaces.schemas";
+import { Elysia, t } from "elysia"
+import { useCases, isDomainError, type Context } from "@ifc-viewer/core"
+import { ErrorResponse, SuccessResponse } from "../../schemas"
+import { ProjectResponse, ProjectListResponse } from "./projects.schemas"
+import { WorkspaceListResponse } from "../workspaces/workspaces.schemas"
 
-export function projectsRoutes(ctx: AppContext) {
+export function projectsRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/projects" })
     .post(
       "/",
       async ({ body, set }) => {
-        // Validate slug format
-        if (!isValidProjectSlug(body.id)) {
-          set.status = 400;
-          return {
-            error:
-              "Invalid project ID. Must be lowercase alphanumeric with hyphens, 1-100 characters.",
-          };
+        try {
+          return await useCases.createProject(ctx, body)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-
-        // Check if project already exists (idempotent create)
-        const existing = await ctx.db.projects.findById(body.id);
-        if (existing) {
-          return existing;
-        }
-
-        // Create project in DB
-        const project = await ctx.db.projects.create({
-          id: body.id,
-          description: body.description,
-        });
-
-        // Create project directory in storage
-        await ctx.storage.put(`projects/${body.id}/.gitkeep`, "", {
-          contentType: "text/plain",
-        });
-
-        return project;
       },
       {
         body: t.Object({
@@ -56,7 +37,7 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/",
       async () => {
-        return ctx.db.projects.findAll();
+        return useCases.listProjects(ctx)
       },
       {
         response: {
@@ -71,12 +52,15 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/:id",
       async ({ params, set }) => {
-        const project = await ctx.db.projects.findById(params.id);
-        if (!project) {
-          set.status = 404;
-          return { error: "Project not found" };
+        try {
+          return await useCases.getProject(ctx, params.id)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-        return project;
       },
       {
         params: t.Object({
@@ -95,14 +79,15 @@ export function projectsRoutes(ctx: AppContext) {
     .patch(
       "/:id",
       async ({ params, body, set }) => {
-        const existing = await ctx.db.projects.findById(params.id);
-        if (!existing) {
-          set.status = 404;
-          return { error: "Project not found" };
+        try {
+          return await useCases.updateProject(ctx, params.id, body)
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-        return ctx.db.projects.update(params.id, {
-          description: body.description,
-        });
       },
       {
         params: t.Object({
@@ -124,21 +109,16 @@ export function projectsRoutes(ctx: AppContext) {
     .delete(
       "/:id",
       async ({ params, set }) => {
-        const existing = await ctx.db.projects.findById(params.id);
-        if (!existing) {
-          set.status = 404;
-          return { error: "Project not found" };
+        try {
+          await useCases.deleteProject(ctx, params.id)
+          return { success: true }
+        } catch (error) {
+          if (isDomainError(error)) {
+            set.status = error.statusCode
+            return { error: error.message }
+          }
+          throw error
         }
-
-        // Delete project files from storage
-        const projectPrefix = `projects/${params.id}/`;
-        for await (const entry of ctx.storage.list(projectPrefix)) {
-          await ctx.storage.delete(entry.key);
-        }
-
-        // Delete from database
-        await ctx.db.projects.delete(params.id);
-        return { success: true };
       },
       {
         params: t.Object({
@@ -157,7 +137,7 @@ export function projectsRoutes(ctx: AppContext) {
     .get(
       "/:id/workspaces",
       async ({ params }) => {
-        return ctx.db.workspaces.findByProjectId(params.id);
+        return useCases.listProjectWorkspaces(ctx, params.id)
       },
       {
         params: t.Object({
@@ -171,5 +151,5 @@ export function projectsRoutes(ctx: AppContext) {
           tags: ["Projects"],
         },
       }
-    );
+    )
 }

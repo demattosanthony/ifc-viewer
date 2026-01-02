@@ -19,12 +19,12 @@ import type {
   StorageInput,
   StorageMetadata,
   StorageObject,
-  StorageProvider,
+  StorageOps,
   StorageResult,
   UploadCredentials,
   UploadUrlOptions,
   UrlOptions,
-} from "../types";
+} from "@ifc-viewer/core";
 
 export interface S3StorageConfig {
   /** S3 bucket name */
@@ -41,7 +41,7 @@ export interface S3StorageConfig {
   prefix?: string;
 }
 
-export class S3StorageProvider implements StorageProvider {
+export class S3StorageProvider implements StorageOps {
   readonly type = "s3" as const;
 
   private client: S3Client;

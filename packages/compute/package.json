@@ -14,6 +14,9 @@
     ".": "./src/index.ts",
     "./local": "./src/providers/local/index.ts"
   },
+  "dependencies": {
+    "@ifc-viewer/core": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

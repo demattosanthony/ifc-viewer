@@ -1,19 +1,19 @@
 import { Elysia, t } from "elysia";
-import type { AppContext } from "../../context";
+import type { Context, FileEntry } from "@ifc-viewer/core";
 import { ErrorResponse, SuccessWithPathResponse } from "../../schemas";
 import { FileListResponse, FileContentResponse } from "./files.schemas";
 
-export function filesRoutes(ctx: AppContext) {
+export function filesRoutes(ctx: Context) {
   return new Elysia({ prefix: "/api/workspaces/:id/files" })
     .get(
       "/",
       async ({ params, query }) => {
-        const computer = ctx.getComputer(params.id);
+        const computer = ctx.getCompute(params.id);
         const path = query.path ?? ".";
         const files = await computer.files.list(path);
 
         return {
-          files: files.map((f) => ({
+          files: files.map((f: FileEntry) => ({
             name: f.name,
             path: f.path,
             type: f.type,
@@ -42,7 +42,7 @@ export function filesRoutes(ctx: AppContext) {
     .get(
       "/content",
       async ({ params, query, set }) => {
-        const computer = ctx.getComputer(params.id);
+        const computer = ctx.getCompute(params.id);
 
         if (!query.path) {
           set.status = 400;
@@ -85,7 +85,7 @@ export function filesRoutes(ctx: AppContext) {
     .post(
       "/content",
       async ({ params, body, set }) => {
-        const computer = ctx.getComputer(params.id);
+        const computer = ctx.getCompute(params.id);
 
         try {
           const content = body.isBinary
@@ -122,7 +122,7 @@ export function filesRoutes(ctx: AppContext) {
     .delete(
       "/",
       async ({ params, query, set }) => {
-        const computer = ctx.getComputer(params.id);
+        const computer = ctx.getCompute(params.id);
 
         if (!query.path) {
           set.status = 400;
@@ -158,7 +158,7 @@ export function filesRoutes(ctx: AppContext) {
     .post(
       "/directory",
       async ({ params, body, set }) => {
-        const computer = ctx.getComputer(params.id);
+        const computer = ctx.getCompute(params.id);
 
         try {
           await computer.files.mkdir(body.path, { recursive: true });

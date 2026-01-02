@@ -1,4 +1,4 @@
-import type { Shell, TerminalSession, TerminalOptions } from "../../types";
+import type { ShellOps, TerminalSession, TerminalOptions } from "@ifc-viewer/core";
 
 const isWindows = process.platform === "win32";
 const DEFAULT_SHELL = isWindows ? "powershell.exe" : "/bin/bash";
@@ -11,7 +11,7 @@ const baseEnv = Object.fromEntries(
   )
 );
 
-export class LocalShell implements Shell {
+export class LocalShell implements ShellOps {
   constructor(
     private workDir: string,
     private defaultEnv?: Record<string, string>

@@ -1,8 +1,8 @@
-import { tool } from "ai";
-import { z } from "zod";
-import type { TerminalSession } from "@ifc-viewer/compute";
-import type { AgentEvent } from "../events";
-import { getErrorMessage } from "../utils";
+import { tool } from "ai"
+import { z } from "zod"
+import type { TerminalSession } from "@ifc-viewer/core"
+import type { AgentEvent } from "../events"
+import { getErrorMessage } from "../utils"
 
 const MARKER_PREFIX = "<<CMD_DONE:";
 const MARKER_SUFFIX = ">>";

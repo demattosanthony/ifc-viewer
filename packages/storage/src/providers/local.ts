@@ -20,12 +20,12 @@ import type {
   StorageInput,
   StorageMetadata,
   StorageObject,
-  StorageProvider,
+  StorageOps,
   StorageResult,
   UploadCredentials,
   UploadUrlOptions,
   UrlOptions,
-} from "../types";
+} from "@ifc-viewer/core";
 
 export interface LocalStorageConfig {
   /** Base directory for storage */
@@ -38,7 +38,7 @@ export interface LocalStorageConfig {
   urlMode?: "none" | "data";
 }
 
-export class LocalStorageProvider implements StorageProvider {
+export class LocalStorageProvider implements StorageOps {
   readonly type = "local" as const;
 
   private readonly baseDir: string;

@@ -14,11 +14,11 @@ import type {
   FileContent,
   FileEntry,
   FileStat,
-  FileSystem,
+  FileSystemOps,
   ReadOptions,
-} from "../../types";
+} from "@ifc-viewer/core";
 
-export class LocalFileSystem implements FileSystem {
+export class LocalFileSystem implements FileSystemOps {
   constructor(private baseDir: string) {}
 
   private resolvePath(path: string): string {

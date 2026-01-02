@@ -21,7 +21,7 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "@ifc-viewer/compute": "workspace:*",
+    "@ifc-viewer/core": "workspace:*",
     "typescript": "^5"
   }
 }
