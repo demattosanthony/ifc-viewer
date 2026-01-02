@@ -47,14 +47,46 @@ export interface MessageRepository {
 }
 
 // ============================================================================
-// Database Provider
+// Unit of Work
 // ============================================================================
 
-/** Database provider interface - aggregates all repositories */
-export interface Database {
+/**
+ * Unit of Work interface - provides access to repositories within a transaction.
+ * All operations performed through these repositories will be part of the same transaction.
+ */
+export interface UnitOfWork {
   projects: ProjectRepository
   workspaces: WorkspaceRepository
   conversations: ConversationRepository
   messages: MessageRepository
+}
+
+// ============================================================================
+// Database Provider
+// ============================================================================
+
+/** Database provider interface - aggregates all repositories */
+export interface Database extends UnitOfWork {
+  /**
+   * Execute operations within a database transaction.
+   *
+   * All repository operations performed within the callback will be atomic -
+   * either all succeed or all are rolled back on error.
+   *
+   * @param fn - Callback function that receives a UnitOfWork with transaction-scoped repositories
+   * @returns The result of the callback function
+   * @throws Re-throws any error from the callback after rolling back the transaction
+   *
+   * @example
+   * ```ts
+   * const result = await db.transaction(async (uow) => {
+   *   const conversation = await uow.conversations.create({ workspaceId })
+   *   await uow.messages.create({ conversationId: conversation.id, role: "user", content })
+   *   return conversation
+   * })
+   * ```
+   */
+  transaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T>
+
   dispose(): Promise<void>
 }

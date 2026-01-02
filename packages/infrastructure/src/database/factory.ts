@@ -1,5 +1,5 @@
 import { resolve } from "node:path"
-import type { Database } from "@ifc-viewer/core"
+import type { Database, UnitOfWork } from "@ifc-viewer/core"
 import {
   createProjectRepository as createMemoryProjectRepository,
   createWorkspaceRepository as createMemoryWorkspaceRepository,
@@ -13,6 +13,7 @@ import {
   createWorkspaceRepository as createSqliteWorkspaceRepository,
   createConversationRepository as createSqliteConversationRepository,
   createMessageRepository as createSqliteMessageRepository,
+  type DrizzleDB as SqliteDrizzleDB,
 } from "./sqlite"
 import {
   createPostgresConnection,
@@ -21,6 +22,7 @@ import {
   createWorkspaceRepository as createPostgresWorkspaceRepository,
   createConversationRepository as createPostgresConversationRepository,
   createMessageRepository as createPostgresMessageRepository,
+  type DrizzleDB as PostgresDrizzleDB,
 } from "./postgres"
 
 /** Configuration for SQLite database (default) */
@@ -55,11 +57,21 @@ export async function createDatabase(config: DatabaseConfig): Promise<Database> 
 }
 
 function createMemoryDatabase(): Database {
+  const projects = createMemoryProjectRepository()
+  const workspaces = createMemoryWorkspaceRepository()
+  const conversations = createMemoryConversationRepository()
+  const messages = createMemoryMessageRepository()
+
   return {
-    projects: createMemoryProjectRepository(),
-    workspaces: createMemoryWorkspaceRepository(),
-    conversations: createMemoryConversationRepository(),
-    messages: createMemoryMessageRepository(),
+    projects,
+    workspaces,
+    conversations,
+    messages,
+    async transaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
+      // Memory adapter: pass-through (no real transaction needed)
+      // The same repositories are used since Map operations are synchronous
+      return fn({ projects, workspaces, conversations, messages })
+    },
     dispose: async () => {},
   }
 }
@@ -70,11 +82,25 @@ async function createSQLiteDatabase(config: SQLiteDatabaseConfig): Promise<Datab
 
   runSqliteMigrations(db)
 
+  /** Create repositories for a given db/transaction instance */
+  const createRepositories = (dbOrTx: SqliteDrizzleDB): UnitOfWork => ({
+    projects: createSqliteProjectRepository(dbOrTx),
+    workspaces: createSqliteWorkspaceRepository(dbOrTx),
+    conversations: createSqliteConversationRepository(dbOrTx),
+    messages: createSqliteMessageRepository(dbOrTx),
+  })
+
+  const repos = createRepositories(db)
+
   return {
-    projects: createSqliteProjectRepository(db),
-    workspaces: createSqliteWorkspaceRepository(db),
-    conversations: createSqliteConversationRepository(db),
-    messages: createSqliteMessageRepository(db),
+    ...repos,
+    async transaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
+      // Use Drizzle's transaction which wraps in BEGIN/COMMIT/ROLLBACK
+      return db.transaction(async (tx) => {
+        const txRepos = createRepositories(tx as unknown as SqliteDrizzleDB)
+        return fn(txRepos)
+      })
+    },
     dispose: async () => close(),
   }
 }
@@ -84,11 +110,25 @@ async function createPostgresDatabase(config: PostgresDatabaseConfig): Promise<D
 
   await runPostgresMigrations(db)
 
+  /** Create repositories for a given db/transaction instance */
+  const createRepositories = (dbOrTx: PostgresDrizzleDB): UnitOfWork => ({
+    projects: createPostgresProjectRepository(dbOrTx),
+    workspaces: createPostgresWorkspaceRepository(dbOrTx),
+    conversations: createPostgresConversationRepository(dbOrTx),
+    messages: createPostgresMessageRepository(dbOrTx),
+  })
+
+  const repos = createRepositories(db)
+
   return {
-    projects: createPostgresProjectRepository(db),
-    workspaces: createPostgresWorkspaceRepository(db),
-    conversations: createPostgresConversationRepository(db),
-    messages: createPostgresMessageRepository(db),
+    ...repos,
+    async transaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
+      // Use Drizzle's transaction which wraps in BEGIN/COMMIT/ROLLBACK
+      return db.transaction(async (tx) => {
+        const txRepos = createRepositories(tx as unknown as PostgresDrizzleDB)
+        return fn(txRepos)
+      })
+    },
     dispose: async () => close(),
   }
 }

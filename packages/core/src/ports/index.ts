@@ -8,6 +8,7 @@
 // Database
 export type {
   Database,
+  UnitOfWork,
   ProjectRepository,
   WorkspaceRepository,
   ConversationRepository,

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { NotFoundError } from "@ifc-viewer/core";
 import type { Message, MessageRepository } from "@ifc-viewer/core";
 import { messages } from "./schema";
-import type { DrizzleDB } from "./db";
+import type { DrizzleDB, DrizzleTransaction } from "./db";
 
 const rowToEntity = (row: typeof messages.$inferSelect): Message => ({
   id: row.id,
@@ -13,7 +13,7 @@ const rowToEntity = (row: typeof messages.$inferSelect): Message => ({
   createdAt: row.createdAt,
 });
 
-export function createMessageRepository(db: DrizzleDB): MessageRepository {
+export function createMessageRepository(db: DrizzleDB | DrizzleTransaction): MessageRepository {
   return {
     async create(input: Message.CreateInput): Promise<Message> {
       const id = uuidv4();

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { NotFoundError } from "@ifc-viewer/core";
 import type { Project, ProjectRepository } from "@ifc-viewer/core";
 import { projects, type ProjectRow } from "./schema";
-import type { DrizzleDB } from "./db";
+import type { DrizzleDB, DrizzleTransaction } from "./db";
 
 const rowToEntity = (row: ProjectRow): Project => ({
   id: row.id,
@@ -11,7 +11,7 @@ const rowToEntity = (row: ProjectRow): Project => ({
   updatedAt: row.updatedAt,
 });
 
-export function createProjectRepository(db: DrizzleDB): ProjectRepository {
+export function createProjectRepository(db: DrizzleDB | DrizzleTransaction): ProjectRepository {
   return {
     async create(input: Project.CreateInput): Promise<Project> {
       const now = new Date();

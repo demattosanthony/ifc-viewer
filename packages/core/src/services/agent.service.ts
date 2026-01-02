@@ -39,12 +39,11 @@ export type AgentChatResult = {
  * Run an agent chat session.
  *
  * This service handles the full orchestration:
- * 1. Gets or creates conversation for workspace
- * 2. Fetches message history from DB (or uses provided history)
- * 3. Saves user message to DB
+ * 1. Gets or creates conversation for workspace (transaction)
+ * 2. Fetches message history from DB
+ * 3. Saves user message and updates status (transaction)
  * 4. Streams AI response
- * 5. Saves assistant response to DB
- * 6. Updates conversation status
+ * 5. Saves assistant response and updates status (transaction)
  *
  * @param ctx - Application context
  * @param input - Chat input
@@ -55,13 +54,12 @@ export async function* runAgentChat(
   ctx: Context,
   input: AgentChatInput
 ): AsyncGenerator<AIEvent, AgentChatResult> {
-  // 1. Get or create conversation
-  let conversation: Conversation | null = await ctx.db.conversations.findActiveByWorkspaceId(
-    input.workspaceId
-  )
-  if (!conversation) {
-    conversation = await ctx.db.conversations.create({ workspaceId: input.workspaceId })
-  }
+  // 1. Get or create conversation (atomic operation)
+  const conversation = await ctx.db.transaction(async (uow) => {
+    const existing = await uow.conversations.findActiveByWorkspaceId(input.workspaceId)
+    if (existing) return existing
+    return uow.conversations.create({ workspaceId: input.workspaceId })
+  })
 
   const conversationId = conversation.id
 
@@ -84,17 +82,17 @@ export async function* runAgentChat(
   // Add user message to history
   messageHistory.push({ role: "user", content: input.content })
 
-  // 3. Save user message to DB
-  await ctx.db.messages.create({
-    conversationId,
-    role: "user",
-    content: input.content,
+  // 3. Save user message and update conversation status (atomic operation)
+  await ctx.db.transaction(async (uow) => {
+    await uow.messages.create({
+      conversationId,
+      role: "user",
+      content: input.content,
+    })
+    await uow.conversations.update(conversationId, { status: "streaming" })
   })
 
-  // 4. Update conversation status to streaming
-  await ctx.db.conversations.update(conversationId, { status: "streaming" })
-
-  // 5. Get compute and stream AI response
+  // 4. Get compute and stream AI response
   const computer = ctx.getCompute(input.workspaceId)
 
   let assistantText = ""
@@ -122,19 +120,19 @@ export async function* runAgentChat(
       yield event
     }
 
-    // 6. Save assistant message to DB (if there was any text)
-    if (assistantText) {
-      await ctx.db.messages.create({
-        conversationId,
-        role: "assistant",
-        content: assistantText,
-      })
-    }
-
-    // 7. Update conversation status to active
-    await ctx.db.conversations.update(conversationId, { status: "active" })
+    // 5. Save assistant message and update conversation status (atomic operation)
+    await ctx.db.transaction(async (uow) => {
+      if (assistantText) {
+        await uow.messages.create({
+          conversationId,
+          role: "assistant",
+          content: assistantText,
+        })
+      }
+      await uow.conversations.update(conversationId, { status: "active" })
+    })
   } catch (error) {
-    // Handle abort
+    // Handle abort - single operation, no transaction needed
     if (error instanceof Error && error.name === "AbortError") {
       await ctx.db.conversations.update(conversationId, { status: "aborted" })
     } else {

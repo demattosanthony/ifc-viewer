@@ -100,6 +100,7 @@ export {
 export type {
   // Database
   Database,
+  UnitOfWork,
   ProjectRepository,
   WorkspaceRepository,
   ConversationRepository,

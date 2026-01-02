@@ -4,7 +4,15 @@ import { migrate } from "drizzle-orm/bun-sql/migrator";
 import { resolve } from "node:path";
 import * as schema from "./schema";
 
+/** Drizzle database instance type */
 export type DrizzleDB = BunSQLDatabase<typeof schema>;
+
+/**
+ * Drizzle transaction type - structurally compatible with DrizzleDB.
+ * We use Pick to extract only the methods we need (insert, select, update, delete)
+ * which are available on both the db and transaction objects.
+ */
+export type DrizzleTransaction = Pick<DrizzleDB, "insert" | "select" | "update" | "delete">;
 
 export interface PostgresConnectionConfig {
   connectionString: string;

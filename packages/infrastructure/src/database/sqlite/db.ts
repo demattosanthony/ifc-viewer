@@ -5,7 +5,15 @@ import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import * as schema from "./schema";
 
+/** Drizzle database instance type */
 export type DrizzleDB = BunSQLiteDatabase<typeof schema>;
+
+/**
+ * Drizzle transaction type - structurally compatible with DrizzleDB.
+ * We use Pick to extract only the methods we need (insert, select, update, delete)
+ * which are available on both the db and transaction objects.
+ */
+export type DrizzleTransaction = Pick<DrizzleDB, "insert" | "select" | "update" | "delete">;
 
 export interface SQLiteConnectionConfig {
   filename: string;

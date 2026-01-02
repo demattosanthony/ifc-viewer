@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid"
 import { NotFoundError } from "@ifc-viewer/core"
 import type { Conversation, ConversationRepository } from "@ifc-viewer/core"
 import { conversations, type ConversationRow } from "./schema"
-import type { DrizzleDB } from "./db"
+import type { DrizzleDB, DrizzleTransaction } from "./db"
 
 const rowToEntity = (row: ConversationRow): Conversation => ({
   id: row.id,
@@ -13,7 +13,7 @@ const rowToEntity = (row: ConversationRow): Conversation => ({
   updatedAt: row.updatedAt,
 })
 
-export function createConversationRepository(db: DrizzleDB): ConversationRepository {
+export function createConversationRepository(db: DrizzleDB | DrizzleTransaction): ConversationRepository {
   return {
     async create(input: Conversation.CreateInput): Promise<Conversation> {
       const now = new Date()
