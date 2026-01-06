@@ -4,6 +4,36 @@ ifcopenshell>=0.7.0
 # Data Processing
 numpy
 pandas
+scipy
+
+# PDF & Reporting
+reportlab
+fpdf2
+
+# Excel/Spreadsheet
+openpyxl
+xlsxwriter
+
+# Visualization
+matplotlib
+plotly
+
+# Geometry & 3D
+shapely
+trimesh
+
+# Image Processing
+pillow
+
+# File Formats
+pyyaml
+python-dotenv
+
+# HTTP & Networking
+requests
+httpx
 
 # Utilities
 lark  # Parser (ifcopenshell dependency)
+tqdm  # Progress bars
+rich  # Rich terminal output
