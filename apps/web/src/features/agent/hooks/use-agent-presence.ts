@@ -1,9 +1,7 @@
-"use client";
-
 import { useEffect, useCallback } from "react";
 import { useAgent } from "../context";
 import { useEditor } from "@/features/editor/context";
-import type { AIEvent as AgentEvent } from "@ifc-viewer/core";
+import type { AIEvent } from "@ifc-viewer/core";
 import type { TerminalHandle } from "@/features/terminal/components/terminal";
 import type { FileBrowserHandle } from "@/features/file-browser/components/file-browser";
 
@@ -22,7 +20,7 @@ export function useAgentPresence({
   const { openFile, setFileContent } = useEditor();
 
   const handleEvent = useCallback(
-    (event: AgentEvent) => {
+    (event: AIEvent) => {
       switch (event.type) {
         case "editor-open":
           openFile(event.path);

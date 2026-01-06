@@ -11,7 +11,12 @@ import {
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSSE } from "@ifc-viewer/sdk";
-import type { AgentMessage, ToolInvocation, MessagePart, AIEvent as AgentEvent } from "@ifc-viewer/core";
+import type {
+  AgentMessage,
+  ToolInvocation,
+  MessagePart,
+  AIEvent,
+} from "@ifc-viewer/core";
 import {
   listConversationsOptions,
   listConversationsQueryKey,
@@ -22,7 +27,6 @@ import {
 } from "@ifc-viewer/sdk/hooks";
 import type {
   ListConversationsResponse,
-  CreateConversationResponse,
   GetConversationResponse,
 } from "@ifc-viewer/sdk";
 
@@ -58,7 +62,7 @@ interface AgentContextValue {
   selectConversation: (conversationId: string) => Promise<void>;
   createNewConversation: () => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
-  onPresenceEvent: (callback: (event: AgentEvent) => void) => () => void;
+  onPresenceEvent: (callback: (event: AIEvent) => void) => () => void;
 }
 
 const AgentContext = createContext<AgentContextValue | null>(null);
@@ -140,9 +144,7 @@ export function AgentProvider({
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
-  const presenceCallbacksRef = useRef<Set<(event: AgentEvent) => void>>(
-    new Set()
-  );
+  const presenceCallbacksRef = useRef<Set<(event: AIEvent) => void>>(new Set());
   const currentStepRef = useRef<number>(0);
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map());
 
@@ -152,14 +154,14 @@ export function AgentProvider({
   // SDK Queries & Mutations
   // ============================================================================
 
-  const EMPTY_CONVERSATIONS: Conversation[] = []
+  const EMPTY_CONVERSATIONS: Conversation[] = [];
 
   // Fetch conversations list
   const conversationsQuery = useQuery({
     ...listConversationsOptions({ path: { id: projectId } }),
-  })
+  });
 
-  const conversations = conversationsQuery.data ?? EMPTY_CONVERSATIONS
+  const conversations = conversationsQuery.data ?? EMPTY_CONVERSATIONS;
 
   // Create conversation mutation
   const createConvMutation = useMutation({
@@ -179,26 +181,26 @@ export function AgentProvider({
   // Clear messages when no conversation selected
   useEffect(() => {
     if (!conversationId) {
-      setMessages([])
+      setMessages([]);
     }
-  }, [conversationId])
+  }, [conversationId]);
 
   // Load conversation messages when conversationId changes (and list is loaded)
   // Skip if we already have messages (active chat session)
   useEffect(() => {
-    if (!conversationId) return
-    if (!conversationsQuery.isSuccess) return
+    if (!conversationId) return;
+    if (!conversationsQuery.isSuccess) return;
 
     // Skip verification and fetching if we already have messages
     // This prevents resetting state during an active chat session
-    if (messages.length > 0) return
+    if (messages.length > 0) return;
 
     // Verify conversation exists in the list
-    const list = conversationsQuery.data ?? EMPTY_CONVERSATIONS
-    const exists = list.some((c) => c.id === conversationId)
+    const list = conversationsQuery.data ?? EMPTY_CONVERSATIONS;
+    const exists = list.some((c) => c.id === conversationId);
     if (!exists) {
-      setConversationId(null)
-      return
+      setConversationId(null);
+      return;
     }
 
     // Fetch conversation messages
@@ -208,16 +210,16 @@ export function AgentProvider({
           getConversationOptions({
             path: { id: projectId, conversationId },
           })
-        )
+        );
         if (data) {
-          setMessages(toAgentMessages(data.messages))
+          setMessages(toAgentMessages(data.messages));
         }
       } catch (error) {
-        console.error("[Agent] Failed to fetch conversation:", error)
+        console.error("[Agent] Failed to fetch conversation:", error);
       }
-    }
+    };
 
-    fetchMessages()
+    fetchMessages();
   }, [
     conversationId,
     conversationsQuery.isSuccess,
@@ -225,7 +227,7 @@ export function AgentProvider({
     projectId,
     queryClient,
     messages.length,
-  ])
+  ]);
 
   // Save conversation ID to session storage when it changes
   useEffect(() => {
@@ -236,14 +238,14 @@ export function AgentProvider({
     }
   }, [conversationId, projectId]);
 
-  const emitPresenceEvent = useCallback((event: AgentEvent) => {
+  const emitPresenceEvent = useCallback((event: AIEvent) => {
     for (const callback of presenceCallbacksRef.current) {
       callback(event);
     }
   }, []);
 
   const handleAgentEvent = useCallback(
-    (event: AgentEvent) => {
+    (event: AIEvent) => {
       emitPresenceEvent(event);
 
       switch (event.type) {
@@ -718,7 +720,7 @@ export function AgentProvider({
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
       setIsLoading(true);
 
-      fetchSSE<AgentEvent>({
+      fetchSSE<AIEvent>({
         url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/chat`,
         body: {
           workspaceId,
@@ -799,15 +801,12 @@ export function AgentProvider({
     setMessages([]);
   }, [deleteConvMutation, projectId, conversationId, queryClient]);
 
-  const onPresenceEvent = useCallback(
-    (callback: (event: AgentEvent) => void) => {
-      presenceCallbacksRef.current.add(callback);
-      return () => {
-        presenceCallbacksRef.current.delete(callback);
-      };
-    },
-    []
-  );
+  const onPresenceEvent = useCallback((callback: (event: AIEvent) => void) => {
+    presenceCallbacksRef.current.add(callback);
+    return () => {
+      presenceCallbacksRef.current.delete(callback);
+    };
+  }, []);
 
   return (
     <AgentContext.Provider
