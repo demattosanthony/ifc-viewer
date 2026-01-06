@@ -9,6 +9,7 @@ const rowToEntity = (row: WorkspaceRow): Workspace => ({
   id: row.id,
   projectId: row.projectId,
   status: row.status,
+  workingDirectory: row.workingDirectory,
   createdAt: row.createdAt,
   lastAccessedAt: row.lastAccessedAt,
 });
@@ -17,11 +18,12 @@ export function createWorkspaceRepository(db: DrizzleDB | DrizzleTransaction): W
   return {
     async create(input: Workspace.CreateInput): Promise<Workspace> {
       const now = new Date();
-      const id = uuidv4();
+      const id = input.id ?? uuidv4();
       await db.insert(workspaces).values({
         id,
         projectId: input.projectId,
         status: "active",
+        workingDirectory: input.workingDirectory,
         createdAt: now,
         lastAccessedAt: now,
       });

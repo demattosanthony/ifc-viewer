@@ -17,6 +17,8 @@ export const WorkspaceSchema = z.object({
   id: z.string().uuid(),
   projectId: z.string(),
   status: WorkspaceStatusSchema,
+  /** Path to workspace's isolated working directory */
+  workingDirectory: z.string(),
   createdAt: z.date(),
   lastAccessedAt: z.date(),
 })
@@ -27,7 +29,10 @@ export type Workspace = z.infer<typeof WorkspaceSchema>
 /** Namespace for Workspace-related input types */
 export namespace Workspace {
   export type CreateInput = {
+    /** Optional ID - if not provided, one will be generated */
+    id?: string
     projectId: string
+    workingDirectory: string
   }
 
   export type UpdateInput = {

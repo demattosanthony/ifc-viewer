@@ -142,7 +142,7 @@ describe("WorkspaceRepository", () => {
 
   describe("create", () => {
     test("creates workspace with generated UUID", async () => {
-      const workspace = await repo.create({ projectId: "my-project" })
+      const workspace = await repo.create({ projectId: "my-project", workingDirectory: "/tmp/workspaces/test" })
 
       expect(workspace.id).toBeDefined()
       expect(workspace.id.length).toBe(36) // UUID format
@@ -153,8 +153,8 @@ describe("WorkspaceRepository", () => {
     })
 
     test("generates unique IDs", async () => {
-      const w1 = await repo.create({ projectId: "project" })
-      const w2 = await repo.create({ projectId: "project" })
+      const w1 = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
+      const w2 = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
 
       expect(w1.id).not.toBe(w2.id)
     })
@@ -162,7 +162,7 @@ describe("WorkspaceRepository", () => {
 
   describe("findById", () => {
     test("returns workspace by id", async () => {
-      const created = await repo.create({ projectId: "project" })
+      const created = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
 
       const found = await repo.findById(created.id)
       expect(found).not.toBeNull()
@@ -177,8 +177,8 @@ describe("WorkspaceRepository", () => {
 
   describe("findAll", () => {
     test("returns all workspaces", async () => {
-      await repo.create({ projectId: "project-1" })
-      await repo.create({ projectId: "project-2" })
+      await repo.create({ projectId: "project-1", workingDirectory: "/tmp/workspaces/test1" })
+      await repo.create({ projectId: "project-2", workingDirectory: "/tmp/workspaces/test2" })
 
       const all = await repo.findAll()
       expect(all.length).toBe(2)
@@ -187,9 +187,9 @@ describe("WorkspaceRepository", () => {
 
   describe("findByProjectId", () => {
     test("returns workspaces for project", async () => {
-      await repo.create({ projectId: "project-1" })
-      await repo.create({ projectId: "project-1" })
-      await repo.create({ projectId: "project-2" })
+      await repo.create({ projectId: "project-1", workingDirectory: "/tmp/workspaces/test1" })
+      await repo.create({ projectId: "project-1", workingDirectory: "/tmp/workspaces/test1" })
+      await repo.create({ projectId: "project-2", workingDirectory: "/tmp/workspaces/test2" })
 
       const results = await repo.findByProjectId("project-1")
       expect(results.length).toBe(2)
@@ -204,10 +204,10 @@ describe("WorkspaceRepository", () => {
 
   describe("findActive", () => {
     test("returns only non-stopped workspaces", async () => {
-      const w1 = await repo.create({ projectId: "project" })
-      const w2 = await repo.create({ projectId: "project" })
+      const w1 = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
+      const w2 = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
       await repo.update(w2.id, { status: "stopped" })
-      const w3 = await repo.create({ projectId: "project" })
+      const w3 = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
       await repo.update(w3.id, { status: "idle" })
 
       const active = await repo.findActive()
@@ -221,14 +221,14 @@ describe("WorkspaceRepository", () => {
 
   describe("update", () => {
     test("updates status", async () => {
-      const created = await repo.create({ projectId: "project" })
+      const created = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
 
       const updated = await repo.update(created.id, { status: "idle" })
       expect(updated.status).toBe("idle")
     })
 
     test("updates lastAccessedAt", async () => {
-      const created = await repo.create({ projectId: "project" })
+      const created = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
       const newDate = new Date("2025-01-01")
 
       const updated = await repo.update(created.id, { lastAccessedAt: newDate })
@@ -242,7 +242,7 @@ describe("WorkspaceRepository", () => {
 
   describe("touch", () => {
     test("updates lastAccessedAt to current time", async () => {
-      const created = await repo.create({ projectId: "project" })
+      const created = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
       const originalTime = created.lastAccessedAt
 
       await new Promise((r) => setTimeout(r, 10))
@@ -258,7 +258,7 @@ describe("WorkspaceRepository", () => {
 
   describe("delete", () => {
     test("removes workspace", async () => {
-      const created = await repo.create({ projectId: "project" })
+      const created = await repo.create({ projectId: "project", workingDirectory: "/tmp/workspaces/test" })
 
       await repo.delete(created.id)
       expect(await repo.findById(created.id)).toBeNull()

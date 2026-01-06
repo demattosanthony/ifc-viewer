@@ -2,7 +2,7 @@
   "name": "@ifc-viewer/monorepo",
   "private": true,
   "scripts": {
-    "dev": "bun run db:start && bun run --env-file=.env --filter='@ifc-viewer/server' --filter='@ifc-viewer/web' dev",
+    "dev": "bun scripts/dev.ts",
     "dev:server": "bun --env-file=.env --filter=@ifc-viewer/server run start",
     "dev:web": "bun --env-file=.env --filter=@ifc-viewer/web run dev",
     "build": "bun --filter=@ifc-viewer/server run build && bun --filter=@ifc-viewer/web run build",

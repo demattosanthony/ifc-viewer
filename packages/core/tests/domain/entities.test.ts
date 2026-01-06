@@ -88,6 +88,7 @@ describe("Workspace Entity", () => {
       id: "ws-123",
       projectId: "project",
       status,
+      workingDirectory: "/tmp/workspaces/ws-123",
       createdAt: new Date(),
       lastAccessedAt: new Date(),
     })

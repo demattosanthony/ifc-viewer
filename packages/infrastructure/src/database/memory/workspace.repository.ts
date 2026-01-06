@@ -8,9 +8,10 @@ export function createWorkspaceRepository(): WorkspaceRepository {
     async create(input: Workspace.CreateInput): Promise<Workspace> {
       const now = new Date()
       const entity: Workspace = {
-        id: uuidv4(),
+        id: input.id ?? uuidv4(),
         projectId: input.projectId,
         status: "active",
+        workingDirectory: input.workingDirectory,
         createdAt: now,
         lastAccessedAt: now,
       }

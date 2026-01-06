@@ -29,6 +29,12 @@ export interface AIChatOptions {
   getTerminal: () => Promise<TerminalSession>
   /** Callback for events (allows tools to emit UI events) */
   onEvent?: (event: AIEvent) => void
+  /** Callback to persist file writes to storage */
+  onFileWrite?: (path: string, content: Uint8Array | string) => Promise<void>
+  /** Callback to persist file deletes to storage (recursive for directories) */
+  onFileDelete?: (path: string, options?: { recursive?: boolean }) => Promise<void>
+  /** Callback to persist file moves in storage */
+  onFileMove?: (source: string, destination: string) => Promise<void>
 }
 
 /** Message in conversation */

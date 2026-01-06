@@ -6,6 +6,7 @@ interface TerminalWSData {
   terminalId?: string
   unsubData?: () => void
   unsubExit?: () => void
+  unregisterConnection?: () => void
 }
 
 export function terminalRoutes(ctx: Context) {
@@ -17,9 +18,25 @@ export function terminalRoutes(ctx: Context) {
     async open(ws) {
       const data = ws.data as TerminalWSData
       const workspaceId = data.query.workspaceId
-      const computer = ctx.getCompute(workspaceId)
 
       try {
+        // Get workspace to ensure it exists and get working directory
+        const workspace = await ctx.db.workspaces.findById(workspaceId)
+        if (!workspace) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Workspace not found",
+            } satisfies TerminalServerEvent)
+          )
+          ws.close()
+          return
+        }
+
+        // Register this connection for lifecycle tracking
+        data.unregisterConnection = ctx.registerConnection(workspaceId)
+
+        const computer = await ctx.getOrCreateCompute(workspace.id, workspace.workingDirectory)
         const terminal = await computer.createTerminal()
         data.terminalId = terminal.id
 
@@ -80,6 +97,16 @@ export function terminalRoutes(ctx: Context) {
       }
 
       const computer = ctx.getCompute(workspaceId)
+      if (!computer) {
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            message: "Workspace compute not found",
+          } satisfies TerminalServerEvent)
+        )
+        return
+      }
+      
       const terminal = computer.getTerminal(terminalId)
 
       if (!terminal) {
@@ -126,8 +153,13 @@ export function terminalRoutes(ctx: Context) {
 
       if (terminalId) {
         const computer = ctx.getCompute(workspaceId)
-        await computer.disposeTerminal(terminalId)
+        if (computer) {
+          await computer.disposeTerminal(terminalId)
+        }
       }
+
+      // Unregister connection - this may trigger workspace cleanup if last connection
+      data.unregisterConnection?.()
     },
   })
 }

@@ -120,7 +120,6 @@ export class LocalStorage implements Storage {
     try {
       await rm(path)
     } catch (error) {
-      // Ignore if file doesn't exist
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error
       }

@@ -64,7 +64,7 @@ export const ViewerProvider = ({
 
   const [cameraState, setCameraState] = useState<CameraState | null>(null);
   const [planViewState, setPlanViewState] = useState<PlanViewState | null>(
-    null
+    null,
   );
 
   // Track previous camera mode to detect mode changes
@@ -104,7 +104,7 @@ export const ViewerProvider = ({
           scene.components,
           scene.world,
           cameraManagerRef.current,
-          { onChange: setPlanViewState }
+          { onChange: setPlanViewState },
         );
         setPlanViewState(planViewManagerRef.current.getState());
 
@@ -125,7 +125,7 @@ export const ViewerProvider = ({
             scene.components,
             scene.world,
             interactionConfig,
-            cameraManagerRef.current ?? undefined
+            cameraManagerRef.current ?? undefined,
           );
 
           // Wire up selection events
@@ -146,9 +146,13 @@ export const ViewerProvider = ({
                 ? {
                     modelIdMap: { [event.modelId]: new Set([event.localId]) },
                     position: event.mousePosition,
-                    point: { x: event.point.x, y: event.point.y, z: event.point.z },
+                    point: {
+                      x: event.point.x,
+                      y: event.point.y,
+                      z: event.point.z,
+                    },
                   }
-                : null
+                : null,
             );
           });
         }
@@ -183,7 +187,7 @@ export const ViewerProvider = ({
               // Clear views for unloaded model
               planViewManagerRef.current?.clearModel(modelId);
             },
-          }
+          },
         );
 
         setState((prev) => ({ ...prev, isInitialized: true, error: null }));
@@ -195,7 +199,7 @@ export const ViewerProvider = ({
         }));
       }
     },
-    [config, workerUrl]
+    [config, workerUrl],
   );
 
   const dispose = useCallback(() => {
@@ -251,46 +255,46 @@ export const ViewerProvider = ({
     (modelId: string, elementId: number) =>
       modelManagerRef.current?.getElement(modelId, elementId) ??
       Promise.resolve(null),
-    []
+    [],
   );
 
   const loadModel = useCallback(
     (
       buffer: ArrayBuffer,
       name: string,
-      onProgress?: (progress: number) => void
+      onProgress?: (progress: number) => void,
     ) =>
       modelManagerRef.current?.loadModel(buffer, name, onProgress) ??
       Promise.resolve(),
-    []
+    [],
   );
 
   const unloadModel = useCallback(
     (modelId: string) =>
       modelManagerRef.current?.unloadModel(modelId) ?? Promise.resolve(),
-    []
+    [],
   );
 
   const unloadAllModels = useCallback(
     () => modelManagerRef.current?.unloadAllModels() ?? Promise.resolve(),
-    []
+    [],
   );
 
   // Camera control callbacks
   const setCameraMode = useCallback(
     (mode: CameraState["mode"]) => cameraManagerRef.current?.setMode(mode),
-    []
+    [],
   );
 
   const setCameraProjection = useCallback(
     (projection: CameraState["projection"]) =>
       cameraManagerRef.current?.setProjection(projection),
-    []
+    [],
   );
 
   const fitCameraToItems = useCallback(
     () => cameraManagerRef.current?.fitToItems(),
-    []
+    [],
   );
 
   // Plan view callbacks

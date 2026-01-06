@@ -6,9 +6,9 @@ import {
   createAIProviderFromEnv,
   type DatabaseConfig,
 } from "@ifc-viewer/infrastructure"
-import { createContext, type Context, type Computer } from "@ifc-viewer/core"
+import { createContext, stopWorkspaceWithSync, type Context, type Computer, type ComputeFactory } from "@ifc-viewer/core"
 import { mkdir, readFile } from "node:fs/promises"
-import { resolve, dirname } from "node:path"
+import { resolve, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const __filename = fileURLToPath(import.meta.url)
@@ -25,7 +25,7 @@ const DEFAULT_DOCKER_IMAGE = "bim-ide:latest"
 export type ComputeProvider = "local" | "docker"
 
 export type AppContextConfig = {
-  workingDirectory?: string
+  workspacesDirectory?: string
   dataDirectory?: string
   storageDirectory?: string
   databaseUrl?: string
@@ -51,31 +51,35 @@ function getDatabaseConfig(config: AppContextConfig): DatabaseConfig {
 }
 
 /**
- * Create compute provider based on configuration
+ * Create a compute factory based on provider type
  */
-async function createCompute(
+function createComputeFactory(
   provider: ComputeProvider,
-  workingDirectory: string,
   dockerImage?: string
-): Promise<Computer> {
-  if (provider === "docker") {
-    console.log(`[Context] Using Docker compute provider (image: ${dockerImage ?? DEFAULT_DOCKER_IMAGE})`)
-    return createDockerComputer({
-      workingDirectory,
-      image: dockerImage ?? DEFAULT_DOCKER_IMAGE,
-      cleanup: true, // Remove container on dispose
-    })
-  }
+): ComputeFactory {
+  return async (_workspaceId: string, workingDirectory: string): Promise<Computer> => {
+    // Ensure workspace directory exists
+    await mkdir(workingDirectory, { recursive: true })
 
-  console.log("[Context] Using local compute provider")
-  return createLocalComputer({ workingDirectory, cleanup: false })
+    if (provider === "docker") {
+      console.log(`[Context] Creating Docker compute for workspace (image: ${dockerImage ?? DEFAULT_DOCKER_IMAGE})`)
+      return createDockerComputer({
+        workingDirectory,
+        image: dockerImage ?? DEFAULT_DOCKER_IMAGE,
+        cleanup: true,
+      })
+    }
+
+    console.log("[Context] Creating local compute for workspace")
+    return createLocalComputer({ workingDirectory, cleanup: false })
+  }
 }
 
 export async function createAppContext(config: AppContextConfig = {}): Promise<Context> {
-  const workingDirectory =
-    config.workingDirectory ??
-    process.env.PLAYGROUND_WORKING_DIR ??
-    resolve(MONOREPO_ROOT, ".data", "workspace")
+  const workspacesDir =
+    config.workspacesDirectory ??
+    process.env.WORKSPACES_DIR ??
+    resolve(MONOREPO_ROOT, ".data", "workspaces")
 
   const storageDirectory =
     config.storageDirectory ??
@@ -90,7 +94,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
 
   const dockerImage = config.dockerImage ?? process.env.DOCKER_IMAGE
 
-  await mkdir(workingDirectory, { recursive: true })
+  await mkdir(workspacesDir, { recursive: true })
   await mkdir(storageDirectory, { recursive: true })
 
   const dbConfig = getDatabaseConfig(config)
@@ -98,12 +102,38 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     await mkdir(dbConfig.dataDirectory, { recursive: true })
   }
 
+  console.log(`[Context] Using ${computeProvider} compute provider`)
+  console.log(`[Context] Workspaces directory: ${workspacesDir}`)
+
   const db = await createDatabase(dbConfig)
   const storage = createStorage({ type: "local", baseDir: storageDirectory })
-  const compute = await createCompute(computeProvider, workingDirectory, dockerImage)
   const ai = createAIProviderFromEnv()
+  const computeFactory = createComputeFactory(computeProvider, dockerImage)
 
-  const ctx = createContext({ db, storage, compute, ai })
+  // Late-bound reference for the idle callback
+  let ctxRef: Context | null = null
+
+  const onWorkspaceIdle = async (workspaceId: string): Promise<void> => {
+    if (!ctxRef) return
+    console.log(`[Context] Workspace ${workspaceId} is idle, stopping and cleaning up...`)
+    try {
+      await stopWorkspaceWithSync(ctxRef, workspaceId)
+      console.log(`[Context] Workspace ${workspaceId} stopped successfully`)
+    } catch (err) {
+      console.error(`[Context] Failed to stop workspace ${workspaceId}:`, err)
+    }
+  }
+
+  const ctx = createContext({
+    db,
+    storage,
+    ai,
+    workspacesDir,
+    computeFactory,
+    onWorkspaceIdle,
+    idleGracePeriodMs: 5000, // 5 second grace period before cleanup
+  })
+  ctxRef = ctx
 
   // Bootstrap sample project
   await bootstrapSampleProject(ctx)
@@ -114,8 +144,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
 async function bootstrapSampleProject(ctx: Context): Promise<void> {
   const existing = await ctx.db.projects.findById(SAMPLE_PROJECT_ID)
   if (existing) {
-    // Load existing project files into compute
-    await loadProjectFiles(ctx, SAMPLE_PROJECT_ID)
+    console.log("[Context] Sample project already exists")
     return
   }
 
@@ -155,33 +184,4 @@ async function bootstrapSampleProject(ctx: Context): Promise<void> {
   )
 
   console.log("[Context] Sample project created successfully")
-
-  // Load into compute
-  await loadProjectFiles(ctx, SAMPLE_PROJECT_ID)
-}
-
-async function loadProjectFiles(ctx: Context, projectId: string): Promise<void> {
-  const prefix = `projects/${projectId}/`
-
-  for await (const entry of ctx.storage.list(prefix)) {
-    const relativePath = entry.key.slice(prefix.length)
-    if (!relativePath) continue
-
-    const obj = await ctx.storage.get(entry.key)
-    if (!obj) continue
-
-    const parentDir = relativePath.includes("/")
-      ? relativePath.slice(0, relativePath.lastIndexOf("/"))
-      : null
-
-    if (parentDir) {
-      try {
-        await ctx.compute.files.mkdir(parentDir, { recursive: true })
-      } catch {
-        // Directory might already exist
-      }
-    }
-
-    await ctx.compute.files.write(relativePath, obj.data)
-  }
 }

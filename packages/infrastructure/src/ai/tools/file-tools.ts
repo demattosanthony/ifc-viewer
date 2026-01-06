@@ -2,6 +2,7 @@
  * File Tools
  *
  * AI tools for file system operations.
+ * All file writes are persisted to both compute and project storage.
  */
 
 import { tool } from "ai"
@@ -9,7 +10,20 @@ import { z } from "zod"
 import type { Computer, AIEvent } from "@ifc-viewer/core"
 import { getErrorMessage } from "../utils"
 
-export function createFileTools(computer: Computer, emit: (event: AIEvent) => void) {
+export interface FileToolsOptions {
+  computer: Computer
+  emit: (event: AIEvent) => void
+  /** Callback to persist file writes to storage */
+  onFileWrite?: (path: string, content: Uint8Array | string) => Promise<void>
+  /** Callback to persist file deletes to storage (recursive for directories) */
+  onFileDelete?: (path: string, options?: { recursive?: boolean }) => Promise<void>
+  /** Callback to persist file moves in storage */
+  onFileMove?: (source: string, destination: string) => Promise<void>
+}
+
+export function createFileTools(options: FileToolsOptions) {
+  const { computer, emit, onFileWrite, onFileDelete, onFileMove } = options
+
   return {
     readFile: tool({
       description: "Read the contents of a file at the specified path",
@@ -51,7 +65,15 @@ export function createFileTools(computer: Computer, emit: (event: AIEvent) => vo
         try {
           emit({ type: "editor-open", path })
           emit({ type: "editor-replace", path, content })
+          
+          // Write to compute environment
           await computer.files.write(path, content)
+          
+          // Persist to project storage
+          if (onFileWrite) {
+            await onFileWrite(path, content)
+          }
+          
           emit({ type: "editor-save", path })
           emit({ type: "file-created", path })
 
@@ -129,7 +151,14 @@ export function createFileTools(computer: Computer, emit: (event: AIEvent) => vo
       }),
       execute: async ({ path, recursive }: { path: string; recursive: boolean }) => {
         try {
+          // Delete from compute environment
           await computer.files.delete(path, { recursive })
+
+          // Delete from project storage
+          if (onFileDelete) {
+            await onFileDelete(path, { recursive })
+          }
+
           emit({ type: "file-deleted", path })
           return { success: true, path }
         } catch (error) {
@@ -150,7 +179,14 @@ export function createFileTools(computer: Computer, emit: (event: AIEvent) => vo
       }),
       execute: async ({ source, destination }: { source: string; destination: string }) => {
         try {
+          // Move in compute environment
           await computer.files.move(source, destination)
+
+          // Update storage
+          if (onFileMove) {
+            await onFileMove(source, destination)
+          }
+
           emit({ type: "file-deleted", path: source })
           emit({ type: "file-created", path: destination })
           return { success: true, source, destination }

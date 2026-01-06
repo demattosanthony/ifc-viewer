@@ -88,11 +88,21 @@ export {
 export {
   createProjectWithStorage,
   createWorkspaceWithFiles,
+  getWorkspaceWithCompute,
+  stopWorkspaceWithSync,
+  deleteWorkspace,
   runAgentChat,
+  // Storage sync utilities
+  normalizeStoragePath,
+  buildStorageKey,
+  deleteStoragePrefix,
+  createStorageSyncCallbacks,
   type CreateProjectInput,
   type CreateWorkspaceInput,
   type AgentChatInput,
   type AgentChatResult,
+  type StorageSyncOptions,
+  type StorageSyncCallbacks,
 } from "./services"
 
 // Ports - Infrastructure Interfaces
@@ -176,4 +186,4 @@ export type {
 } from "./ports"
 
 // Context - Dependency Injection
-export { createContext, withContext, type Context, type ContextConfig } from "./context"
+export { createContext, withContext, type Context, type ContextConfig, type ComputeFactory, type OnWorkspaceIdle } from "./context"

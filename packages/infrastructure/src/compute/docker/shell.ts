@@ -5,9 +5,6 @@ import { createInterface, type Interface } from "readline"
 import { fileURLToPath } from "url"
 import { dirname, join } from "path"
 
-/**
- * Message types for communication with the terminal worker
- */
 interface WorkerMessage {
   type: "ready" | "data" | "exit" | "error"
   data?: string // base64 encoded for "data" type
@@ -43,22 +40,12 @@ interface KillMessage {
 
 type ParentMessage = InitMessage | InputMessage | ResizeMessage | KillMessage
 
-/**
- * Get the path to the terminal worker script
- */
 function getWorkerPath(): string {
-  // In ESM, we need to resolve relative to this file
   const currentFile = fileURLToPath(import.meta.url)
   const currentDir = dirname(currentFile)
   return join(currentDir, "terminal-worker.cjs")
 }
 
-/**
- * Docker-based Shell implementation using Node.js worker for TTY support
- *
- * Spawns a Node.js child process to handle Docker's hijack protocol,
- * communicating via newline-delimited JSON over stdin/stdout.
- */
 export class DockerShell implements Shell {
   constructor(
     private container: Container,
@@ -78,15 +65,12 @@ export class DockerShell implements Shell {
     let killed = false
     let isReady = false
 
-    // Pending data buffer for messages received before onData is registered
     const pendingData: string[] = []
 
-    // Helper to emit data to callbacks
     const emitData = (text: string) => {
       if (killed) return
 
       if (dataCallbacks.length === 0) {
-        // Buffer data until callbacks are registered
         pendingData.push(text)
         return
       }
@@ -94,38 +78,30 @@ export class DockerShell implements Shell {
       for (const cb of dataCallbacks) {
         try {
           cb(text)
-        } catch {
-          // Ignore callback errors
-        }
+        } catch {}
       }
     }
 
-    // Helper to emit exit to callbacks
     const emitExit = (code: number) => {
       if (killed) return
 
       for (const cb of exitCallbacks) {
         try {
           cb(code)
-        } catch {
-          // Ignore callback errors
-        }
+        } catch {}
       }
     }
 
-    // Helper to send message to worker
     const sendToWorker = (message: ParentMessage) => {
       if (!worker || killed) return
       worker.stdin?.write(JSON.stringify(message) + "\n")
     }
 
-    // Spawn the Node.js worker process
     const workerPath = getWorkerPath()
     worker = spawn("node", [workerPath], {
       stdio: ["pipe", "pipe", "pipe"],
     })
 
-    // Set up readline for newline-delimited JSON from worker
     if (worker.stdout) {
       readline = createInterface({
         input: worker.stdout,
@@ -159,14 +135,12 @@ export class DockerShell implements Shell {
       })
     }
 
-    // Log stderr from worker for debugging
     if (worker.stderr) {
       worker.stderr.on("data", (chunk: Buffer) => {
         console.error("[DockerShell Worker]", chunk.toString("utf-8"))
       })
     }
 
-    // Handle worker exit
     worker.on("exit", (code) => {
       if (!killed) {
         emitExit(code ?? 0)
@@ -180,10 +154,8 @@ export class DockerShell implements Shell {
       console.error("[DockerShell] Worker process error:", err)
     })
 
-    // Get container ID
     const containerId = this.container.id
 
-    // Initialize the terminal in the worker
     sendToWorker({
       type: "init",
       containerId,
@@ -198,7 +170,6 @@ export class DockerShell implements Shell {
       },
     })
 
-    // Wait for ready signal
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error("Terminal worker initialization timeout"))
@@ -224,7 +195,6 @@ export class DockerShell implements Shell {
       write: async (data: string) => {
         if (killed || !worker) return
 
-        // Send raw input to the worker (it goes directly to the PTY)
         sendToWorker({
           type: "input",
           data: Buffer.from(data, "utf-8").toString("base64"),
@@ -247,7 +217,6 @@ export class DockerShell implements Shell {
 
         sendToWorker({ type: "kill" })
 
-        // Give worker time to clean up, then force kill
         setTimeout(() => {
           if (worker) {
             worker.kill("SIGKILL")
@@ -262,15 +231,12 @@ export class DockerShell implements Shell {
       onData: (callback: (data: string) => void) => {
         dataCallbacks.push(callback)
 
-        // Flush any pending data to the new callback
         if (pendingData.length > 0) {
           queueMicrotask(() => {
             for (const data of pendingData) {
               try {
                 callback(data)
-              } catch {
-                // Ignore callback errors
-              }
+              } catch {}
             }
             pendingData.length = 0
           })

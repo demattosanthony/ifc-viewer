@@ -227,14 +227,26 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    // Create workspace for the sample project (auto-created by API on startup)
-    workspaceMutation.mutate({
-      body: { projectId: "sample-project" },
-    });
+    // Prevent double creation in React StrictMode
+    // StrictMode runs effects twice in dev mode to help catch bugs
+    let isCancelled = false;
 
+    // Small delay to allow StrictMode's double-invoke to cancel
+    const timeoutId = setTimeout(() => {
+      if (!isCancelled && !workspaceIdRef.current) {
+        workspaceMutation.mutate({
+          body: { projectId: "sample-project" },
+        });
+      }
+    }, 0);
+
+    // Cleanup function for page unload - use /stop endpoint which accepts POST
     const cleanup = () => {
       if (workspaceIdRef.current) {
-        navigator.sendBeacon(`/api/workspaces/${workspaceIdRef.current}`);
+        navigator.sendBeacon(
+          `/api/workspaces/${workspaceIdRef.current}/stop`,
+          ""
+        );
       }
     };
 
@@ -242,6 +254,8 @@ function Home() {
     window.addEventListener("beforeunload", cleanup);
 
     return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
       window.removeEventListener("pagehide", cleanup);
       window.removeEventListener("beforeunload", cleanup);
     };
@@ -292,7 +306,7 @@ function Home() {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-theme">
+    <ThemeProvider>
       <ViewerProvider
         workerUrl="/worker.mjs"
         config={{

@@ -13,8 +13,20 @@ export {
 
 export {
   createWorkspaceWithFiles,
+  getWorkspaceWithCompute,
+  stopWorkspaceWithSync,
+  deleteWorkspace,
   type CreateWorkspaceInput,
 } from "./workspace.service"
+
+export {
+  normalizeStoragePath,
+  buildStorageKey,
+  deleteStoragePrefix,
+  createStorageSyncCallbacks,
+  type StorageSyncOptions,
+  type StorageSyncCallbacks,
+} from "./storage-sync"
 
 export {
   runAgentChat,

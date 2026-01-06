@@ -17,6 +17,7 @@ export const workspaces = sqliteTable("workspaces", {
   })
     .notNull()
     .default("active"),
+  workingDirectory: text("working_directory").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   lastAccessedAt: integer("last_accessed_at", { mode: "timestamp_ms" }).notNull(),
 });

@@ -12,6 +12,8 @@
 import type { Context } from "../context"
 import type { AIEvent, AIMessage } from "../ports"
 import type { Conversation } from "../domain"
+import { NotFoundError } from "../domain/errors"
+import { createStorageSyncCallbacks } from "./storage-sync"
 
 // ============================================================================
 // Constants
@@ -93,7 +95,7 @@ export async function* runAgentChat(
   // 1. Validate conversation exists
   const conversation = await ctx.db.conversations.findById(conversationId)
   if (!conversation) {
-    throw new Error(`Conversation ${conversationId} not found`)
+    throw new NotFoundError("Conversation", conversationId)
   }
 
   // 2. Build message history
@@ -135,8 +137,19 @@ export async function* runAgentChat(
     await uow.conversations.update(conversationId, updates)
   })
 
-  // 4. Get compute and stream AI response
-  const computer = ctx.getCompute(input.workspaceId)
+  // 4. Get workspace and compute, then stream AI response
+  const workspace = await ctx.db.workspaces.findById(input.workspaceId)
+  if (!workspace) {
+    throw new NotFoundError("Workspace", input.workspaceId)
+  }
+
+  const computer = await ctx.getOrCreateCompute(workspace.id, workspace.workingDirectory)
+
+  // Storage callbacks for write-through persistence
+  const { onFileWrite, onFileDelete, onFileMove } = createStorageSyncCallbacks({
+    storage: ctx.storage,
+    projectId: workspace.projectId,
+  })
 
   let assistantText = ""
   let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
@@ -147,6 +160,9 @@ export async function* runAgentChat(
       signal: input.signal,
       computer,
       getTerminal: () => computer.getOrCreateAgentTerminal(),
+      onFileWrite,
+      onFileDelete,
+      onFileMove,
     })) {
       // Track text for final result
       if (event.type === "text-delta") {

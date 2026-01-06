@@ -16,6 +16,10 @@ export type DrizzleTransaction = Pick<DrizzleDB, "insert" | "select" | "update" 
 
 export interface PostgresConnectionConfig {
   connectionString: string;
+  /** Maximum number of connections in the pool (default: 10) */
+  maxConnections?: number;
+  /** Idle timeout in seconds before releasing connections (default: 20) */
+  idleTimeout?: number;
 }
 
 /**
@@ -24,7 +28,12 @@ export interface PostgresConnectionConfig {
 export function createPostgresConnection(
   config: PostgresConnectionConfig
 ): { db: DrizzleDB; close: () => void } {
-  const client = new SQL(config.connectionString);
+  const client = new SQL(config.connectionString, {
+    // Limit pool size to avoid "too many clients" errors
+    max: config.maxConnections ?? 10,
+    // Release idle connections after timeout (seconds)
+    idleTimeout: config.idleTimeout ?? 20,
+  });
   const db = drizzle({ client, schema });
 
   return {
