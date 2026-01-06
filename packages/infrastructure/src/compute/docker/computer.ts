@@ -1,8 +1,11 @@
 import type { Computer, ComputeConfig, FileSystem, Shell, TerminalSession } from "@ifc-viewer/core"
+import { createLogger } from "@ifc-viewer/logger"
 import Docker from "dockerode"
 import type { Container } from "dockerode"
 import { DockerFileSystem } from "./filesystem"
 import { DockerShell } from "./shell"
+
+const log = createLogger("docker")
 
 const DEFAULT_IMAGE = "bim-ide:latest"
 const DEFAULT_WORK_DIR = "/workspace"
@@ -137,7 +140,7 @@ export class DockerComputer implements Computer {
     } catch (err: unknown) {
       if (err && typeof err === "object" && "statusCode" in err && err.statusCode === 404) {
         // Image doesn't exist, try to pull
-        console.log(`[DockerComputer] Pulling image ${this.image}...`)
+        log.info("Pulling image", { image: this.image })
         await this.pullImage()
       } else {
         throw err
@@ -168,15 +171,12 @@ export class DockerComputer implements Computer {
             if (err) {
               reject(err)
             } else {
-              console.log(`[DockerComputer] Image ${this.image} pulled successfully`)
+              log.info("Image pulled successfully", { image: this.image })
               resolve()
             }
           },
-          (event) => {
-            if (event.status) {
-              // Optionally log progress
-              // console.log(`[DockerComputer] ${event.status} ${event.progress || ''}`)
-            }
+          (_event) => {
+            // Progress events are noisy, omit logging
           }
         )
       })

@@ -16,6 +16,7 @@
     "@ifc-viewer/core": "workspace:*",
     "@ifc-viewer/infrastructure": "workspace:*",
     "@ifc-viewer/interface": "workspace:*",
+    "@ifc-viewer/logger": "workspace:*",
     "elysia": "^1.2.0",
     "zod-to-json-schema": "^3.25.1"
   },

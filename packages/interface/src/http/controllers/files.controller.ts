@@ -6,6 +6,9 @@
  */
 
 import type { Context, FileEntry as CoreFileEntry, Computer, Workspace } from "@ifc-viewer/core"
+import { createLogger } from "@ifc-viewer/logger"
+
+const log = createLogger("files")
 import {
   buildStorageKey,
   deleteStoragePrefix,
@@ -136,39 +139,25 @@ export class FilesController {
 
     const { workspace, computer } = result
 
-    console.log(`[FilesController] Deleting file: workspace=${workspaceId}, projectId=${workspace.projectId}, path=${path}`)
+    log.debug("Deleting file", { workspaceId, projectId: workspace.projectId, path })
 
     try {
       // Delete from compute environment
-      console.log(`[FilesController] Deleting from compute: ${path}`)
       await computer.files.delete(path, { recursive: true })
-      console.log(`[FilesController] Deleted from compute successfully`)
+      log.debug("Deleted from compute", { path })
 
       // Delete from project storage (handles both files and directories)
       const storageKey = buildStorageKey(workspace.projectId, path)
-      console.log(`[FilesController] Deleting from storage: ${storageKey}`)
-
-      // Check if file exists before deleting
-      const existsBefore = await this.ctx.storage.exists(storageKey)
-      console.log(`[FilesController] Storage key exists before delete: ${existsBefore}`)
 
       // Delete the exact key (if file) and all keys with this prefix (if directory)
       await this.ctx.storage.delete(storageKey)
       await deleteStoragePrefix(this.ctx.storage, `${storageKey}/`)
 
-      // Verify deletion
-      const existsAfter = await this.ctx.storage.exists(storageKey)
-      console.log(`[FilesController] Storage key exists after delete: ${existsAfter}`)
-
-      if (existsAfter) {
-        console.error(`[FilesController] WARNING: File still exists in storage after delete!`)
-      }
-
-      console.log(`[FilesController] Deleted from storage successfully`)
+      log.debug("Deleted from storage", { storageKey })
 
       return ok({ success: true, path })
     } catch (error) {
-      console.error(`[FilesController] Failed to delete file:`, error)
+      log.error("Failed to delete file", { path, error })
       return serverError("Failed to delete file")
     }
   }

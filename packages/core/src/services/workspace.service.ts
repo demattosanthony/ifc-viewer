@@ -7,11 +7,14 @@
 
 import { join } from "node:path"
 import { rm } from "node:fs/promises"
+import { createLogger } from "@ifc-viewer/logger"
 import type { Context } from "../context"
 import type { Workspace } from "../domain"
-import type { Computer, FileEntry } from "../ports"
+import type { Computer } from "../ports"
 import { NotFoundError } from "../domain/errors"
 import { generateId } from "../utils"
+
+const log = createLogger("workspace")
 
 
 export type CreateWorkspaceInput = {
@@ -121,13 +124,13 @@ async function syncComputeToStorage(
 ): Promise<void> {
   const storagePrefix = `projects/${projectId}/`
   
-  console.log(`[WorkspaceService] Syncing compute to storage for project ${projectId}`)
+  log.debug("Syncing compute to storage", { projectId })
   
   // Get current files in compute
   const computeFiles = new Set<string>()
   await collectComputeFiles(computer, ".", computeFiles)
   
-  console.log(`[WorkspaceService] Found ${computeFiles.size} files in compute`)
+  log.debug("Found files in compute", { count: computeFiles.size })
   
   // Get current files in storage
   const storageFiles = new Set<string>()
@@ -136,13 +139,13 @@ async function syncComputeToStorage(
     storageFiles.add(relativePath)
   }
   
-  console.log(`[WorkspaceService] Found ${storageFiles.size} files in storage`)
+  log.debug("Found files in storage", { count: storageFiles.size })
   
   // Find files that were deleted from compute but still exist in storage
   for (const storagePath of storageFiles) {
     if (!computeFiles.has(storagePath)) {
       const storageKey = `${storagePrefix}${storagePath}`
-      console.log(`[WorkspaceService] Deleting orphaned storage file: ${storageKey}`)
+      log.debug("Deleting orphaned storage file", { key: storageKey })
       await ctx.storage.delete(storageKey)
     }
   }
@@ -156,7 +159,7 @@ async function syncComputeToStorage(
       
       if (!storageFiles.has(computePath)) {
         // New file created via terminal
-        console.log(`[WorkspaceService] Syncing new file to storage: ${computePath}`)
+        log.debug("Syncing new file to storage", { path: computePath })
         await ctx.storage.put(storageKey, computeContent)
       } else {
         // File exists in both - check if modified
@@ -165,17 +168,17 @@ async function syncComputeToStorage(
           // Compare content to detect modifications
           const storageContent = storageObj.data
           if (!buffersEqual(computeContent, storageContent)) {
-            console.log(`[WorkspaceService] Syncing modified file to storage: ${computePath}`)
+            log.debug("Syncing modified file to storage", { path: computePath })
             await ctx.storage.put(storageKey, computeContent)
           }
         }
       }
     } catch (err) {
-      console.error(`[WorkspaceService] Failed to sync file ${computePath}:`, err)
+      log.error("Failed to sync file", { path: computePath, error: err })
     }
   }
   
-  console.log(`[WorkspaceService] Sync complete`)
+  log.debug("Sync complete")
 }
 
 /**
@@ -209,7 +212,7 @@ async function collectComputeFiles(
       }
     }
   } catch (err) {
-    console.error(`[WorkspaceService] Failed to list ${path}:`, err)
+    log.error("Failed to list directory", { path, error: err })
   }
 }
 
@@ -232,7 +235,7 @@ export async function stopWorkspaceWithSync(
     try {
       await syncComputeToStorage(ctx, workspace.projectId, computer)
     } catch (err) {
-      console.error(`[WorkspaceService] Failed to sync compute to storage:`, err)
+      log.error("Failed to sync compute to storage", { workspaceId, error: err })
       // Continue with shutdown even if sync fails
     }
   }

@@ -1,0 +1,18 @@
+{
+  "name": "@ifc-viewer/logger",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Structured logging with console and file transports",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

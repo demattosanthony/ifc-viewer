@@ -27,6 +27,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "beta",
     "@ifc-viewer/core": "workspace:*",
+    "@ifc-viewer/logger": "workspace:*",
     "@types/dockerode": "^3.3.47",
     "ai": "beta",
     "dockerode": "^4.0.9",

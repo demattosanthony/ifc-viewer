@@ -1,5 +1,8 @@
 import { Elysia, t } from "elysia"
 import type { Context, TerminalServerEvent, TerminalClientMessage } from "@ifc-viewer/core"
+import { createLogger } from "@ifc-viewer/logger"
+
+const log = createLogger("terminal")
 
 interface TerminalWSData {
   query: { workspaceId: string }
@@ -134,7 +137,7 @@ export function terminalRoutes(ctx: Context) {
           terminal.resize(message.cols, message.rows)
         }
       } catch (error) {
-        console.error("[Terminal] Error processing message:", error)
+        log.error("Error processing message", { error })
       }
     },
 

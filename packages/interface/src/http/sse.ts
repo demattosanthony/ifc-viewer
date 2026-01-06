@@ -2,6 +2,10 @@
  * Server-Side Events (SSE) utilities for streaming responses
  */
 
+import { createLogger } from "@ifc-viewer/logger"
+
+const log = createLogger("sse")
+
 /**
  * Context for sending SSE events
  */
@@ -102,7 +106,7 @@ export function createSSEStream(
 
       // Start the handler
       Promise.resolve(onConnect(ctx)).catch((error) => {
-        console.error("[SSE] Error in handler:", error)
+        log.error("Error in handler", { error })
         if (isOpen) {
           ctx.send("error", { message: error.message })
           ctx.close()

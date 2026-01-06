@@ -18,6 +18,7 @@
         "@ifc-viewer/core": "workspace:*",
         "@ifc-viewer/infrastructure": "workspace:*",
         "@ifc-viewer/interface": "workspace:*",
+        "@ifc-viewer/logger": "workspace:*",
         "elysia": "^1.2.0",
         "zod-to-json-schema": "^3.25.1",
       },
@@ -62,6 +63,7 @@
       "name": "@ifc-viewer/core",
       "version": "0.1.0",
       "dependencies": {
+        "@ifc-viewer/logger": "workspace:*",
         "uuidv7": "^1.0.2",
         "zod": "^3.24.0",
       },
@@ -96,6 +98,7 @@
       "dependencies": {
         "@ai-sdk/anthropic": "beta",
         "@ifc-viewer/core": "workspace:*",
+        "@ifc-viewer/logger": "workspace:*",
         "@types/dockerode": "^3.3.47",
         "ai": "beta",
         "dockerode": "^4.0.9",
@@ -113,10 +116,18 @@
       "version": "0.1.0",
       "dependencies": {
         "@ifc-viewer/core": "workspace:*",
+        "@ifc-viewer/logger": "workspace:*",
         "zod": "^3.24.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "packages/logger": {
+      "name": "@ifc-viewer/logger",
+      "version": "0.1.0",
+      "devDependencies": {
         "typescript": "^5",
       },
     },
@@ -374,6 +385,8 @@
     "@ifc-viewer/infrastructure": ["@ifc-viewer/infrastructure@workspace:packages/infrastructure"],
 
     "@ifc-viewer/interface": ["@ifc-viewer/interface@workspace:packages/interface"],
+
+    "@ifc-viewer/logger": ["@ifc-viewer/logger@workspace:packages/logger"],
 
     "@ifc-viewer/sdk": ["@ifc-viewer/sdk@workspace:packages/sdk"],
 

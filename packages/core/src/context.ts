@@ -5,7 +5,10 @@
  * Manages compute lifecycle with activity-based idle detection.
  */
 
+import { createLogger } from "@ifc-viewer/logger";
 import type { Database, Storage, Computer, AIProvider } from "./ports";
+
+const log = createLogger("compute");
 
 // ============================================================================
 // Constants
@@ -91,20 +94,16 @@ export function createContext(config: ContextConfig): Context {
         const idleMs = now - state.lastActivityAt;
 
         if (idleMs >= IDLE_TIMEOUT_MS) {
-          console.log(
-            `[Compute] Workspace ${workspaceId} idle for ${Math.round(
-              idleMs / 1000
-            )}s, disposing...`
-          );
+          log.debug("Workspace idle, disposing", {
+            workspaceId,
+            idleSeconds: Math.round(idleMs / 1000),
+          });
 
           if (config.onWorkspaceIdle) {
             try {
               await config.onWorkspaceIdle(workspaceId);
             } catch (err) {
-              console.error(
-                `[Compute] Failed to cleanup workspace ${workspaceId}:`,
-                err
-              );
+              log.error("Failed to cleanup workspace", { workspaceId, error: err });
             }
           } else {
             // Default: just dispose compute
@@ -150,9 +149,7 @@ export function createContext(config: ContextConfig): Context {
       // Create new instance
       const creationPromise = (async () => {
         try {
-          console.log(
-            `[Compute] Creating compute for workspace ${workspaceId}`
-          );
+          log.debug("Creating compute", { workspaceId });
           const computer = await config.computeFactory(
             workspaceId,
             workingDirectory
@@ -168,7 +165,7 @@ export function createContext(config: ContextConfig): Context {
             startIdleChecker();
           }
 
-          console.log(`[Compute] Compute ready for workspace ${workspaceId}`);
+          log.debug("Compute ready", { workspaceId });
           return computer;
         } finally {
           pendingCreations.delete(workspaceId);
@@ -183,9 +180,7 @@ export function createContext(config: ContextConfig): Context {
       const state = computeStates.get(workspaceId);
       if (state) {
         state.lastActivityAt = Date.now();
-        console.log(
-          `[Compute] Activity on workspace ${workspaceId} (${source})`
-        );
+        log.debug("Activity", { workspaceId, source });
       }
     },
 
@@ -193,7 +188,7 @@ export function createContext(config: ContextConfig): Context {
       const state = computeStates.get(workspaceId);
       if (!state) return;
 
-      console.log(`[Compute] Disposing compute for workspace ${workspaceId}`);
+      log.debug("Disposing compute", { workspaceId });
       await state.computer.dispose();
       computeStates.delete(workspaceId);
 
@@ -208,7 +203,7 @@ export function createContext(config: ContextConfig): Context {
 
       // Dispose all compute instances
       for (const [workspaceId, state] of computeStates) {
-        console.log(`[Compute] Disposing compute for workspace ${workspaceId}`);
+        log.debug("Disposing compute", { workspaceId });
         await state.computer.dispose();
       }
       computeStates.clear();

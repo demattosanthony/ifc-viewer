@@ -7,9 +7,12 @@ import {
   type DatabaseConfig,
 } from "@ifc-viewer/infrastructure"
 import { createContext, stopWorkspaceWithSync, type Context, type Computer, type ComputeFactory } from "@ifc-viewer/core"
+import { createLogger } from "@ifc-viewer/logger"
 import { mkdir, readFile } from "node:fs/promises"
-import { resolve, dirname, join } from "node:path"
+import { resolve, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+
+const log = createLogger("context")
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -62,7 +65,7 @@ function createComputeFactory(
     await mkdir(workingDirectory, { recursive: true })
 
     if (provider === "docker") {
-      console.log(`[Context] Creating Docker compute for workspace (image: ${dockerImage ?? DEFAULT_DOCKER_IMAGE})`)
+      log.debug("Creating Docker compute", { image: dockerImage ?? DEFAULT_DOCKER_IMAGE })
       return createDockerComputer({
         workingDirectory,
         image: dockerImage ?? DEFAULT_DOCKER_IMAGE,
@@ -70,7 +73,7 @@ function createComputeFactory(
       })
     }
 
-    console.log("[Context] Creating local compute for workspace")
+    log.debug("Creating local compute")
     return createLocalComputer({ workingDirectory, cleanup: false })
   }
 }
@@ -102,8 +105,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     await mkdir(dbConfig.dataDirectory, { recursive: true })
   }
 
-  console.log(`[Context] Using ${computeProvider} compute provider`)
-  console.log(`[Context] Workspaces directory: ${workspacesDir}`)
+  log.info("Initializing context", { computeProvider, workspacesDir })
 
   const db = await createDatabase(dbConfig)
   const storage = createStorage({ type: "local", baseDir: storageDirectory })
@@ -115,12 +117,12 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
 
   const onWorkspaceIdle = async (workspaceId: string): Promise<void> => {
     if (!ctxRef) return
-    console.log(`[Context] Workspace ${workspaceId} is idle, stopping and cleaning up...`)
+    log.info("Workspace idle, stopping", { workspaceId })
     try {
       await stopWorkspaceWithSync(ctxRef, workspaceId)
-      console.log(`[Context] Workspace ${workspaceId} stopped successfully`)
+      log.info("Workspace stopped", { workspaceId })
     } catch (err) {
-      console.error(`[Context] Failed to stop workspace ${workspaceId}:`, err)
+      log.error("Failed to stop workspace", { workspaceId, error: err })
     }
   }
 
@@ -141,13 +143,14 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
 }
 
 async function bootstrapSampleProject(ctx: Context): Promise<void> {
+  const bootstrapLog = log.child("bootstrap")
   const existing = await ctx.db.projects.findById(SAMPLE_PROJECT_ID)
   if (existing) {
-    console.log("[Context] Sample project already exists")
+    bootstrapLog.debug("Sample project already exists")
     return
   }
 
-  console.log("[Context] Creating sample project...")
+  bootstrapLog.info("Creating sample project")
 
   await ctx.db.projects.create({
     id: SAMPLE_PROJECT_ID,
@@ -161,9 +164,9 @@ async function bootstrapSampleProject(ctx: Context): Promise<void> {
     await ctx.storage.put(`${prefix}/sample.ifc`, new Uint8Array(ifcContent), {
       contentType: "application/x-step",
     })
-    console.log("[Context] Uploaded sample.ifc to storage")
+    bootstrapLog.debug("Uploaded sample.ifc")
   } catch (err) {
-    console.warn("[Context] Could not upload sample.ifc:", err)
+    bootstrapLog.warn("Could not upload sample.ifc", { error: err })
   }
 
   try {
@@ -171,9 +174,9 @@ async function bootstrapSampleProject(ctx: Context): Promise<void> {
     await ctx.storage.put(`${prefix}/print_info.py`, new Uint8Array(pyContent), {
       contentType: "text/x-python",
     })
-    console.log("[Context] Uploaded print_info.py to storage")
+    bootstrapLog.debug("Uploaded print_info.py")
   } catch (err) {
-    console.warn("[Context] Could not upload print_info.py:", err)
+    bootstrapLog.warn("Could not upload print_info.py", { error: err })
   }
 
   await ctx.storage.put(
@@ -182,5 +185,5 @@ async function bootstrapSampleProject(ctx: Context): Promise<void> {
     { contentType: "text/markdown" }
   )
 
-  console.log("[Context] Sample project created successfully")
+  bootstrapLog.info("Sample project created")
 }

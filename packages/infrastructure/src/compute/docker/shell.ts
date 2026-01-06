@@ -1,9 +1,12 @@
 import type { Shell, TerminalSession, TerminalOptions } from "@ifc-viewer/core"
+import { createLogger } from "@ifc-viewer/logger"
 import type { Container } from "dockerode"
 import { spawn, type ChildProcess } from "child_process"
 import { createInterface, type Interface } from "readline"
 import { fileURLToPath } from "url"
 import { dirname, join } from "path"
+
+const log = createLogger("docker:shell")
 
 interface WorkerMessage {
   type: "ready" | "data" | "exit" | "error"
@@ -126,18 +129,18 @@ export class DockerShell implements Shell {
               emitExit(message.code ?? 0)
               break
             case "error":
-              console.error("[DockerShell] Worker error:", message.message)
+              log.error("Worker error", { message: message.message })
               break
           }
         } catch (err) {
-          console.error("[DockerShell] Failed to parse worker message:", err)
+          log.error("Failed to parse worker message", { error: err })
         }
       })
     }
 
     if (worker.stderr) {
       worker.stderr.on("data", (chunk: Buffer) => {
-        console.error("[DockerShell Worker]", chunk.toString("utf-8"))
+        log.debug("Worker stderr", { output: chunk.toString("utf-8") })
       })
     }
 
@@ -151,7 +154,7 @@ export class DockerShell implements Shell {
     })
 
     worker.on("error", (err) => {
-      console.error("[DockerShell] Worker process error:", err)
+      log.error("Worker process error", { error: err })
     })
 
     const containerId = this.container.id

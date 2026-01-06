@@ -2,8 +2,11 @@ import { Elysia } from "elysia";
 import { openapi } from "@elysiajs/openapi";
 import { cors } from "@elysiajs/cors";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { createLogger, closeLogs } from "@ifc-viewer/logger";
 import { createAppContext } from "./context";
 import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface";
+
+const log = createLogger("server");
 import {
   projectsRoutes,
   workspacesRoutes,
@@ -90,21 +93,22 @@ const app = new Elysia()
   .use(terminalRoutes(ctx))
   .listen(process.env.PORT ?? 3000);
 
-console.log(`API is running at ${app.server?.hostname}:${app.server?.port}`);
-console.log(`Swagger docs: http://localhost:${app.server?.port}/swagger`);
+log.info("API server started", {
+  host: app.server?.hostname,
+  port: app.server?.port,
+  swagger: `http://localhost:${app.server?.port}/swagger`,
+});
 
 // Export app type for Eden treaty SDK generation
 export type App = typeof app;
 
 // Graceful shutdown
-process.on("SIGTERM", async () => {
-  console.log("Shutting down...");
+async function shutdown(signal: string) {
+  log.info("Shutting down", { signal });
   await ctx.dispose();
+  await closeLogs();
   process.exit(0);
-});
+}
 
-process.on("SIGINT", async () => {
-  console.log("Shutting down...");
-  await ctx.dispose();
-  process.exit(0);
-});
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
