@@ -215,8 +215,8 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     return !hasContent && !hasTools;
   })();
 
-  // Show loading state when conversation is selected but messages haven't loaded yet
-  const isLoadingMessages = conversationId !== null && !hasMessages && !isLoading;
+  // Check if conversation is selected but has no messages
+  const hasNoMessages = conversationId !== null && !hasMessages && !isLoading;
 
   const handleSubmit = () => {
     const trimmed = inputValue.trim();
@@ -350,9 +350,14 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               <ChatMessage key={message.id} message={message} />
             ))}
           </ErrorBoundary>
-          {(isAwaitingFirstToken || isLoadingMessages) && (
+          {isAwaitingFirstToken && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <PulseDotLoader />
+            </div>
+          )}
+          {hasNoMessages && (
+            <div className="text-sm text-muted-foreground">
+              No messages
             </div>
           )}
           <ChatContainerScrollAnchor />
