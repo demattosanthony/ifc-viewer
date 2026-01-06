@@ -11,6 +11,7 @@ import type { Context } from "../context"
 import type { Workspace } from "../domain"
 import type { Computer, FileEntry } from "../ports"
 import { NotFoundError } from "../domain/errors"
+import { generateId } from "../utils"
 
 
 export type CreateWorkspaceInput = {
@@ -36,7 +37,7 @@ export async function createWorkspaceWithFiles(
   if (!project) throw new NotFoundError("Project", input.projectId)
 
   // Generate workspace ID and working directory path
-  const workspaceId = crypto.randomUUID()
+  const workspaceId = generateId()
   const workingDirectory = join(ctx.workspacesDir, workspaceId)
 
   // Create workspace in database with the same ID used for the directory

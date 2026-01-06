@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid"
+import { generateId } from "@ifc-viewer/core"
 import type { Message, MessageRepository } from "@ifc-viewer/core"
 
 export function createMessageRepository(): MessageRepository {
@@ -7,7 +7,7 @@ export function createMessageRepository(): MessageRepository {
   return {
     async create(input: Message.CreateInput): Promise<Message> {
       const entity: Message = {
-        id: uuidv4(),
+        id: generateId(),
         conversationId: input.conversationId,
         role: input.role,
         content: input.content,

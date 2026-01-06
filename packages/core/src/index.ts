@@ -60,6 +60,9 @@ export {
 // Domain Layer - Value Objects
 export { Slug } from "./domain/value-objects"
 
+// Utilities
+export { generateId } from "./utils"
+
 // Domain Layer - Agent Types
 export type {
   Position,

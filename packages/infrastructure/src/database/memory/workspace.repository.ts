@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid"
+import { generateId } from "@ifc-viewer/core"
 import type { Workspace, WorkspaceRepository } from "@ifc-viewer/core"
 
 export function createWorkspaceRepository(): WorkspaceRepository {
@@ -8,7 +8,7 @@ export function createWorkspaceRepository(): WorkspaceRepository {
     async create(input: Workspace.CreateInput): Promise<Workspace> {
       const now = new Date()
       const entity: Workspace = {
-        id: input.id ?? uuidv4(),
+        id: input.id ?? generateId(),
         projectId: input.projectId,
         status: "active",
         workingDirectory: input.workingDirectory,

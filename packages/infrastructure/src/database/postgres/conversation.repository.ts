@@ -1,6 +1,5 @@
 import { eq, desc } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
-import { NotFoundError } from "@ifc-viewer/core";
+import { NotFoundError, generateId } from "@ifc-viewer/core";
 import type { Conversation, ConversationRepository } from "@ifc-viewer/core";
 import { conversations, type ConversationRow } from "./schema";
 import type { DrizzleDB, DrizzleTransaction } from "./db";
@@ -18,7 +17,7 @@ export function createConversationRepository(db: DrizzleDB | DrizzleTransaction)
   return {
     async create(input: Conversation.CreateInput): Promise<Conversation> {
       const now = new Date();
-      const id = uuidv4();
+      const id = generateId();
       await db.insert(conversations).values({
         id,
         projectId: input.projectId,

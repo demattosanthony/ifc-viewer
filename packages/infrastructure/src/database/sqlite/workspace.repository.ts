@@ -1,6 +1,5 @@
 import { eq, ne } from "drizzle-orm"
-import { v4 as uuidv4 } from "uuid"
-import { NotFoundError } from "@ifc-viewer/core"
+import { NotFoundError, generateId } from "@ifc-viewer/core"
 import type { Workspace, WorkspaceRepository } from "@ifc-viewer/core"
 import { workspaces, type WorkspaceRow } from "./schema"
 import type { DrizzleDB, DrizzleTransaction } from "./db"
@@ -18,7 +17,7 @@ export function createWorkspaceRepository(db: DrizzleDB | DrizzleTransaction): W
   return {
     async create(input: Workspace.CreateInput): Promise<Workspace> {
       const now = new Date()
-      const id = input.id ?? uuidv4()
+      const id = input.id ?? generateId()
       await db.insert(workspaces).values({
         id,
         projectId: input.projectId,
