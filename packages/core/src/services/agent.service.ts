@@ -164,6 +164,11 @@ export async function* runAgentChat(
       onFileDelete,
       onFileMove,
     })) {
+      // Touch activity on significant events to keep workspace alive during long AI sessions
+      if (event.type === "step-start" || event.type === "tool-call") {
+        ctx.touchCompute(workspace.id, "ai-chat")
+      }
+
       // Track text for final result
       if (event.type === "text-delta") {
         assistantText += event.content

@@ -6,7 +6,6 @@ interface TerminalWSData {
   terminalId?: string
   unsubData?: () => void
   unsubExit?: () => void
-  unregisterConnection?: () => void
 }
 
 export function terminalRoutes(ctx: Context) {
@@ -20,7 +19,6 @@ export function terminalRoutes(ctx: Context) {
       const workspaceId = data.query.workspaceId
 
       try {
-        // Get workspace to ensure it exists and get working directory
         const workspace = await ctx.db.workspaces.findById(workspaceId)
         if (!workspace) {
           ws.send(
@@ -32,9 +30,6 @@ export function terminalRoutes(ctx: Context) {
           ws.close()
           return
         }
-
-        // Register this connection for lifecycle tracking
-        data.unregisterConnection = ctx.registerConnection(workspaceId)
 
         const computer = await ctx.getOrCreateCompute(workspace.id, workspace.workingDirectory)
         const terminal = await computer.createTerminal()
@@ -106,9 +101,8 @@ export function terminalRoutes(ctx: Context) {
         )
         return
       }
-      
-      const terminal = computer.getTerminal(terminalId)
 
+      const terminal = computer.getTerminal(terminalId)
       if (!terminal) {
         ws.send(
           JSON.stringify({
@@ -134,6 +128,7 @@ export function terminalRoutes(ctx: Context) {
         }
 
         if (message.type === "input" && message.data) {
+          ctx.touchCompute(workspaceId, "terminal")
           await terminal.write(message.data)
         } else if (message.type === "resize" && message.cols && message.rows) {
           terminal.resize(message.cols, message.rows)
@@ -157,9 +152,6 @@ export function terminalRoutes(ctx: Context) {
           await computer.disposeTerminal(terminalId)
         }
       }
-
-      // Unregister connection - this may trigger workspace cleanup if last connection
-      data.unregisterConnection?.()
     },
   })
 }

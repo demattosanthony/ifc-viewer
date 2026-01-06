@@ -8,6 +8,7 @@ import {
   type ElementSelectedEvent,
 } from "@ifc-viewer/viewer";
 import { createWorkspaceMutation } from "@ifc-viewer/sdk/hooks";
+import { getWorkspace } from "@ifc-viewer/sdk";
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
 import Terminal, {
@@ -202,12 +203,15 @@ function MainContent({
   );
 }
 
+const PROJECT_ID = "sample-project";
+const WORKSPACE_STORAGE_KEY = `ifc-viewer:workspace:${PROJECT_ID}`;
+
 function Home() {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showTerminal, setShowTerminal] = useState(true);
   const [showChat, setShowChat] = useState(true);
-  const workspaceIdRef = useRef<string | null>(null);
+  const initStartedRef = useRef(false);
   const terminalRef = useRef<TerminalHandle | null>(null);
   const fileBrowserRef = useRef<FileBrowserHandle | null>(null);
 
@@ -215,7 +219,7 @@ function Home() {
     ...createWorkspaceMutation(),
     onSuccess: (data) => {
       setWorkspaceId(data.id);
-      workspaceIdRef.current = data.id;
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEY, data.id);
     },
     onError: (error) => {
       console.error("Failed to create workspace:", error);
@@ -227,38 +231,44 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    // Prevent double creation in React StrictMode
-    // StrictMode runs effects twice in dev mode to help catch bugs
-    let isCancelled = false;
+    // Prevent double initialization in React StrictMode
+    if (initStartedRef.current) return;
+    initStartedRef.current = true;
 
-    // Small delay to allow StrictMode's double-invoke to cancel
-    const timeoutId = setTimeout(() => {
-      if (!isCancelled && !workspaceIdRef.current) {
-        workspaceMutation.mutate({
-          body: { projectId: "sample-project" },
-        });
-      }
-    }, 0);
+    const initWorkspace = async () => {
+      // Check sessionStorage for existing workspace
+      const storedWorkspaceId = sessionStorage.getItem(WORKSPACE_STORAGE_KEY);
 
-    // Cleanup function for page unload - use /stop endpoint which accepts POST
-    const cleanup = () => {
-      if (workspaceIdRef.current) {
-        navigator.sendBeacon(
-          `/api/workspaces/${workspaceIdRef.current}/stop`,
-          ""
-        );
+      if (storedWorkspaceId) {
+        try {
+          // Try to fetch the existing workspace
+          const { data, error } = await getWorkspace({
+            path: { id: storedWorkspaceId },
+          });
+
+          if (data && !error && data.status === "active") {
+            // Workspace exists and is active, reuse it
+            console.log(`[App] Reconnecting to workspace ${storedWorkspaceId}`);
+            setWorkspaceId(storedWorkspaceId);
+            return;
+          }
+        } catch {
+          // Workspace not found or error, will create new one
+          console.log(`[App] Stored workspace ${storedWorkspaceId} not available`);
+        }
+
+        // Clear stale workspace ID
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEY);
       }
+
+      // No valid workspace found, create a new one
+      console.log("[App] Creating new workspace");
+      workspaceMutation.mutate({
+        body: { projectId: PROJECT_ID },
+      });
     };
 
-    window.addEventListener("pagehide", cleanup);
-    window.addEventListener("beforeunload", cleanup);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timeoutId);
-      window.removeEventListener("pagehide", cleanup);
-      window.removeEventListener("beforeunload", cleanup);
-    };
+    initWorkspace();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -275,7 +285,7 @@ function Home() {
     );
   }
 
-  const projectId = "sample-project"; // TODO: Make this dynamic based on selected project
+  const projectId = PROJECT_ID;
 
   return (
     <EditorProvider initialFile="sample.ifc">

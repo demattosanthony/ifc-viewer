@@ -186,4 +186,12 @@ export type {
 } from "./ports"
 
 // Context - Dependency Injection
-export { createContext, withContext, type Context, type ContextConfig, type ComputeFactory, type OnWorkspaceIdle } from "./context"
+export {
+  createContext,
+  withContext,
+  type Context,
+  type ContextConfig,
+  type ComputeFactory,
+  type OnWorkspaceIdle,
+  type ActivitySource,
+} from "./context"

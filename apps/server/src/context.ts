@@ -131,7 +131,6 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     workspacesDir,
     computeFactory,
     onWorkspaceIdle,
-    idleGracePeriodMs: 5000, // 5 second grace period before cleanup
   })
   ctxRef = ctx
 

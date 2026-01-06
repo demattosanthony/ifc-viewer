@@ -2,190 +2,225 @@
  * Application Context
  *
  * Wires all dependencies together, enabling Dependency Injection without classes.
+ * Manages compute lifecycle with activity-based idle detection.
  */
 
-import type { Database, Storage, Computer, AIProvider } from "./ports"
+import type { Database, Storage, Computer, AIProvider } from "./ports";
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/** Idle timeout before disposing compute (5 minutes) */
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** Interval for checking idle workspaces (30 seconds) */
+const IDLE_CHECK_INTERVAL_MS = 30 * 1000;
+
+// ============================================================================
+// Types
+// ============================================================================
 
 /** Compute factory for creating per-workspace compute instances */
-export type ComputeFactory = (workspaceId: string, workingDirectory: string) => Promise<Computer>
+export type ComputeFactory = (
+  workspaceId: string,
+  workingDirectory: string
+) => Promise<Computer>;
 
-/** Callback when workspace has no active connections */
-export type OnWorkspaceIdle = (workspaceId: string) => Promise<void>
+/** Callback when workspace becomes idle and should be cleaned up */
+export type OnWorkspaceIdle = (workspaceId: string) => Promise<void>;
+
+/** Activity source for logging */
+export type ActivitySource =
+  | "terminal"
+  | "file-read"
+  | "file-write"
+  | "file-delete"
+  | "ai-chat";
+
+/** Internal state for a compute instance */
+interface ComputeState {
+  computer: Computer;
+  lastActivityAt: number;
+}
 
 /** Application context with all infrastructure */
 export type Context = {
-  db: Database
-  storage: Storage
-  ai: AIProvider
-  /** Base directory for workspace working directories */
-  workspacesDir: string
-  /** Get compute for a specific workspace (creates if needed) */
-  getCompute(workspaceId: string): Computer | undefined
-  /** Get or create compute for a workspace */
-  getOrCreateCompute(workspaceId: string, workingDirectory: string): Promise<Computer>
-  /** Dispose a specific workspace's compute */
-  disposeCompute(workspaceId: string): Promise<void>
-  /** Register a connection to a workspace (returns unregister function) */
-  registerConnection(workspaceId: string): () => void
-  /** Get the number of active connections for a workspace */
-  getConnectionCount(workspaceId: string): number
-  /** Dispose all resources */
-  dispose(): Promise<void>
-}
+  db: Database;
+  storage: Storage;
+  ai: AIProvider;
+  workspacesDir: string;
+  getCompute(workspaceId: string): Computer | undefined;
+  getOrCreateCompute(
+    workspaceId: string,
+    workingDirectory: string
+  ): Promise<Computer>;
+  touchCompute(workspaceId: string, source: ActivitySource): void;
+  disposeCompute(workspaceId: string): Promise<void>;
+  dispose(): Promise<void>;
+};
 
 /** Configuration for creating context */
 export type ContextConfig = {
-  db: Database
-  storage: Storage
-  ai: AIProvider
-  /** Base directory for workspace working directories */
-  workspacesDir: string
-  /** Factory function to create compute instances */
-  computeFactory: ComputeFactory
-  /** Callback when workspace has no active connections (after grace period) */
-  onWorkspaceIdle?: OnWorkspaceIdle
-  /** Grace period in ms before triggering idle callback (default: 5000) */
-  idleGracePeriodMs?: number
-}
+  db: Database;
+  storage: Storage;
+  ai: AIProvider;
+  workspacesDir: string;
+  computeFactory: ComputeFactory;
+  onWorkspaceIdle?: OnWorkspaceIdle;
+};
+
+// ============================================================================
+// Context Factory
+// ============================================================================
 
 /** Create a context from pre-configured infrastructure */
 export function createContext(config: ContextConfig): Context {
-  const computeInstances = new Map<string, Computer>()
-  const pendingCreations = new Map<string, Promise<Computer>>()
-  const connectionCounts = new Map<string, number>()
-  const idleTimers = new Map<string, Timer>()
-  const gracePeriod = config.idleGracePeriodMs ?? 5000
+  const computeStates = new Map<string, ComputeState>();
+  const pendingCreations = new Map<string, Promise<Computer>>();
+  let idleCheckInterval: Timer | null = null;
 
-  const scheduleIdleCheck = (workspaceId: string): void => {
-    // Clear any existing timer
-    const existingTimer = idleTimers.get(workspaceId)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
-      idleTimers.delete(workspaceId)
-    }
+  // Start the idle checker
+  const startIdleChecker = (): void => {
+    if (idleCheckInterval) return;
 
-    // Only schedule if there's a callback and compute exists
-    if (!config.onWorkspaceIdle || !computeInstances.has(workspaceId)) {
-      return
-    }
+    idleCheckInterval = setInterval(async () => {
+      const now = Date.now();
 
-    // Schedule idle callback after grace period
-    const timer = setTimeout(() => {
-      idleTimers.delete(workspaceId)
-      const count = connectionCounts.get(workspaceId) ?? 0
-      if (count === 0 && computeInstances.has(workspaceId)) {
-        console.log(`[Context] Workspace ${workspaceId} idle, triggering cleanup`)
-        config.onWorkspaceIdle!(workspaceId).catch((err) => {
-          console.error(`[Context] Failed to cleanup workspace ${workspaceId}:`, err)
-        })
+      for (const [workspaceId, state] of computeStates) {
+        const idleMs = now - state.lastActivityAt;
+
+        if (idleMs >= IDLE_TIMEOUT_MS) {
+          console.log(
+            `[Compute] Workspace ${workspaceId} idle for ${Math.round(
+              idleMs / 1000
+            )}s, disposing...`
+          );
+
+          if (config.onWorkspaceIdle) {
+            try {
+              await config.onWorkspaceIdle(workspaceId);
+            } catch (err) {
+              console.error(
+                `[Compute] Failed to cleanup workspace ${workspaceId}:`,
+                err
+              );
+            }
+          } else {
+            // Default: just dispose compute
+            await ctx.disposeCompute(workspaceId);
+          }
+        }
       }
-    }, gracePeriod)
-    idleTimers.set(workspaceId, timer)
-  }
+    }, IDLE_CHECK_INTERVAL_MS);
+  };
 
-  return {
+  const stopIdleChecker = (): void => {
+    if (idleCheckInterval) {
+      clearInterval(idleCheckInterval);
+      idleCheckInterval = null;
+    }
+  };
+
+  const ctx: Context = {
     db: config.db,
     storage: config.storage,
     ai: config.ai,
     workspacesDir: config.workspacesDir,
 
     getCompute(workspaceId: string): Computer | undefined {
-      return computeInstances.get(workspaceId)
+      return computeStates.get(workspaceId)?.computer;
     },
 
-    async getOrCreateCompute(workspaceId: string, workingDirectory: string): Promise<Computer> {
-      // Return existing instance
-      const existing = computeInstances.get(workspaceId)
-      if (existing) return existing
+    async getOrCreateCompute(
+      workspaceId: string,
+      workingDirectory: string
+    ): Promise<Computer> {
+      // Return existing instance and touch activity
+      const existing = computeStates.get(workspaceId);
+      if (existing) {
+        existing.lastActivityAt = Date.now();
+        return existing.computer;
+      }
 
       // Wait for pending creation if already in progress
-      const pending = pendingCreations.get(workspaceId)
-      if (pending) return pending
+      const pending = pendingCreations.get(workspaceId);
+      if (pending) return pending;
 
-      // Create new instance with proper synchronization
+      // Create new instance
       const creationPromise = (async () => {
         try {
-          const computer = await config.computeFactory(workspaceId, workingDirectory)
-          computeInstances.set(workspaceId, computer)
-          return computer
-        } finally {
-          pendingCreations.delete(workspaceId)
-        }
-      })()
+          console.log(
+            `[Compute] Creating compute for workspace ${workspaceId}`
+          );
+          const computer = await config.computeFactory(
+            workspaceId,
+            workingDirectory
+          );
 
-      pendingCreations.set(workspaceId, creationPromise)
-      return creationPromise
+          computeStates.set(workspaceId, {
+            computer,
+            lastActivityAt: Date.now(),
+          });
+
+          // Start idle checker if this is the first compute
+          if (computeStates.size === 1) {
+            startIdleChecker();
+          }
+
+          console.log(`[Compute] Compute ready for workspace ${workspaceId}`);
+          return computer;
+        } finally {
+          pendingCreations.delete(workspaceId);
+        }
+      })();
+
+      pendingCreations.set(workspaceId, creationPromise);
+      return creationPromise;
+    },
+
+    touchCompute(workspaceId: string, source: ActivitySource): void {
+      const state = computeStates.get(workspaceId);
+      if (state) {
+        state.lastActivityAt = Date.now();
+        console.log(
+          `[Compute] Activity on workspace ${workspaceId} (${source})`
+        );
+      }
     },
 
     async disposeCompute(workspaceId: string): Promise<void> {
-      // Clear any pending idle timer
-      const timer = idleTimers.get(workspaceId)
-      if (timer) {
-        clearTimeout(timer)
-        idleTimers.delete(workspaceId)
-      }
-      // Clear connection count
-      connectionCounts.delete(workspaceId)
+      const state = computeStates.get(workspaceId);
+      if (!state) return;
 
-      const computer = computeInstances.get(workspaceId)
-      if (computer) {
-        await computer.dispose()
-        computeInstances.delete(workspaceId)
+      console.log(`[Compute] Disposing compute for workspace ${workspaceId}`);
+      await state.computer.dispose();
+      computeStates.delete(workspaceId);
+
+      // Stop idle checker if no more computes
+      if (computeStates.size === 0) {
+        stopIdleChecker();
       }
     },
 
-    registerConnection(workspaceId: string): () => void {
-      // Clear any pending idle timer since we have a new connection
-      const existingTimer = idleTimers.get(workspaceId)
-      if (existingTimer) {
-        clearTimeout(existingTimer)
-        idleTimers.delete(workspaceId)
-      }
-
-      const current = connectionCounts.get(workspaceId) ?? 0
-      connectionCounts.set(workspaceId, current + 1)
-      console.log(`[Context] Workspace ${workspaceId} connection registered (total: ${current + 1})`)
-
-      // Return unregister function
-      let unregistered = false
-      return () => {
-        if (unregistered) return
-        unregistered = true
-
-        const count = connectionCounts.get(workspaceId) ?? 0
-        const newCount = Math.max(0, count - 1)
-        connectionCounts.set(workspaceId, newCount)
-        console.log(`[Context] Workspace ${workspaceId} connection unregistered (remaining: ${newCount})`)
-
-        if (newCount === 0) {
-          scheduleIdleCheck(workspaceId)
-        }
-      }
-    },
-
-    getConnectionCount(workspaceId: string): number {
-      return connectionCounts.get(workspaceId) ?? 0
-    },
-
-    async dispose() {
-      // Clear all idle timers
-      for (const timer of idleTimers.values()) {
-        clearTimeout(timer)
-      }
-      idleTimers.clear()
-      connectionCounts.clear()
+    async dispose(): Promise<void> {
+      stopIdleChecker();
 
       // Dispose all compute instances
-      for (const [id, computer] of computeInstances) {
-        await computer.dispose()
-        computeInstances.delete(id)
+      for (const [workspaceId, state] of computeStates) {
+        console.log(`[Compute] Disposing compute for workspace ${workspaceId}`);
+        await state.computer.dispose();
       }
-      await config.db.dispose()
+      computeStates.clear();
+
+      await config.db.dispose();
       if (config.storage.dispose) {
-        await config.storage.dispose()
+        await config.storage.dispose();
       }
     },
-  }
+  };
+
+  return ctx;
 }
 
 /** Helper to run a function with context, ensuring cleanup on error */
@@ -194,8 +229,8 @@ export async function withContext<T>(
   fn: (ctx: Context) => Promise<T>
 ): Promise<T> {
   try {
-    return await fn(ctx)
+    return await fn(ctx);
   } finally {
-    await ctx.dispose()
+    await ctx.dispose();
   }
 }
