@@ -57,7 +57,13 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
 
       try {
         const tools = {
-          ...createFileTools(options.computer, emitToolEvent),
+          ...createFileTools({
+            computer: options.computer,
+            emit: emitToolEvent,
+            onFileWrite: options.onFileWrite,
+            onFileDelete: options.onFileDelete,
+            onFileMove: options.onFileMove,
+          }),
           ...createShellTools(options.getTerminal, emitToolEvent),
         }
 

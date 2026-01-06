@@ -17,6 +17,7 @@ export const workspaces = pgTable("workspaces", {
   })
     .notNull()
     .default("active"),
+  workingDirectory: text("working_directory").notNull(),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
   lastAccessedAt: timestamp("last_accessed_at", { mode: "date", withTimezone: true }).notNull(),
 });

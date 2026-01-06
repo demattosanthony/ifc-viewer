@@ -91,16 +91,25 @@ export class LocalFileSystem implements FileSystem {
     options?: { recursive?: boolean }
   ): Promise<void> {
     const fullPath = this.resolvePath(path)
-    const stats = await lstat(fullPath)
 
-    if (stats.isDirectory()) {
-      if (options?.recursive) {
-        await rm(fullPath, { recursive: true, force: true })
+    try {
+      const stats = await lstat(fullPath)
+
+      if (stats.isDirectory()) {
+        if (options?.recursive) {
+          await rm(fullPath, { recursive: true, force: true })
+        } else {
+          await rmdir(fullPath)
+        }
       } else {
-        await rmdir(fullPath)
+        await unlink(fullPath)
       }
-    } else {
-      await unlink(fullPath)
+    } catch (error) {
+      // Ignore ENOENT (file not found) - consistent with rm -f behavior
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return
+      }
+      throw error
     }
   }
 

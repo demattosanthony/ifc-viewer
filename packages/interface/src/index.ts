@@ -100,4 +100,9 @@ export {
   FilesController,
   ConversationController,
   AgentController, // Alias for backward compatibility
+  // SSE utilities
+  createSSEStream,
+  sseResponse,
+  type SSEContext,
+  type SSEStreamOptions,
 } from "./http"

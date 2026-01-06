@@ -1,5 +1,8 @@
 {
   "extends": "../../tooling/tsconfig/node.json",
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "compilerOptions": {
+    "types": ["@types/bun"]
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -8,6 +8,13 @@
       "when": 1767320614207,
       "tag": "0000_square_lila_cheney",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767400000000,
+      "tag": "0001_add_workspace_working_directory",
+      "breakpoints": true
     }
   ]
 }

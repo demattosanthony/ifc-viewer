@@ -2,7 +2,7 @@
   "name": "@ifc-viewer/monorepo",
   "private": true,
   "scripts": {
-    "dev": "bun run db:start && bun run --env-file=.env --filter='@ifc-viewer/server' --filter='@ifc-viewer/web' dev",
+    "dev": "bun scripts/dev.ts",
     "dev:server": "bun --env-file=.env --filter=@ifc-viewer/server run start",
     "dev:web": "bun --env-file=.env --filter=@ifc-viewer/web run dev",
     "build": "bun --filter=@ifc-viewer/server run build && bun --filter=@ifc-viewer/web run build",
@@ -12,7 +12,8 @@
     "ui:add": "bunx shadcn@latest add --cwd apps/web",
     "db:start": "docker compose up -d postgres",
     "db:stop": "docker compose down",
-    "db:logs": "docker compose logs -f postgres"
+    "db:logs": "docker compose logs -f postgres",
+    "docker:build:bim-ide": "docker build -t bim-ide:latest ./containers/bim-ide"
   },
   "workspaces": [
     "apps/*",
@@ -20,6 +21,7 @@
     "tooling/*"
   ],
   "devDependencies": {
+    "@types/bun": "^1.3.5",
     "@types/stats.js": "^0.17.4"
   }
 }

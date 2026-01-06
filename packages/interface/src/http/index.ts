@@ -23,3 +23,11 @@ export {
   ConversationController,
   AgentController, // Alias for backward compatibility
 } from "./controllers"
+
+// SSE utilities
+export {
+  createSSEStream,
+  sseResponse,
+  type SSEContext,
+  type SSEStreamOptions,
+} from "./sse"

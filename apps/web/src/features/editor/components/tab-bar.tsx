@@ -108,7 +108,7 @@ export function TabBar({
   const { tabs, activeTabId, setActiveTab, closeTab } = useEditor();
 
   return (
-    <div className="h-[35px] bg-[#181818] border-b border-[#2d2d2d] flex items-center">
+    <div className="h-[35px] bg-secondary border-b border-border flex items-center">
       {/* Tabs */}
       <div className="flex-1 flex items-end h-full overflow-x-auto">
         {tabs.map((tab) => {
@@ -118,10 +118,10 @@ export function TabBar({
             <div
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`group flex items-center gap-2 h-[35px] px-3 cursor-pointer border-r border-[#2d2d2d] ${
+              className={`group flex items-center gap-2 h-[35px] px-3 cursor-pointer border-r border-border ${
                 isActive
-                  ? "bg-[#1e1e1e] text-[#ffffff]"
-                  : "bg-[#2d2d2d] text-[#969696] hover:bg-[#2a2a2a]"
+                  ? "bg-background text-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent/50"
               }`}
             >
               <TabIcon type={tab.type} name={tab.name} />
@@ -129,7 +129,7 @@ export function TabBar({
                 {tab.name}
                 {tab.isDirty && (
                   <span
-                    className="w-2 h-2 rounded-full bg-[#cccccc]"
+                    className="w-2 h-2 rounded-full bg-muted-foreground"
                     title="Unsaved changes"
                   />
                 )}
@@ -139,7 +139,7 @@ export function TabBar({
                   e.stopPropagation();
                   closeTab(tab.id);
                 }}
-                className={`p-0.5 rounded hover:bg-[#3d3d3d] ${
+                className={`p-0.5 rounded hover:bg-accent ${
                   isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                 }`}
               >
@@ -154,21 +154,21 @@ export function TabBar({
       <div className="flex items-center gap-0.5 px-2">
         <button
           onClick={onToggleSidebar}
-          className="p-1.5 rounded text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d] transition-colors"
+          className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           title="Toggle Sidebar"
         >
           <SidebarIcon active={showSidebar} />
         </button>
         <button
           onClick={onToggleTerminal}
-          className="p-1.5 rounded text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d] transition-colors"
+          className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           title="Toggle Terminal"
         >
           <TerminalIcon active={showTerminal} />
         </button>
         <button
           onClick={onToggleChat}
-          className="p-1.5 rounded text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d] transition-colors"
+          className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           title="Toggle Chat"
         >
           <RightSidebarIcon active={showChat} />

@@ -32,15 +32,30 @@ export type FileContentType = z.infer<typeof FileContentType>
 // Request DTOs
 // ============================================================================
 
+/**
+ * Path parameter that handles comma-containing filenames.
+ * Query parameters with commas may be parsed as arrays by some frameworks.
+ * This schema accepts both string and string[] and normalizes to string.
+ */
+const PathParam = z.union([z.string(), z.array(z.string())])
+  .transform((val) => Array.isArray(val) ? val.join(",") : val)
+
+const OptionalPathParam = z.union([z.string(), z.array(z.string())])
+  .optional()
+  .transform((val) => {
+    if (val === undefined) return undefined
+    return Array.isArray(val) ? val.join(",") : val
+  })
+
 /** List files query */
 export const ListFilesQuery = z.object({
-  path: z.string().optional(),
+  path: OptionalPathParam,
 })
 export type ListFilesQuery = z.infer<typeof ListFilesQuery>
 
 /** Read file query */
 export const ReadFileQuery = z.object({
-  path: z.string(),
+  path: PathParam,
 })
 export type ReadFileQuery = z.infer<typeof ReadFileQuery>
 
@@ -54,7 +69,7 @@ export type WriteFileRequest = z.infer<typeof WriteFileRequest>
 
 /** Delete file query */
 export const DeleteFileQuery = z.object({
-  path: z.string(),
+  path: PathParam,
 })
 export type DeleteFileQuery = z.infer<typeof DeleteFileQuery>
 

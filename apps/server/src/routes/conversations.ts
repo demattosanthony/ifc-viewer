@@ -15,8 +15,9 @@
 
 import { Elysia } from "elysia"
 import { runAgentChat, type Context, type AIEvent } from "@ifc-viewer/core"
-import { createSSEStream, sseResponse } from "@ifc-viewer/realtime"
 import {
+  createSSEStream,
+  sseResponse,
   ConversationController,
   CreateConversationRequest,
   StartChatRequest,
@@ -187,6 +188,9 @@ export function conversationRoutes(ctx: Context) {
         const abortController = new AbortController()
         abortControllers.set(conversationId, abortController)
 
+        // Register connection for workspace lifecycle tracking
+        const unregisterConnection = ctx.registerConnection(workspaceId)
+
         const stream = createSSEStream(async (sseCtx) => {
           sseCtx.send("message", { type: "ready" })
 
@@ -220,6 +224,7 @@ export function conversationRoutes(ctx: Context) {
             } satisfies AIEvent)
           } finally {
             abortControllers.delete(conversationId)
+            unregisterConnection()
             sseCtx.close()
           }
         })

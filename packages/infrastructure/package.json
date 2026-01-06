@@ -25,9 +25,11 @@
     "./ai": "./src/ai/index.ts"
   },
   "dependencies": {
-    "@ifc-viewer/core": "workspace:*",
     "@ai-sdk/anthropic": "beta",
+    "@ifc-viewer/core": "workspace:*",
+    "@types/dockerode": "^3.3.47",
     "ai": "beta",
+    "dockerode": "^4.0.9",
     "drizzle-orm": "^0.45.1",
     "uuid": "^13.0.0",
     "zod": "^3.23.0"

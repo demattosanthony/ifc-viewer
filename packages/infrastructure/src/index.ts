@@ -76,10 +76,17 @@ export {
 
 // Compute
 export {
+  // Local
   createLocalComputer,
   LocalComputer,
   LocalFileSystem,
   LocalShell,
+  // Docker
+  createDockerComputer,
+  DockerComputer,
+  DockerFileSystem,
+  DockerShell,
+  type DockerComputeConfig,
 } from "./compute"
 
 // AI

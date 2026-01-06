@@ -259,10 +259,10 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
     if (isCollapsed) {
       return (
         <div className="relative flex" style={{ width: COLLAPSED_WIDTH }}>
-          <div className="w-full bg-[#181818] border-r border-[#2d2d2d] flex flex-col items-center pt-2">
+          <div className="w-full bg-secondary border-r border-border flex flex-col items-center pt-2">
             <button
               onClick={() => expand()}
-              className="p-2 hover:bg-[#2d2d2d] rounded text-[#858585] hover:text-[#cccccc] transition-colors"
+              className="p-2 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
               title="Explorer"
             >
               <PanelLeft className="w-5 h-5" />
@@ -270,7 +270,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
           </div>
           <div
             onMouseDown={handleResizeStart}
-            className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-[#007acc] transition-colors"
+            className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary transition-colors"
           />
         </div>
       );
@@ -281,29 +281,29 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
     return (
       <div className="relative flex" style={{ width }}>
-        <div className="flex-1 bg-background border-r border-[#2d2d2d] flex flex-col min-w-0">
-          <div className="flex items-center justify-between px-2 h-[35px] border-b border-[#2d2d2d]">
-            <span className="text-[11px] font-medium text-[#bbbbbb] uppercase tracking-wider">
+        <div className="flex-1 bg-background border-r border-border flex flex-col min-w-0">
+          <div className="flex items-center justify-between px-2 h-[35px] border-b border-border">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Explorer
             </span>
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => handleStartNewItem("file", ".")}
-                className="p-1 hover:bg-[#2d2d2d] rounded text-[#858585] hover:text-[#cccccc]"
+                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
                 title="New File"
               >
                 <Plus className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleStartNewItem("folder", ".")}
-                className="p-1 hover:bg-[#2d2d2d] rounded text-[#858585] hover:text-[#cccccc]"
+                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
                 title="New Folder"
               >
                 <FolderPlus className="w-4 h-4" />
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-1 hover:bg-[#2d2d2d] rounded text-[#858585] hover:text-[#cccccc]"
+                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
                 title="Upload Files"
               >
                 <Upload className="w-4 h-4" />
@@ -325,11 +325,11 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
           <div className="flex-1 overflow-auto py-1">
             {isRootLoading && !rootFiles ? (
-              <div className="px-4 py-1 text-[#858585] text-[13px]">
+              <div className="px-4 py-1 text-muted-foreground text-[13px]">
                 Loading...
               </div>
             ) : rootFiles?.length === 0 ? (
-              <div className="px-4 py-1 text-[#858585] text-[13px]">Empty</div>
+              <div className="px-4 py-1 text-muted-foreground text-[13px]">Empty</div>
             ) : (
               renderTree(".")
             )}
@@ -338,7 +338,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
         <div
           onMouseDown={handleResizeStart}
-          className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-[#007acc] transition-colors"
+          className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary transition-colors"
         />
 
         <DeleteDialog

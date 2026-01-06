@@ -8,6 +8,8 @@ import {
   type Context,
   type Workspace,
   createWorkspaceWithFiles,
+  stopWorkspaceWithSync,
+  deleteWorkspace,
   isDomainError,
 } from "@ifc-viewer/core"
 import type { CreateWorkspaceRequest } from "../../dto"
@@ -71,26 +73,32 @@ export class WorkspaceController {
   }
 
   /**
-   * Stop a workspace
+   * Stop a workspace (syncs files back to project storage and disposes compute)
    */
   async stop(id: string): Promise<HttpResult<Workspace>> {
-    const existing = await this.ctx.db.workspaces.findById(id)
-    if (!existing) {
-      return notFound(`Workspace ${id} not found`)
+    try {
+      const updated = await stopWorkspaceWithSync(this.ctx, id)
+      return ok(updated)
+    } catch (error) {
+      if (isDomainError(error)) {
+        return err(error.message, error.statusCode)
+      }
+      throw error
     }
-    const updated = await this.ctx.db.workspaces.update(id, { status: "stopped" })
-    return ok(updated)
   }
 
   /**
-   * Delete a workspace
+   * Delete a workspace (disposes compute, cleans up directory, removes from database)
    */
   async delete(id: string): Promise<HttpResult<{ success: true }>> {
-    const existing = await this.ctx.db.workspaces.findById(id)
-    if (!existing) {
-      return notFound(`Workspace ${id} not found`)
+    try {
+      await deleteWorkspace(this.ctx, id)
+      return ok({ success: true })
+    } catch (error) {
+      if (isDomainError(error)) {
+        return err(error.message, error.statusCode)
+      }
+      throw error
     }
-    await this.ctx.db.workspaces.delete(id)
-    return ok({ success: true })
   }
 }
