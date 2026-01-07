@@ -40,26 +40,14 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 
-# Create non-root user for security
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-RUN groupadd -g ${GROUP_ID} bimuser \
-    && useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash bimuser
-
-# Configure bash prompt and aliases system-wide
+# Configure bash prompt and aliases
 RUN echo 'PS1="\[\033[36m\]\w\[\033[0m\] $ "' >> /etc/bash.bashrc \
     && echo 'alias ll="ls -la"' >> /etc/bash.bashrc
 
-# Set up workspace directory with correct ownership
+# Set up workspace directory
 WORKDIR /workspace
-RUN chown bimuser:bimuser /workspace
-
-# Switch to non-root user
-USER bimuser
-
-# Configure user's bashrc (override default prompt)
-RUN echo 'PS1="\[\033[36m\]\w\[\033[0m\] $ "' >> ~/.bashrc \
-    && echo 'alias ll="ls -la"' >> ~/.bashrc
 
 # Keep container running (for exec-based interaction)
+# NOTE: Running as root to avoid permission issues with mounted volumes
+# In production, consider using user namespaces or fixing permissions at runtime
 CMD ["tail", "-f", "/dev/null"]
