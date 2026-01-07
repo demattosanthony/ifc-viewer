@@ -204,6 +204,99 @@ export type { Logger, LogLevel } from "./types.ts"
 - Copy `.env.example` to `.env` for local development
 - Environment variables: `LOG_LEVEL`, `LOG_DIR`, `DATABASE_URL`, `PORT`, etc.
 
+## SDK Usage (CRITICAL)
+
+**NEVER use `fetch()` directly in `apps/web/`.** Always use `@ifc-viewer/sdk` for API calls.
+
+The SDK is auto-generated from the server's OpenAPI spec and provides:
+- Type-safe API client functions
+- TanStack Query hooks and mutations
+- Automatic base URL configuration
+- File upload utilities for binary data
+
+### Regenerating the SDK
+
+**When you add or modify API routes, you MUST regenerate the SDK:**
+
+```bash
+bun run generate:sdk                           # Regenerate SDK (requires server running)
+
+# Or manually:
+bun run dev:server                             # Start server first
+cd packages/sdk && bun run fetch-spec          # Fetch OpenAPI spec
+cd packages/sdk && bun run generate            # Generate SDK
+```
+
+### Using the SDK in React
+
+```typescript
+// Import hooks from @ifc-viewer/sdk/hooks
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  listFilesOptions,
+  writeFileMutation,
+} from "@ifc-viewer/sdk/hooks";
+
+// Queries
+const { data, isLoading } = useQuery({
+  ...listFilesOptions({
+    path: { id: workspaceId },
+    query: { path: "." },
+  }),
+});
+
+// Mutations
+const writeFile = useMutation({ ...writeFileMutation() });
+await writeFile.mutateAsync({
+  path: { id: workspaceId },
+  body: { path: "file.txt", content: "hello" },
+});
+```
+
+### File Uploads
+
+Use the SDK's upload mutation for file uploads:
+
+```typescript
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  uploadFileMutation,
+  getPresignedUrlMutation,
+  confirmUploadMutation,
+} from "@ifc-viewer/sdk/hooks";
+
+// Direct upload (works with any storage backend)
+const uploadFile = useMutation({ ...uploadFileMutation() });
+await uploadFile.mutateAsync({
+  path: { id: workspaceId },
+  body: { file, path: "path/to/file.txt" },
+});
+
+// S3 presigned URL upload (optimization for large files)
+const presigned = await getPresignedUrl.mutateAsync({
+  path: { id: workspaceId },
+  body: { path: "path/to/file.txt", contentType: file.type },
+});
+await fetch(presigned.url, {  // fetch is OK here - uploading to S3, not our API
+  method: presigned.method,
+  headers: presigned.headers,
+  body: file,
+});
+await confirmUpload.mutateAsync({
+  path: { id: workspaceId },
+  body: { path: "path/to/file.txt" },
+});
+```
+
+### When raw fetch() is acceptable
+
+Only use `fetch()` for:
+1. **SSE streaming** responses (use `fetchSSE` from `@ifc-viewer/sdk`)
+2. **External APIs** not part of this application
+3. **S3 presigned URL uploads** (uploading directly to S3, not our API)
+
+**Never use fetch() for API calls to our server** - always use SDK functions or utilities.
+
 ## Linting
 
 No ESLint/Prettier configured. Follow TypeScript strict mode and match existing code patterns.

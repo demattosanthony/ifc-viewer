@@ -20,7 +20,16 @@ const ctx = await createAppContext();
 
 // Create Elysia app
 const app = new Elysia()
-  .use(cors())
+  .use(
+    cors({
+      origin: true, // Allow all origins (configure for production)
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      exposeHeaders: ["Content-Length", "Content-Type"],
+      credentials: true,
+      maxAge: 86400, // 24 hours
+    })
+  )
   .use(
     openapi({
       path: "/swagger",
@@ -91,7 +100,11 @@ const app = new Elysia()
   .use(filesRoutes(ctx))
   .use(conversationRoutes(ctx))
   .use(terminalRoutes(ctx))
-  .listen(process.env.PORT ?? 3000);
+  .listen({
+    port: process.env.PORT ?? 3000,
+    // Allow large file uploads (500MB max)
+    maxRequestBodySize: 500 * 1024 * 1024,
+  });
 
 log.info("API server started", {
   host: app.server?.hostname,

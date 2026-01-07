@@ -30,6 +30,9 @@
 // Export client configuration (this also configures the base URL)
 export { client, configureClient } from "./client";
 
+// Export body serializers from @hey-api/client-fetch for custom requests
+export { formDataBodySerializer } from "@hey-api/client-fetch";
+
 // Export generated types
 export * from "./generated/types.gen";
 

@@ -96,4 +96,35 @@ export const ReadFileResponse = z.object({
   type: FileContentType,
   content: z.string(),
 })
+
+// ============================================================================
+// Upload DTOs
+// ============================================================================
+
+/** Request presigned upload URL (S3 optimization) */
+export const GetPresignedUrlRequest = z.object({
+  /** File path in the workspace */
+  path: z.string(),
+  /** MIME type of the file */
+  contentType: z.string().optional(),
+})
+export type GetPresignedUrlRequest = z.infer<typeof GetPresignedUrlRequest>
+
+/** Presigned URL response - only returned when S3 storage is configured */
+export const GetPresignedUrlResponse = z.object({
+  /** Presigned URL to upload directly to S3 */
+  url: z.string(),
+  /** HTTP method to use */
+  method: z.enum(["PUT", "POST"]),
+  /** Headers to include with the upload request */
+  headers: z.record(z.string()).optional(),
+})
+export type GetPresignedUrlResponse = z.infer<typeof GetPresignedUrlResponse>
+
+/** Confirm S3 upload request - syncs uploaded file to compute */
+export const ConfirmUploadRequest = z.object({
+  /** File path in the workspace */
+  path: z.string(),
+})
+export type ConfirmUploadRequest = z.infer<typeof ConfirmUploadRequest>
 export type ReadFileResponse = z.infer<typeof ReadFileResponse>

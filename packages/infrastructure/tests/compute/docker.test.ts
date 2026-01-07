@@ -99,19 +99,22 @@ describe("DockerComputer", () => {
   // ============================================================================
 
   describe("container lifecycle", () => {
-    test("creates container, verifies properties, and removes on dispose", async () => {
+    test("creates container with resource limits, verifies properties, and removes on dispose", async () => {
       if (skipIfUnavailable()) return
 
       const workDir = join(tmpdir(), `docker-lifecycle-${Date.now()}`)
       await mkdir(workDir, { recursive: true })
 
       try {
-        // Test creation
+        // Test creation with resource limits
         const computer = await createDockerComputer({
           workingDirectory: workDir,
           image: TEST_IMAGE,
+          memory: "256m",
+          cpus: 0.5,
         })
 
+        // Verify properties
         expect(computer.id).toMatch(/^docker-computer-/)
         expect(computer.workingDirectory).toBe(workDir)
 
@@ -128,26 +131,6 @@ describe("DockerComputer", () => {
           stderr: "ignore",
         })
         expect(await proc.exited).not.toBe(0)
-      } finally {
-        await rm(workDir, { recursive: true, force: true }).catch(() => {})
-      }
-    }, TEST_TIMEOUT)
-
-    test("applies resource limits (memory and CPU)", async () => {
-      if (skipIfUnavailable()) return
-
-      const workDir = join(tmpdir(), `docker-limits-${Date.now()}`)
-      await mkdir(workDir, { recursive: true })
-
-      try {
-        const computer = await createDockerComputer({
-          workingDirectory: workDir,
-          image: TEST_IMAGE,
-          memory: "256m",
-          cpus: 0.5,
-        })
-        expect(computer).toBeDefined()
-        await computer.dispose()
       } finally {
         await rm(workDir, { recursive: true, force: true }).catch(() => {})
       }
