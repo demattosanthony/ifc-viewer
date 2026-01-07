@@ -4,7 +4,14 @@ import {
   writeFileMutation,
   createDirectoryMutation,
   deleteFileMutation,
+  uploadFileMutation,
+  getPresignedUrlMutation,
+  confirmUploadMutation,
 } from "@ifc-viewer/sdk/hooks";
+import { formDataBodySerializer } from "@ifc-viewer/sdk";
+
+/** Size threshold for using presigned URL optimization (5MB) */
+const PRESIGNED_URL_THRESHOLD = 5 * 1024 * 1024;
 
 interface UseFileOperationsOptions {
   workspaceId: string;
@@ -21,45 +28,136 @@ export function useFileOperations({
   onRefresh,
 }: UseFileOperationsOptions) {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
 
-  const writeFile = useMutation({
-    ...writeFileMutation(),
-  });
+  // SDK mutations
+  const writeFile = useMutation({ ...writeFileMutation() });
+  const createDirectory = useMutation({ ...createDirectoryMutation() });
+  const deleteFile = useMutation({ ...deleteFileMutation() });
+  const uploadFileDirect = useMutation({ ...uploadFileMutation() });
+  const getPresignedUrl = useMutation({ ...getPresignedUrlMutation() });
+  const confirmUpload = useMutation({ ...confirmUploadMutation() });
 
-  const createDirectory = useMutation({
-    ...createDirectoryMutation(),
-  });
+  /**
+   * Upload file via S3 presigned URL (optimization for large files).
+   * Returns true if successful, false if presigned URLs not supported.
+   */
+  const uploadViaPresignedUrl = useCallback(
+    async (file: File, path: string): Promise<boolean> => {
+      try {
+        // Try to get presigned URL
+        const presignedData = await getPresignedUrl.mutateAsync({
+          path: { id: workspaceId },
+          body: {
+            path,
+            contentType: file.type || "application/octet-stream",
+          },
+        });
 
-  const deleteFile = useMutation({
-    ...deleteFileMutation(),
-  });
+        // Upload directly to S3
+        const response = await fetch(presignedData.url, {
+          method: presignedData.method,
+          headers: presignedData.headers,
+          body: file,
+        });
 
-  const uploadFiles = useCallback(
-    async (files: FileList, targetPath: string = ".") => {
-      for (const file of Array.from(files)) {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const content = reader.result as string;
-          const base64 = content.split(",")[1] || "";
-          const filePath =
-            targetPath === "." ? file.name : `${targetPath}/${file.name}`;
+        if (!response.ok) {
+          throw new Error(`S3 upload failed: ${response.statusText}`);
+        }
 
-          try {
-            await writeFile.mutateAsync({
-              path: { id: workspaceId },
-              body: { path: filePath, content: base64, isBinary: true },
-            });
-            onRefresh(targetPath);
-          } catch (err) {
-            console.error("Failed to upload file:", err);
-          }
-        };
-        reader.readAsDataURL(file);
+        // Confirm upload to sync to compute environment
+        await confirmUpload.mutateAsync({
+          path: { id: workspaceId },
+          body: { path },
+        });
+
+        return true;
+      } catch (error: unknown) {
+        // Check if presigned URLs are not supported (501)
+        // The SDK throws the error response body: { error: string }
+        const errorObj = error as { error?: string };
+        if (errorObj?.error?.includes("not supported")) {
+          return false;
+        }
+        throw error;
       }
     },
-    [workspaceId, onRefresh, writeFile]
+    [workspaceId, getPresignedUrl, confirmUpload]
   );
 
+  /**
+   * Upload a single file with automatic method selection.
+   * Uses presigned URL for large files when available, falls back to direct upload.
+   */
+  const uploadFile = useCallback(
+    async (file: File, path: string): Promise<void> => {
+      // For large files, try S3 presigned URL first (optimization)
+      if (file.size >= PRESIGNED_URL_THRESHOLD) {
+        const usedPresigned = await uploadViaPresignedUrl(file, path);
+        if (usedPresigned) return;
+      }
+
+      // Direct upload using SDK (works with any storage backend)
+      // Use formDataBodySerializer to send as multipart/form-data
+      await uploadFileDirect.mutateAsync({
+        path: { id: workspaceId },
+        body: { file, path },
+        bodySerializer: formDataBodySerializer.bodySerializer,
+        headers: {
+          // Remove Content-Type to let browser set it with boundary
+          "Content-Type": null as unknown as string,
+        },
+      });
+    },
+    [workspaceId, uploadFileDirect, uploadViaPresignedUrl]
+  );
+
+  /**
+   * Upload multiple files to a target directory.
+   */
+  const uploadFiles = useCallback(
+    async (
+      files: FileList,
+      targetPath: string = "."
+    ): Promise<{ success: number; failed: number }> => {
+      const fileArray = Array.from(files);
+      setUploadProgress({ current: 0, total: fileArray.length });
+
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        if (!file) continue;
+
+        const filePath =
+          targetPath === "." ? file.name : `${targetPath}/${file.name}`;
+
+        try {
+          await uploadFile(file, filePath);
+          successCount++;
+        } catch (err) {
+          failedCount++;
+          console.error(`Failed to upload ${file.name}:`, err);
+        }
+
+        setUploadProgress({ current: i + 1, total: fileArray.length });
+      }
+
+      setUploadProgress(null);
+      onRefresh(targetPath);
+
+      return { success: successCount, failed: failedCount };
+    },
+    [uploadFile, onRefresh]
+  );
+
+  /**
+   * Create a new file or folder.
+   */
   const createItem = useCallback(
     async (
       type: "file" | "folder",
@@ -93,6 +191,9 @@ export function useFileOperations({
     [workspaceId, onRefresh, writeFile, createDirectory]
   );
 
+  /**
+   * Delete a file or directory.
+   */
   const deleteItem = useCallback(
     async (path: string, onTabClose?: () => void): Promise<boolean> => {
       try {
@@ -116,12 +217,9 @@ export function useFileOperations({
     [workspaceId, onRefresh, deleteFile]
   );
 
-  const initiateDelete = useCallback(
-    (path: string, isDirectory: boolean) => {
-      setDeleteTarget({ path, isDirectory });
-    },
-    []
-  );
+  const initiateDelete = useCallback((path: string, isDirectory: boolean) => {
+    setDeleteTarget({ path, isDirectory });
+  }, []);
 
   const confirmDelete = useCallback(
     async (onTabClose?: () => void) => {
@@ -143,9 +241,9 @@ export function useFileOperations({
     initiateDelete,
     confirmDelete,
     cancelDelete,
-    isUploading: writeFile.isPending,
-    isCreating:
-      writeFile.isPending || createDirectory.isPending,
+    isUploading: uploadProgress !== null || uploadFileDirect.isPending,
+    uploadProgress,
+    isCreating: writeFile.isPending || createDirectory.isPending,
     isDeleting: deleteFile.isPending,
   };
 }

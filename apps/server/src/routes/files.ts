@@ -1,4 +1,4 @@
-import { Elysia } from "elysia"
+import { Elysia, t } from "elysia"
 import type { Context } from "@ifc-viewer/core"
 import {
   FilesController,
@@ -11,6 +11,9 @@ import {
   ReadFileResponse,
   ErrorResponse,
   SuccessWithPathResponse,
+  GetPresignedUrlRequest,
+  GetPresignedUrlResponse,
+  ConfirmUploadRequest,
 } from "@ifc-viewer/interface"
 import { z } from "zod"
 
@@ -145,6 +148,102 @@ export function filesRoutes(ctx: Context) {
           summary: "Create a directory",
           tags: ["Files"],
           operationId: "createDirectory",
+        },
+      }
+    )
+    .post(
+      "/upload",
+      async ({ params, body, set }) => {
+        const { file, path } = body
+
+        // Convert File to Uint8Array
+        const arrayBuffer = await file.arrayBuffer()
+        const data = new Uint8Array(arrayBuffer)
+
+        const result = await controller.upload(params.id, path, data, file.type)
+        if (!result.success) {
+          set.status = result.status
+          return { error: result.error }
+        }
+        return result.data
+      },
+      {
+        params: z.object({
+          id: z.string(),
+        }),
+        body: t.Object({
+          file: t.File(),
+          path: t.String(),
+        }),
+        type: "multipart",
+        response: {
+          200: SuccessWithPathResponse,
+          400: ErrorResponse,
+          404: ErrorResponse,
+          500: ErrorResponse,
+        },
+        detail: {
+          summary: "Upload file",
+          description: "Upload a file using multipart/form-data. Writes to both storage and compute environment.",
+          tags: ["Files"],
+          operationId: "uploadFile",
+        },
+      }
+    )
+    .post(
+      "/presigned-url",
+      async ({ params, body, set }) => {
+        const result = await controller.getPresignedUrl(params.id, body)
+        if (!result.success) {
+          set.status = result.status
+          return { error: result.error }
+        }
+        return result.data
+      },
+      {
+        params: z.object({
+          id: z.string(),
+        }),
+        body: GetPresignedUrlRequest,
+        response: {
+          200: GetPresignedUrlResponse,
+          404: ErrorResponse,
+          500: ErrorResponse,
+          501: ErrorResponse,
+        },
+        detail: {
+          summary: "Get presigned upload URL",
+          description: "Get a presigned URL for direct S3 upload. Returns 501 if storage doesn't support presigned URLs.",
+          tags: ["Files"],
+          operationId: "getPresignedUrl",
+        },
+      }
+    )
+    .post(
+      "/confirm-upload",
+      async ({ params, body, set }) => {
+        const result = await controller.confirmUpload(params.id, body)
+        if (!result.success) {
+          set.status = result.status
+          return { error: result.error }
+        }
+        return result.data
+      },
+      {
+        params: z.object({
+          id: z.string(),
+        }),
+        body: ConfirmUploadRequest,
+        response: {
+          200: SuccessWithPathResponse,
+          404: ErrorResponse,
+          500: ErrorResponse,
+        },
+        detail: {
+          summary: "Confirm S3 upload",
+          description: "After uploading via presigned URL, call this to sync the file to the workspace.",
+          tags: ["Files"],
+          operationId: "confirmUpload",
         },
       }
     )

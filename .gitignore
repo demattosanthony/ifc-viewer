@@ -40,3 +40,6 @@ packages/sdk/src/generated/
 .data
 
 TODO.md
+
+# Sample IFC models
+sample-models/

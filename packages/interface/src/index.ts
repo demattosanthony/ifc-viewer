@@ -82,6 +82,9 @@ export {
   CreateDirectoryRequest,
   ListFilesResponse,
   ReadFileResponse,
+  GetPresignedUrlRequest,
+  GetPresignedUrlResponse,
+  ConfirmUploadRequest,
 } from "./dto"
 
 // HTTP

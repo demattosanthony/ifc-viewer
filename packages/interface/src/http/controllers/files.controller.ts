@@ -7,19 +7,19 @@
 
 import type { Context, FileEntry as CoreFileEntry, Computer, Workspace } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-
-const log = createLogger("files")
-import {
-  buildStorageKey,
-  deleteStoragePrefix,
-} from "@ifc-viewer/core"
+import { buildStorageKey, deleteStoragePrefix } from "@ifc-viewer/core"
 import type {
   ListFilesResponse,
   ReadFileResponse,
   WriteFileRequest,
   CreateDirectoryRequest,
+  GetPresignedUrlRequest,
+  GetPresignedUrlResponse,
+  ConfirmUploadRequest,
 } from "../../dto"
 import { type HttpResult, type HttpError, ok, err, notFound, serverError } from "../types"
+
+const log = createLogger("files")
 
 type WorkspaceComputeResult =
   | { ok: true; workspace: Workspace; computer: Computer }
@@ -179,6 +179,106 @@ export class FilesController {
       return ok({ success: true, path: input.path })
     } catch {
       return serverError("Failed to create directory")
+    }
+  }
+
+  /**
+   * Upload file - writes to both storage and compute in one step.
+   * This is the primary upload method that works with any storage backend.
+   */
+  async upload(
+    workspaceId: string,
+    path: string,
+    data: Uint8Array,
+    contentType?: string
+  ): Promise<HttpResult<{ success: true; path: string }>> {
+    const result = await this.getWorkspaceCompute(workspaceId)
+    if (!result.ok) return result.error
+
+    const { workspace, computer } = result
+
+    try {
+      const storageKey = buildStorageKey(workspace.projectId, path)
+
+      // Write to both storage and compute in parallel
+      await Promise.all([
+        this.ctx.storage.put(storageKey, data, { contentType }),
+        computer.files.write(path, data),
+      ])
+
+      log.info("File uploaded", { workspaceId, path, size: data.byteLength })
+
+      return ok({ success: true, path })
+    } catch (error) {
+      log.error("Upload failed", { workspaceId, path, error })
+      return serverError("Failed to upload file")
+    }
+  }
+
+  /**
+   * Get presigned URL for direct S3 upload (optimization for S3 storage).
+   * Returns null/error if storage doesn't support presigned URLs.
+   */
+  async getPresignedUrl(
+    workspaceId: string,
+    input: GetPresignedUrlRequest
+  ): Promise<HttpResult<GetPresignedUrlResponse>> {
+    // Only S3 storage supports presigned URLs
+    if (this.ctx.storage.type !== "s3") {
+      return err("Presigned URLs not supported with current storage", 501)
+    }
+
+    const workspace = await this.ctx.db.workspaces.findById(workspaceId)
+    if (!workspace) {
+      return notFound(`Workspace ${workspaceId} not found`)
+    }
+
+    const storageKey = buildStorageKey(workspace.projectId, input.path)
+    const credentials = await this.ctx.storage.getUploadUrl(storageKey, {
+      contentType: input.contentType,
+      expiresIn: 300, // 5 minutes
+    })
+
+    if (!credentials) {
+      return serverError("Failed to generate presigned URL")
+    }
+
+    return ok({
+      url: credentials.url,
+      method: credentials.method,
+      headers: credentials.headers,
+    })
+  }
+
+  /**
+   * Confirm S3 upload - fetches from S3 and syncs to compute environment.
+   * Only needed after uploading via presigned URL.
+   */
+  async confirmUpload(
+    workspaceId: string,
+    input: ConfirmUploadRequest
+  ): Promise<HttpResult<{ success: true; path: string }>> {
+    const result = await this.getWorkspaceCompute(workspaceId)
+    if (!result.ok) return result.error
+
+    const { workspace, computer } = result
+
+    try {
+      const storageKey = buildStorageKey(workspace.projectId, input.path)
+      const obj = await this.ctx.storage.get(storageKey)
+
+      if (!obj) {
+        return notFound("File not found in storage")
+      }
+
+      await computer.files.write(input.path, obj.data)
+
+      log.info("Upload confirmed", { workspaceId, path: input.path, size: obj.data.byteLength })
+
+      return ok({ success: true, path: input.path })
+    } catch (error) {
+      log.error("Failed to confirm upload", { workspaceId, path: input.path, error })
+      return serverError("Failed to sync file to workspace")
     }
   }
 }

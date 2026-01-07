@@ -56,4 +56,7 @@ export {
   CreateDirectoryRequest,
   ListFilesResponse,
   ReadFileResponse,
+  GetPresignedUrlRequest,
+  GetPresignedUrlResponse,
+  ConfirmUploadRequest,
 } from "./files.dto"
