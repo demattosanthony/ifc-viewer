@@ -11,24 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Detect which files changed to enable path-based filtering
-  changes:
-    name: Detect Changes
-    runs-on: ubuntu-latest
-    outputs:
-      docker: ${{ steps.filter.outputs.docker }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            docker:
-              - 'packages/infrastructure/src/compute/docker/**'
-              - 'packages/infrastructure/tests/compute/docker.test.ts'
-              - 'packages/core/src/domain/computer.ts'
-              - 'containers/bim-ide/**'
-
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
@@ -111,9 +93,6 @@ jobs:
   test-docker:
     name: Docker Tests
     runs-on: ubuntu-latest
-    needs: changes
-    # Run if docker-related files changed OR if running on main branch (always test main)
-    if: ${{ needs.changes.outputs.docker == 'true' || github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
 
