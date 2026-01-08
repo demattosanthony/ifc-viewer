@@ -2,7 +2,6 @@ import { useEffect, useRef, useCallback } from "react";
 import { Terminal as XTerm, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { Minus, Loader2 } from "lucide-react";
-import "@xterm/xterm/css/xterm.css";
 
 /**
  * Gets the computed value of a CSS variable.
