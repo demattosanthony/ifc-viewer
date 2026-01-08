@@ -7,6 +7,20 @@
 
 import { $ } from "bun"
 
+const BIM_IDE_IMAGE = "bim-ide:latest"
+
+async function ensureBimIdeImage() {
+  // Check if image exists
+  const result = await $`docker image inspect ${BIM_IDE_IMAGE}`.quiet().nothrow()
+  if (result.exitCode !== 0) {
+    console.log(`Docker image '${BIM_IDE_IMAGE}' not found, building...`)
+    await $`docker build -t ${BIM_IDE_IMAGE} ./containers/bim-ide`
+    console.log(`Docker image '${BIM_IDE_IMAGE}' built successfully`)
+  } else {
+    console.log(`Docker image '${BIM_IDE_IMAGE}' found`)
+  }
+}
+
 async function startDb() {
   console.log("Starting database container...")
   // --wait ensures health check passes before returning
@@ -38,6 +52,7 @@ async function startDevServers() {
 }
 
 async function main() {
+  await ensureBimIdeImage()
   await startDb()
 
   const devProcess = await startDevServers()
