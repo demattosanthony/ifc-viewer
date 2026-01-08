@@ -13,7 +13,8 @@
     "db:start": "docker compose up -d postgres",
     "db:stop": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
-    "docker:build:bim-ide": "docker build -t bim-ide:latest ./containers/bim-ide"
+    "docker:build:bim-ide": "docker build -t bim-ide:latest ./containers/bim-ide",
+    "clean": "bun --filter=* run clean"
   },
   "workspaces": [
     "apps/*",
