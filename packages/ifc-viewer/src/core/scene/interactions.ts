@@ -51,6 +51,8 @@ export class InteractionManager {
   private lastClickPoint: THREE.Vector3 | undefined;
   private isDragging = false;
   private mouseDownButton: number | null = null;
+  private mouseDownPosition: MousePosition | undefined;
+  private readonly dragThreshold = 5; // pixels of movement to consider it a drag
 
   // Throttling
   private lastHoverTime = 0;
@@ -127,6 +129,7 @@ export class InteractionManager {
 
   private onMouseDown = (e: MouseEvent) => {
     this.lastMousePosition = { clientX: e.clientX, clientY: e.clientY };
+    this.mouseDownPosition = { clientX: e.clientX, clientY: e.clientY };
     this.mouseDownButton = e.button;
     this.isDragging = false;
   };
@@ -221,6 +224,16 @@ export class InteractionManager {
 
   private onClick = async (e: MouseEvent) => {
     if (!this.enabled) return;
+
+    // Check if mouse moved significantly since mousedown (was a drag, not a click)
+    if (this.mouseDownPosition) {
+      const dx = e.clientX - this.mouseDownPosition.clientX;
+      const dy = e.clientY - this.mouseDownPosition.clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance > this.dragThreshold) {
+        return;
+      }
+    }
 
     const result = await this.raycast();
     const isCtrlClick = e.ctrlKey || e.metaKey;
