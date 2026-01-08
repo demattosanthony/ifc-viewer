@@ -14,9 +14,6 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test"
 import { DockerComputer, createDockerComputer } from "../../src/compute/docker"
 import type { Computer } from "@ifc-viewer/core"
-import { mkdir, rm } from "node:fs/promises"
-import { join } from "node:path"
-import { tmpdir } from "node:os"
 
 const TEST_IMAGE = "bim-ide:latest"
 const TEST_TIMEOUT = 30000
@@ -25,7 +22,6 @@ const TEST_TIMEOUT = 30000
 let dockerAvailable = false
 let imageAvailable = false
 let sharedComputer: Computer | null = null
-let sharedWorkDir: string | null = null
 
 // Helper to check if Docker is available
 async function isDockerAvailable(): Promise<boolean> {
@@ -72,12 +68,8 @@ describe("DockerComputer", () => {
       return
     }
 
-    // Create shared working directory and computer
-    sharedWorkDir = join(tmpdir(), `docker-test-${Date.now()}`)
-    await mkdir(sharedWorkDir, { recursive: true })
-
+    // Create shared container (ephemeral - no host mounts needed)
     sharedComputer = await createDockerComputer({
-      workingDirectory: sharedWorkDir,
       image: TEST_IMAGE,
     })
   }, TEST_TIMEOUT)
@@ -87,10 +79,6 @@ describe("DockerComputer", () => {
     if (sharedComputer) {
       await sharedComputer.dispose()
       sharedComputer = null
-    }
-    if (sharedWorkDir) {
-      await rm(sharedWorkDir, { recursive: true, force: true }).catch(() => {})
-      sharedWorkDir = null
     }
   })
 
@@ -102,38 +90,30 @@ describe("DockerComputer", () => {
     test("creates container with resource limits, verifies properties, and removes on dispose", async () => {
       if (skipIfUnavailable()) return
 
-      const workDir = join(tmpdir(), `docker-lifecycle-${Date.now()}`)
-      await mkdir(workDir, { recursive: true })
+      // Test creation with resource limits (ephemeral - no host mounts)
+      const computer = await createDockerComputer({
+        image: TEST_IMAGE,
+        memory: "256m",
+        cpus: 0.5,
+      })
 
-      try {
-        // Test creation with resource limits
-        const computer = await createDockerComputer({
-          workingDirectory: workDir,
-          image: TEST_IMAGE,
-          memory: "256m",
-          cpus: 0.5,
-        })
+      // Verify properties
+      expect(computer.id).toMatch(/^docker-computer-/)
+      expect(computer.workingDirectory).toBe("/workspace") // Container internal path
 
-        // Verify properties
-        expect(computer.id).toMatch(/^docker-computer-/)
-        expect(computer.workingDirectory).toBe(workDir)
+      // Get container ID before dispose
+      const containerId = (computer as DockerComputer)["containerId"]
+      expect(containerId).toBeTruthy()
 
-        // Get container ID before dispose
-        const containerId = (computer as DockerComputer)["containerId"]
-        expect(containerId).toBeTruthy()
+      // Test dispose
+      await computer.dispose()
 
-        // Test dispose
-        await computer.dispose()
-
-        // Verify container is removed
-        const proc = Bun.spawn(["docker", "container", "inspect", containerId!], {
-          stdout: "ignore",
-          stderr: "ignore",
-        })
-        expect(await proc.exited).not.toBe(0)
-      } finally {
-        await rm(workDir, { recursive: true, force: true }).catch(() => {})
-      }
+      // Verify container is removed
+      const proc = Bun.spawn(["docker", "container", "inspect", containerId!], {
+        stdout: "ignore",
+        stderr: "ignore",
+      })
+      expect(await proc.exited).not.toBe(0)
     }, TEST_TIMEOUT)
   })
 

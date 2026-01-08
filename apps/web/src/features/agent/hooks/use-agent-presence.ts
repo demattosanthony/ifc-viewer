@@ -2,19 +2,14 @@ import { useEffect, useCallback } from "react";
 import { useAgent } from "../context";
 import { useEditor } from "@/features/editor/context";
 import type { AIEvent } from "@ifc-viewer/core";
-import type { TerminalHandle } from "@/features/terminal/components/terminal";
 import type { FileBrowserHandle } from "@/features/file-browser/components/file-browser";
 
 interface UseAgentPresenceOptions {
-  terminalRef: React.RefObject<TerminalHandle | null>;
   fileBrowserRef: React.RefObject<FileBrowserHandle | null>;
-  onShowTerminal: () => void;
 }
 
 export function useAgentPresence({
-  terminalRef,
   fileBrowserRef,
-  onShowTerminal,
 }: UseAgentPresenceOptions) {
   const { onPresenceEvent } = useAgent();
   const { openFile, setFileContent } = useEditor();
@@ -30,30 +25,22 @@ export function useAgentPresence({
           setFileContent(event.path, { type: "text", content: event.content });
           break;
 
-        case "terminal-focus":
-          onShowTerminal();
-          terminalRef.current?.focus();
-          break;
-
-        case "terminal-type":
-          terminalRef.current?.typeText(event.text, event.speed);
-          break;
-
-        case "terminal-execute":
-          terminalRef.current?.execute();
-          break;
-
-        case "terminal-output":
-          terminalRef.current?.writeOutput(event.data);
-          break;
-
         case "file-created":
         case "file-deleted":
           fileBrowserRef.current?.refreshPath(event.path);
           break;
+
+        // Terminal events are no longer handled since terminal is not available
+        // without a workspace. AI agent now runs compute internally.
+        case "terminal-focus":
+        case "terminal-type":
+        case "terminal-execute":
+        case "terminal-output":
+          // No-op: terminal is internal to compute
+          break;
       }
     },
-    [openFile, setFileContent, onShowTerminal, terminalRef, fileBrowserRef]
+    [openFile, setFileContent, fileBrowserRef]
   );
 
   useEffect(() => {

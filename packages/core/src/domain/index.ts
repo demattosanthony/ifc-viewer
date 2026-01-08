@@ -11,12 +11,6 @@ export {
   ProjectSchema,
   createProject,
   isValidProjectId,
-  // Workspace
-  type Workspace,
-  type WorkspaceStatus,
-  WorkspaceSchema,
-  WorkspaceStatusSchema,
-  isWorkspaceActive,
   // Conversation
   type Conversation,
   type ConversationStatus,
@@ -31,6 +25,13 @@ export {
   isUserMessage,
   isAssistantMessage,
   isSystemMessage,
+  // Model
+  type Model,
+  type ModelDiscipline,
+  ModelSchema,
+  ModelDisciplineSchema,
+  getModelStorageKey,
+  inferDiscipline,
 } from "./entities"
 
 // Value Objects

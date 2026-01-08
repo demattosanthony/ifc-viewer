@@ -1,16 +1,17 @@
 import { eq, asc } from "drizzle-orm"
-import { NotFoundError, generateId } from "@ifc-viewer/core"
+import { NotFoundError, generateId, MessageSchema } from "@ifc-viewer/core"
 import type { Message, MessageRepository } from "@ifc-viewer/core"
 import { messages } from "./schema"
 import type { DrizzleDB, DrizzleTransaction } from "./db"
 
-const rowToEntity = (row: typeof messages.$inferSelect): Message => ({
-  id: row.id,
-  conversationId: row.conversationId,
-  role: row.role,
-  content: row.content,
-  createdAt: row.createdAt,
-})
+const rowToEntity = (row: typeof messages.$inferSelect): Message =>
+  MessageSchema.parse({
+    id: row.id,
+    conversationId: row.conversationId,
+    role: row.role,
+    content: row.content,
+    createdAt: row.createdAt,
+  })
 
 export function createMessageRepository(db: DrizzleDB | DrizzleTransaction): MessageRepository {
   return {

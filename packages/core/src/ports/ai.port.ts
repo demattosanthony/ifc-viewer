@@ -6,6 +6,7 @@
  */
 
 import type { Computer, TerminalSession } from "./compute.port"
+import type { ChangeTracker } from "../services/change-tracker"
 
 /** Configuration for AI provider */
 export interface AIProviderConfig {
@@ -27,14 +28,10 @@ export interface AIChatOptions {
   computer: Computer
   /** Terminal session factory */
   getTerminal: () => Promise<TerminalSession>
+  /** Change tracker for recording file changes (persisted later) */
+  changeTracker: ChangeTracker
   /** Callback for events (allows tools to emit UI events) */
   onEvent?: (event: AIEvent) => void
-  /** Callback to persist file writes to storage */
-  onFileWrite?: (path: string, content: Uint8Array | string) => Promise<void>
-  /** Callback to persist file deletes to storage (recursive for directories) */
-  onFileDelete?: (path: string, options?: { recursive?: boolean }) => Promise<void>
-  /** Callback to persist file moves in storage */
-  onFileMove?: (source: string, destination: string) => Promise<void>
 }
 
 /** Message in conversation */

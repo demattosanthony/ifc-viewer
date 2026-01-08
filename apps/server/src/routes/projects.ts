@@ -5,7 +5,6 @@ import {
   CreateProjectRequest,
   UpdateProjectRequest,
   ProjectResponse,
-  WorkspaceResponse,
   ErrorResponse,
   SuccessResponse,
 } from "@ifc-viewer/interface"
@@ -129,27 +128,6 @@ export function projectsRoutes(ctx: Context) {
           summary: "Delete a project",
           tags: ["Projects"],
           operationId: "deleteProject",
-        },
-      }
-    )
-    .get(
-      "/:id/workspaces",
-      async ({ params }) => {
-        const result = await controller.listWorkspaces(params.id)
-        if (!result.success) return []
-        return result.data
-      },
-      {
-        params: z.object({
-          id: z.string(),
-        }),
-        response: {
-          200: z.array(WorkspaceResponse),
-        },
-        detail: {
-          summary: "List workspaces for a project",
-          tags: ["Projects"],
-          operationId: "listProjectWorkspaces",
         },
       }
     )

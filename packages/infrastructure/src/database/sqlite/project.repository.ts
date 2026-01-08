@@ -1,15 +1,16 @@
 import { eq } from "drizzle-orm"
-import { NotFoundError } from "@ifc-viewer/core"
+import { NotFoundError, ProjectSchema } from "@ifc-viewer/core"
 import type { Project, ProjectRepository } from "@ifc-viewer/core"
 import { projects, type ProjectRow } from "./schema"
 import type { DrizzleDB, DrizzleTransaction } from "./db"
 
-const rowToEntity = (row: ProjectRow): Project => ({
-  id: row.id,
-  description: row.description,
-  createdAt: row.createdAt,
-  updatedAt: row.updatedAt,
-})
+const rowToEntity = (row: ProjectRow): Project =>
+  ProjectSchema.parse({
+    id: row.id,
+    description: row.description,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  })
 
 export function createProjectRepository(db: DrizzleDB | DrizzleTransaction): ProjectRepository {
   return {

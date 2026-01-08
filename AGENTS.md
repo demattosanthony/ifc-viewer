@@ -2,19 +2,19 @@
 
 Guidelines for AI coding agents operating in this repository.
 
-## Project Overview
+## Project Structure
 
 Monorepo for an IFC (Industry Foundation Classes) viewer platform with AI agent integration.
 
 ```
 apps/server/             # Elysia server - HTTP + WebSocket (port 3000)
 apps/web/                # React + Vite frontend
-packages/core/           # Domain entities, services, and port interfaces
+packages/core/           # Domain entities, services, port interfaces
 packages/interface/      # DTOs and HTTP controllers
 packages/infrastructure/ # Database, storage, compute implementations
 packages/ifc-viewer/     # IFC 3D viewer (Three.js + web-ifc)
-packages/logger/         # Structured logging with file and console output
-packages/sdk/            # Type-safe API client
+packages/logger/         # Structured logging
+packages/sdk/            # Auto-generated type-safe API client
 packages/ui/             # Shared UI components (shadcn/ui)
 ```
 
@@ -23,9 +23,9 @@ packages/ui/             # Shared UI components (shadcn/ui)
 **CRITICAL: Use Bun exclusively.** Never use npm, pnpm, yarn, or vite CLI.
 
 ```bash
-bun install             # Install dependencies
-bun <file.ts>           # Run TypeScript directly
-bunx <package>          # Run package binaries
+bun install              # Install dependencies
+bun <file.ts>            # Run TypeScript directly
+bunx <package>           # Run package binaries
 ```
 
 Prefer Bun APIs: `Bun.file()` over fs, `Bun.$`cmd`` over execa.
@@ -34,23 +34,23 @@ Prefer Bun APIs: `Bun.file()` over fs, `Bun.$`cmd`` over execa.
 
 ```bash
 # Development
-bun run dev                                    # Start server + web (requires Docker)
-bun run dev:server                             # Server only (port 3000)
-bun run dev:web                                # Web frontend only
+bun run dev              # Start server + web (requires Docker for Postgres)
+bun run dev:server       # Server only (port 3000)
+bun run dev:web          # Web frontend only
 
 # Build & Check
-bun run build                                  # Build all packages
-bun run typecheck                              # Type check all packages
-bun --filter=@ifc-viewer/server run typecheck  # Type check single package
+bun run build            # Build all packages
+bun run typecheck        # Type check all packages
 
-# Database (Postgres via Docker)
-bun run db:start                               # Start Postgres container
-bun run db:stop                                # Stop Postgres container
-bun run db:logs                                # View Postgres logs
+# Database
+bun run db:start         # Start Postgres container
+bun run db:stop          # Stop Postgres container
 
-# SDK & Docker
-bun run generate:sdk                           # Generate SDK from OpenAPI
-bun run docker:build:bim-ide                   # Build compute container image
+# SDK (regenerate after API changes)
+bun run generate:sdk     # Requires server running
+
+# Docker
+bun run docker:build:bim-ide  # Build compute container
 ```
 
 ## Testing
@@ -64,16 +64,11 @@ bun test packages/core/tests/domain/slug.test.ts  # Run single test file
 bun test --test-name-pattern "creates project"    # Filter by test name
 ```
 
-Test file structure:
+Test structure:
 ```typescript
-import { describe, test, expect, beforeEach } from "bun:test"
-
+import { describe, test, expect } from "bun:test"
 describe("Feature", () => {
-  beforeEach(() => { /* setup */ })
-
-  test("does something", () => {
-    expect(result).toBe(expected)
-  })
+  test("does something", () => { expect(result).toBe(expected) })
 })
 ```
 
@@ -96,27 +91,20 @@ describe("Feature", () => {
 3. Internal workspace packages (`@ifc-viewer/*`)
 4. Relative imports (`./`, `../`)
 
-Use `import type` for type-only imports:
-```typescript
-import { createLogger } from "@ifc-viewer/logger"
-import type { Logger, LogLevel } from "@ifc-viewer/logger"
-```
+Use `import type` for type-only imports.
 
 ### TypeScript
 
-- Strict mode enabled with `noUncheckedIndexedAccess`
+- Strict mode with `noUncheckedIndexedAccess` enabled
 - Use `interface` for object shapes, `type` for unions/aliases
-- Specify return types for public/exported functions
-- Use Zod schemas with inference: `type Project = z.infer<typeof ProjectSchema>`
+- Specify return types for exported functions
 - Use `.ts` extensions in imports (required by `verbatimModuleSyntax`)
+- Use Zod schemas with inference: `type Project = z.infer<typeof ProjectSchema>`
 
 ### Error Handling
 
 Extend `DomainError` from `@ifc-viewer/core`:
-
 ```typescript
-import { DomainError } from "@ifc-viewer/core"
-
 export class SessionNotFoundError extends DomainError {
   constructor(sessionId: string) {
     super(`Session ${sessionId} not found`, "SESSION_NOT_FOUND", 404)
@@ -127,176 +115,46 @@ export class SessionNotFoundError extends DomainError {
 
 ### Logging
 
-Use `@ifc-viewer/logger` for all server-side logging:
-
+Use `@ifc-viewer/logger` for server-side logging. Create child loggers for subsystems:
 ```typescript
-import { createLogger } from "@ifc-viewer/logger"
-
 const log = createLogger("server")
-log.info("Server started", { port: 3000 })
-log.error("Request failed", { error, requestId })
-
+log.info("Started", { port: 3000 })
 const dbLog = log.child("database")  // Creates "server:database" namespace
-```
-
-Logs output to console (colored) and `.data/logs/app.YYYY-MM-DD.log` (plain text).
-
-### React Patterns
-
-- Function components with hooks; context providers for shared state
-- Tailwind CSS with `cn()` utility from `@ifc-viewer/ui`
-- Use `React.ComponentProps<"element">` for extending HTML element props
-
-```typescript
-const ViewerContext = createContext<ViewerContextValue | undefined>(undefined)
-
-export function useViewer() {
-  const context = useContext(ViewerContext)
-  if (!context) throw new Error("useViewer must be used within ViewerProvider")
-  return context
-}
-```
-
-### API Routes (Elysia)
-
-Factory functions with dependency injection and Zod validation:
-
-```typescript
-export function filesRoutes(ctx: Context) {
-  return new Elysia({ prefix: "/api/workspaces/:id/files" })
-    .get("/", async ({ params, query }) => {
-      return controller.list(params.id, query.path)
-    }, {
-      params: z.object({ id: z.string() }),
-      query: ListFilesQuery,
-      response: { 200: ListFilesResponse },
-      detail: { summary: "List files", tags: ["Files"], operationId: "listFiles" },
-    })
-}
 ```
 
 ### Package Structure
 
-```
-packages/{name}/
-  src/
-    index.ts          # Barrel exports (public API)
-    types.ts          # Type definitions
-    *.ts              # Implementation files
-  tests/
-    *.test.ts         # Test files
-  package.json
-  tsconfig.json
-```
+Each package has `src/` (with `index.ts` barrel exports), `tests/*.test.ts`, `package.json`, `tsconfig.json`.
 
-### Barrel Exports
+## SDK Usage (CRITICAL)
 
-Only export what consumers need:
+**NEVER use `fetch()` directly in `apps/web/`.** Always use `@ifc-viewer/sdk`.
+
 ```typescript
-// Public API
-export { createLogger, flushLogs, closeLogs } from "./logger.ts"
-export type { Logger, LogLevel } from "./types.ts"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { listFilesOptions, writeFileMutation } from "@ifc-viewer/sdk/hooks"
+
+// Queries
+const { data } = useQuery(listFilesOptions({ path: { id }, query: { path: "." } }))
+
+// Mutations
+const writeFile = useMutation(writeFileMutation())
+await writeFile.mutateAsync({ path: { id }, body: { path: "file.txt", content: "hi" } })
 ```
+
+**When you modify API routes, regenerate the SDK:** `bun run generate:sdk`
+
+Exceptions where `fetch()` is OK: SSE streaming (`fetchSSE`), external APIs, S3 presigned uploads.
+
+## React Patterns
+
+Function components with hooks, context providers for shared state, Tailwind CSS with `cn()` from `@ifc-viewer/ui`.
 
 ## Environment
 
 - Bun auto-loads `.env` files (no dotenv needed)
 - Copy `.env.example` to `.env` for local development
-- Environment variables: `LOG_LEVEL`, `LOG_DIR`, `DATABASE_URL`, `PORT`, etc.
-
-## SDK Usage (CRITICAL)
-
-**NEVER use `fetch()` directly in `apps/web/`.** Always use `@ifc-viewer/sdk` for API calls.
-
-The SDK is auto-generated from the server's OpenAPI spec and provides:
-- Type-safe API client functions
-- TanStack Query hooks and mutations
-- Automatic base URL configuration
-- File upload utilities for binary data
-
-### Regenerating the SDK
-
-**When you add or modify API routes, you MUST regenerate the SDK:**
-
-```bash
-bun run generate:sdk                           # Regenerate SDK (requires server running)
-
-# Or manually:
-bun run dev:server                             # Start server first
-cd packages/sdk && bun run fetch-spec          # Fetch OpenAPI spec
-cd packages/sdk && bun run generate            # Generate SDK
-```
-
-### Using the SDK in React
-
-```typescript
-// Import hooks from @ifc-viewer/sdk/hooks
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  listFilesOptions,
-  writeFileMutation,
-} from "@ifc-viewer/sdk/hooks";
-
-// Queries
-const { data, isLoading } = useQuery({
-  ...listFilesOptions({
-    path: { id: workspaceId },
-    query: { path: "." },
-  }),
-});
-
-// Mutations
-const writeFile = useMutation({ ...writeFileMutation() });
-await writeFile.mutateAsync({
-  path: { id: workspaceId },
-  body: { path: "file.txt", content: "hello" },
-});
-```
-
-### File Uploads
-
-Use the SDK's upload mutation for file uploads:
-
-```typescript
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  uploadFileMutation,
-  getPresignedUrlMutation,
-  confirmUploadMutation,
-} from "@ifc-viewer/sdk/hooks";
-
-// Direct upload (works with any storage backend)
-const uploadFile = useMutation({ ...uploadFileMutation() });
-await uploadFile.mutateAsync({
-  path: { id: workspaceId },
-  body: { file, path: "path/to/file.txt" },
-});
-
-// S3 presigned URL upload (optimization for large files)
-const presigned = await getPresignedUrl.mutateAsync({
-  path: { id: workspaceId },
-  body: { path: "path/to/file.txt", contentType: file.type },
-});
-await fetch(presigned.url, {  // fetch is OK here - uploading to S3, not our API
-  method: presigned.method,
-  headers: presigned.headers,
-  body: file,
-});
-await confirmUpload.mutateAsync({
-  path: { id: workspaceId },
-  body: { path: "path/to/file.txt" },
-});
-```
-
-### When raw fetch() is acceptable
-
-Only use `fetch()` for:
-1. **SSE streaming** responses (use `fetchSSE` from `@ifc-viewer/sdk`)
-2. **External APIs** not part of this application
-3. **S3 presigned URL uploads** (uploading directly to S3, not our API)
-
-**Never use fetch() for API calls to our server** - always use SDK functions or utilities.
 
 ## Linting
 
-No ESLint/Prettier configured. Follow TypeScript strict mode and match existing code patterns.
+No ESLint/Prettier configured. Follow TypeScript strict mode and match existing patterns.

@@ -8,10 +8,10 @@ import {
   FolderPlus,
   Trash2,
 } from "lucide-react";
-import type { ListFilesResponse } from "@ifc-viewer/sdk";
+import type { ListProjectFilesResponse } from "@ifc-viewer/sdk";
 import { FileIcon } from "../utils/file-icons";
 
-type FileEntry = ListFilesResponse["files"][number];
+type FileEntry = ListProjectFilesResponse["files"][number];
 
 interface FileTreeItemProps {
   file: FileEntry;

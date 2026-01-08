@@ -51,7 +51,8 @@ RUN groupadd -g ${GROUP_ID} bimuser \
 RUN echo 'PS1="\[\033[36m\]\w\[\033[0m\] $ "' >> /etc/bash.bashrc \
     && echo 'alias ll="ls -la"' >> /etc/bash.bashrc
 
-# Set up workspace directory
+# Set up workspace directory with correct ownership for non-root user
+RUN mkdir -p /workspace && chown ${USER_ID}:${GROUP_ID} /workspace
 WORKDIR /workspace
 
 # Switch to non-root user

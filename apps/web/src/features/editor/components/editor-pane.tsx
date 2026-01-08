@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { readFile } from "@ifc-viewer/sdk";
-import { readFileQueryKey } from "@ifc-viewer/sdk/hooks";
+import { readProjectFile } from "@ifc-viewer/sdk";
+import { readProjectFileQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../context";
 import { CodeEditor } from "./viewers/code-editor";
 import { IFCViewer } from "./viewers/ifc-viewer";
@@ -9,7 +9,7 @@ import { HtmlViewer } from "./viewers/html-viewer";
 import { PdfViewer } from "./viewers/pdf-viewer";
 
 interface EditorPaneProps {
-  workspaceId: string;
+  projectId: string;
   onShowTerminal?: () => void;
 }
 
@@ -32,7 +32,7 @@ function LoadingState() {
   );
 }
 
-export function EditorPane({ workspaceId }: EditorPaneProps) {
+export function EditorPane({ projectId }: EditorPaneProps) {
   const { tabs, activeTabId, getFileContent, setFileContent } = useEditor();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -41,13 +41,13 @@ export function EditorPane({ workspaceId }: EditorPaneProps) {
 
   // Query for file content (non-IFC files only)
   const contentQuery = useQuery({
-    queryKey: readFileQueryKey({
-      path: { id: workspaceId },
+    queryKey: readProjectFileQueryKey({
+      path: { id: projectId },
       query: { path: activeTab?.path ?? "" },
     }),
     queryFn: async () => {
-      const { data } = await readFile({
-        path: { id: workspaceId },
+      const { data } = await readProjectFile({
+        path: { id: projectId },
         query: { path: activeTab!.path },
       });
       return data;
@@ -74,7 +74,7 @@ export function EditorPane({ workspaceId }: EditorPaneProps) {
 
   // IFC has its own loading mechanism
   if (activeTab.type === "ifc") {
-    return <IFCViewer workspaceId={workspaceId} filePath={activeTab.path} />;
+    return <IFCViewer projectId={projectId} filePath={activeTab.path} />;
   }
 
   const content = getFileContent(activeTab.path);
@@ -107,7 +107,7 @@ export function EditorPane({ workspaceId }: EditorPaneProps) {
     default:
       return (
         <CodeEditor
-          workspaceId={workspaceId}
+          projectId={projectId}
           path={activeTab.path}
           tabId={activeTab.id}
           content={content.content}

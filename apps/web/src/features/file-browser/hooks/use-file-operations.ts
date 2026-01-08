@@ -1,20 +1,26 @@
 import { useState, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
-  writeFileMutation,
-  createDirectoryMutation,
-  deleteFileMutation,
-  uploadFileMutation,
-  getPresignedUrlMutation,
-  confirmUploadMutation,
+  writeProjectFileMutation,
+  createProjectDirectoryMutation,
+  deleteProjectFileMutation,
+  uploadProjectFileMutation,
+  getProjectPresignedUrlMutation,
+  confirmProjectUploadMutation,
+  uploadModelMutation,
 } from "@ifc-viewer/sdk/hooks";
 import { formDataBodySerializer } from "@ifc-viewer/sdk";
+
+/** Check if a file is an IFC model based on extension */
+function isIfcFile(filename: string): boolean {
+  return filename.toLowerCase().endsWith(".ifc");
+}
 
 /** Size threshold for using presigned URL optimization (5MB) */
 const PRESIGNED_URL_THRESHOLD = 5 * 1024 * 1024;
 
 interface UseFileOperationsOptions {
-  workspaceId: string;
+  projectId: string;
   onRefresh: (path: string) => void;
 }
 
@@ -24,7 +30,7 @@ interface DeleteTarget {
 }
 
 export function useFileOperations({
-  workspaceId,
+  projectId,
   onRefresh,
 }: UseFileOperationsOptions) {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -33,13 +39,14 @@ export function useFileOperations({
     total: number;
   } | null>(null);
 
-  // SDK mutations
-  const writeFile = useMutation({ ...writeFileMutation() });
-  const createDirectory = useMutation({ ...createDirectoryMutation() });
-  const deleteFile = useMutation({ ...deleteFileMutation() });
-  const uploadFileDirect = useMutation({ ...uploadFileMutation() });
-  const getPresignedUrl = useMutation({ ...getPresignedUrlMutation() });
-  const confirmUpload = useMutation({ ...confirmUploadMutation() });
+  // SDK mutations - use project-based endpoints
+  const writeFile = useMutation({ ...writeProjectFileMutation() });
+  const createDirectory = useMutation({ ...createProjectDirectoryMutation() });
+  const deleteFile = useMutation({ ...deleteProjectFileMutation() });
+  const uploadFileDirect = useMutation({ ...uploadProjectFileMutation() });
+  const getPresignedUrl = useMutation({ ...getProjectPresignedUrlMutation() });
+  const confirmUpload = useMutation({ ...confirmProjectUploadMutation() });
+  const uploadModel = useMutation({ ...uploadModelMutation() });
 
   /**
    * Upload file via S3 presigned URL (optimization for large files).
@@ -50,7 +57,7 @@ export function useFileOperations({
       try {
         // Try to get presigned URL
         const presignedData = await getPresignedUrl.mutateAsync({
-          path: { id: workspaceId },
+          path: { id: projectId },
           body: {
             path,
             contentType: file.type || "application/octet-stream",
@@ -68,9 +75,9 @@ export function useFileOperations({
           throw new Error(`S3 upload failed: ${response.statusText}`);
         }
 
-        // Confirm upload to sync to compute environment
+        // Confirm upload
         await confirmUpload.mutateAsync({
-          path: { id: workspaceId },
+          path: { id: projectId },
           body: { path },
         });
 
@@ -85,15 +92,44 @@ export function useFileOperations({
         throw error;
       }
     },
-    [workspaceId, getPresignedUrl, confirmUpload]
+    [projectId, getPresignedUrl, confirmUpload]
+  );
+
+  /**
+   * Upload an IFC file via the Models API.
+   * IFC files are tracked as models with metadata and stored in models/ directory.
+   */
+  const uploadIfcModel = useCallback(
+    async (file: File): Promise<void> => {
+      // Extract name from filename (without extension)
+      const name = file.name.replace(/\.ifc$/i, "");
+
+      await uploadModel.mutateAsync({
+        path: { id: projectId },
+        body: { file, name },
+        bodySerializer: formDataBodySerializer.bodySerializer,
+        headers: {
+          "Content-Type": null as unknown as string,
+        },
+      });
+    },
+    [projectId, uploadModel]
   );
 
   /**
    * Upload a single file with automatic method selection.
-   * Uses presigned URL for large files when available, falls back to direct upload.
+   * - IFC files are routed to Models API (stored in models/ directory)
+   * - Large files use presigned URL when available
+   * - Other files use direct upload
    */
   const uploadFile = useCallback(
     async (file: File, path: string): Promise<void> => {
+      // Route IFC files to Models API
+      if (isIfcFile(file.name)) {
+        await uploadIfcModel(file);
+        return;
+      }
+
       // For large files, try S3 presigned URL first (optimization)
       if (file.size >= PRESIGNED_URL_THRESHOLD) {
         const usedPresigned = await uploadViaPresignedUrl(file, path);
@@ -103,7 +139,7 @@ export function useFileOperations({
       // Direct upload using SDK (works with any storage backend)
       // Use formDataBodySerializer to send as multipart/form-data
       await uploadFileDirect.mutateAsync({
-        path: { id: workspaceId },
+        path: { id: projectId },
         body: { file, path },
         bodySerializer: formDataBodySerializer.bodySerializer,
         headers: {
@@ -112,11 +148,12 @@ export function useFileOperations({
         },
       });
     },
-    [workspaceId, uploadFileDirect, uploadViaPresignedUrl]
+    [projectId, uploadFileDirect, uploadViaPresignedUrl, uploadIfcModel]
   );
 
   /**
    * Upload multiple files to a target directory.
+   * IFC files are automatically routed to the Models API and stored in models/.
    */
   const uploadFiles = useCallback(
     async (
@@ -128,10 +165,15 @@ export function useFileOperations({
 
       let successCount = 0;
       let failedCount = 0;
+      let hasIfcFiles = false;
 
       for (let i = 0; i < fileArray.length; i++) {
         const file = fileArray[i];
         if (!file) continue;
+
+        if (isIfcFile(file.name)) {
+          hasIfcFiles = true;
+        }
 
         const filePath =
           targetPath === "." ? file.name : `${targetPath}/${file.name}`;
@@ -148,7 +190,12 @@ export function useFileOperations({
       }
 
       setUploadProgress(null);
+
+      // Refresh target directory and models/ if IFC files were uploaded
       onRefresh(targetPath);
+      if (hasIfcFiles && targetPath !== "models") {
+        onRefresh("models");
+      }
 
       return { success: successCount, failed: failedCount };
     },
@@ -172,12 +219,12 @@ export function useFileOperations({
       try {
         if (type === "folder") {
           await createDirectory.mutateAsync({
-            path: { id: workspaceId },
+            path: { id: projectId },
             body: { path: newPath },
           });
         } else {
           await writeFile.mutateAsync({
-            path: { id: workspaceId },
+            path: { id: projectId },
             body: { path: newPath, content: "" },
           });
         }
@@ -188,7 +235,7 @@ export function useFileOperations({
         return false;
       }
     },
-    [workspaceId, onRefresh, writeFile, createDirectory]
+    [projectId, onRefresh, writeFile, createDirectory]
   );
 
   /**
@@ -198,7 +245,7 @@ export function useFileOperations({
     async (path: string, onTabClose?: () => void): Promise<boolean> => {
       try {
         await deleteFile.mutateAsync({
-          path: { id: workspaceId },
+          path: { id: projectId },
           query: { path },
         });
 
@@ -214,7 +261,7 @@ export function useFileOperations({
         return false;
       }
     },
-    [workspaceId, onRefresh, deleteFile]
+    [projectId, onRefresh, deleteFile]
   );
 
   const initiateDelete = useCallback((path: string, isDirectory: boolean) => {
@@ -241,7 +288,10 @@ export function useFileOperations({
     initiateDelete,
     confirmDelete,
     cancelDelete,
-    isUploading: uploadProgress !== null || uploadFileDirect.isPending,
+    isUploading:
+      uploadProgress !== null ||
+      uploadFileDirect.isPending ||
+      uploadModel.isPending,
     uploadProgress,
     isCreating: writeFile.isPending || createDirectory.isPending,
     isDeleting: deleteFile.isPending,

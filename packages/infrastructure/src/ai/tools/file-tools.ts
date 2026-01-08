@@ -2,27 +2,22 @@
  * File Tools
  *
  * AI tools for file system operations.
- * All file writes are persisted to both compute and project storage.
+ * Changes are tracked via ChangeTracker for deferred persistence.
  */
 
 import { tool } from "ai"
 import { z } from "zod"
-import type { Computer, AIEvent } from "@ifc-viewer/core"
+import type { Computer, AIEvent, ChangeTracker } from "@ifc-viewer/core"
 import { getErrorMessage } from "../utils"
 
 export interface FileToolsOptions {
   computer: Computer
+  changeTracker: ChangeTracker
   emit: (event: AIEvent) => void
-  /** Callback to persist file writes to storage */
-  onFileWrite?: (path: string, content: Uint8Array | string) => Promise<void>
-  /** Callback to persist file deletes to storage (recursive for directories) */
-  onFileDelete?: (path: string, options?: { recursive?: boolean }) => Promise<void>
-  /** Callback to persist file moves in storage */
-  onFileMove?: (source: string, destination: string) => Promise<void>
 }
 
 export function createFileTools(options: FileToolsOptions) {
-  const { computer, emit, onFileWrite, onFileDelete, onFileMove } = options
+  const { computer, changeTracker, emit } = options
 
   return {
     readFile: tool({
@@ -65,15 +60,26 @@ export function createFileTools(options: FileToolsOptions) {
         try {
           emit({ type: "editor-open", path })
           emit({ type: "editor-replace", path, content })
-          
+
+          // Check if file exists to determine create vs update
+          let exists = false
+          try {
+            await computer.files.read(path)
+            exists = true
+          } catch {
+            exists = false
+          }
+
           // Write to compute environment
           await computer.files.write(path, content)
-          
-          // Persist to project storage
-          if (onFileWrite) {
-            await onFileWrite(path, content)
-          }
-          
+
+          // Sync to storage immediately so file browser can see it
+          await changeTracker.sync({
+            type: exists ? "update" : "create",
+            path,
+            source: "tool",
+          })
+
           emit({ type: "editor-save", path })
           emit({ type: "file-created", path })
 
@@ -154,10 +160,12 @@ export function createFileTools(options: FileToolsOptions) {
           // Delete from compute environment
           await computer.files.delete(path, { recursive })
 
-          // Delete from project storage
-          if (onFileDelete) {
-            await onFileDelete(path, { recursive })
-          }
+          // Sync to storage immediately so file browser reflects deletion
+          await changeTracker.sync({
+            type: "delete",
+            path,
+            source: "tool",
+          })
 
           emit({ type: "file-deleted", path })
           return { success: true, path }
@@ -182,10 +190,13 @@ export function createFileTools(options: FileToolsOptions) {
           // Move in compute environment
           await computer.files.move(source, destination)
 
-          // Update storage
-          if (onFileMove) {
-            await onFileMove(source, destination)
-          }
+          // Sync to storage immediately so file browser reflects move
+          await changeTracker.sync({
+            type: "move",
+            path: destination,
+            oldPath: source,
+            source: "tool",
+          })
 
           emit({ type: "file-deleted", path: source })
           emit({ type: "file-created", path: destination })

@@ -2,26 +2,26 @@ import { resolve } from "node:path"
 import type { Database, UnitOfWork } from "@ifc-viewer/core"
 import {
   createProjectRepository as createMemoryProjectRepository,
-  createWorkspaceRepository as createMemoryWorkspaceRepository,
   createConversationRepository as createMemoryConversationRepository,
   createMessageRepository as createMemoryMessageRepository,
+  createModelRepository as createMemoryModelRepository,
 } from "./memory"
 import {
   createSQLiteConnection,
   runMigrations as runSqliteMigrations,
   createProjectRepository as createSqliteProjectRepository,
-  createWorkspaceRepository as createSqliteWorkspaceRepository,
   createConversationRepository as createSqliteConversationRepository,
   createMessageRepository as createSqliteMessageRepository,
+  createModelRepository as createSqliteModelRepository,
   type DrizzleDB as SqliteDrizzleDB,
 } from "./sqlite"
 import {
   createPostgresConnection,
   runMigrations as runPostgresMigrations,
   createProjectRepository as createPostgresProjectRepository,
-  createWorkspaceRepository as createPostgresWorkspaceRepository,
   createConversationRepository as createPostgresConversationRepository,
   createMessageRepository as createPostgresMessageRepository,
+  createModelRepository as createPostgresModelRepository,
   type DrizzleDB as PostgresDrizzleDB,
 } from "./postgres"
 
@@ -58,19 +58,19 @@ export async function createDatabase(config: DatabaseConfig): Promise<Database> 
 
 function createMemoryDatabase(): Database {
   const projects = createMemoryProjectRepository()
-  const workspaces = createMemoryWorkspaceRepository()
   const conversations = createMemoryConversationRepository()
   const messages = createMemoryMessageRepository()
+  const models = createMemoryModelRepository()
 
   return {
     projects,
-    workspaces,
     conversations,
     messages,
+    models,
     async transaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
       // Memory adapter: pass-through (no real transaction needed)
       // The same repositories are used since Map operations are synchronous
-      return fn({ projects, workspaces, conversations, messages })
+      return fn({ projects, conversations, messages, models })
     },
     dispose: async () => {},
   }
@@ -85,9 +85,9 @@ async function createSQLiteDatabase(config: SQLiteDatabaseConfig): Promise<Datab
   /** Create repositories for a given db/transaction instance */
   const createRepositories = (dbOrTx: SqliteDrizzleDB): UnitOfWork => ({
     projects: createSqliteProjectRepository(dbOrTx),
-    workspaces: createSqliteWorkspaceRepository(dbOrTx),
     conversations: createSqliteConversationRepository(dbOrTx),
     messages: createSqliteMessageRepository(dbOrTx),
+    models: createSqliteModelRepository(dbOrTx),
   })
 
   const repos = createRepositories(db)
@@ -113,9 +113,9 @@ async function createPostgresDatabase(config: PostgresDatabaseConfig): Promise<D
   /** Create repositories for a given db/transaction instance */
   const createRepositories = (dbOrTx: PostgresDrizzleDB): UnitOfWork => ({
     projects: createPostgresProjectRepository(dbOrTx),
-    workspaces: createPostgresWorkspaceRepository(dbOrTx),
     conversations: createPostgresConversationRepository(dbOrTx),
     messages: createPostgresMessageRepository(dbOrTx),
+    models: createPostgresModelRepository(dbOrTx),
   })
 
   const repos = createRepositories(db)

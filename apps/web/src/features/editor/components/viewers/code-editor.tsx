@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { writeFileMutation } from "@ifc-viewer/sdk/hooks";
+import { writeProjectFileMutation } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "../../context";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { useEffectiveTheme } from "@/shared/hooks";
@@ -29,7 +29,7 @@ function getLanguage(filename: string): string {
 }
 
 export interface CodeEditorProps {
-  workspaceId: string;
+  projectId: string;
   path: string;
   tabId: string;
   content: string;
@@ -37,7 +37,7 @@ export interface CodeEditorProps {
 }
 
 export function CodeEditor({
-  workspaceId,
+  projectId,
   path,
   tabId,
   content,
@@ -49,7 +49,7 @@ export function CodeEditor({
   const effectiveTheme = useEffectiveTheme();
 
   const saveMutation = useMutation({
-    ...writeFileMutation(),
+    ...writeProjectFileMutation(),
     onSuccess: () => {
       const currentContent = getFileContent(path);
       if (currentContent) {
@@ -74,11 +74,11 @@ export function CodeEditor({
       if (!currentContent) return;
 
       saveMutation.mutate({
-        path: { id: workspaceId },
+        path: { id: projectId },
         body: { path, content: currentContent.content },
       });
     };
-  }, [workspaceId, path, getFileContent, saveMutation]);
+  }, [projectId, path, getFileContent, saveMutation]);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     // Add Ctrl+S / Cmd+S keybinding

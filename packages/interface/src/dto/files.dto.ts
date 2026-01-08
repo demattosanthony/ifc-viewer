@@ -103,7 +103,7 @@ export const ReadFileResponse = z.object({
 
 /** Request presigned upload URL (S3 optimization) */
 export const GetPresignedUrlRequest = z.object({
-  /** File path in the workspace */
+  /** File path in the project */
   path: z.string(),
   /** MIME type of the file */
   contentType: z.string().optional(),
@@ -121,9 +121,9 @@ export const GetPresignedUrlResponse = z.object({
 })
 export type GetPresignedUrlResponse = z.infer<typeof GetPresignedUrlResponse>
 
-/** Confirm S3 upload request - syncs uploaded file to compute */
+/** Confirm S3 upload request */
 export const ConfirmUploadRequest = z.object({
-  /** File path in the workspace */
+  /** File path in the project */
   path: z.string(),
 })
 export type ConfirmUploadRequest = z.infer<typeof ConfirmUploadRequest>

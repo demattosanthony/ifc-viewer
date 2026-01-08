@@ -10,15 +10,6 @@ export {
   isValidProjectId,
 } from "./project"
 
-// Workspace
-export {
-  type Workspace,
-  type WorkspaceStatus,
-  WorkspaceSchema,
-  WorkspaceStatusSchema,
-  isWorkspaceActive,
-} from "./workspace"
-
 // Conversation
 export {
   type Conversation,
@@ -38,3 +29,13 @@ export {
   isAssistantMessage,
   isSystemMessage,
 } from "./message"
+
+// Model
+export {
+  type Model,
+  type ModelDiscipline,
+  ModelSchema,
+  ModelDisciplineSchema,
+  getModelStorageKey,
+  inferDiscipline,
+} from "./model"

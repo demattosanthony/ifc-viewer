@@ -8,7 +8,7 @@ A modern IFC (Industry Foundation Classes) viewer platform with AI agent integra
 - **Backend:** [Elysia](https://elysiajs.com)
 - **Frontend:** React + Vite + Tailwind CSS
 - **3D Viewer:** Three.js + web-ifc
-- **AI:** Anthropic Claude SDK
+- **AI:** AI SDK (Anthropic, OpenAI, etc.)
 
 ## Getting Started
 
