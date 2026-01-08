@@ -7,7 +7,6 @@
 import {
   type Context,
   type Project,
-  type Workspace,
   createProjectWithStorage,
   isDomainError,
 } from "@ifc-viewer/core"
@@ -73,13 +72,5 @@ export class ProjectController {
     }
     await this.ctx.db.projects.delete(id)
     return ok({ success: true })
-  }
-
-  /**
-   * List workspaces for a project
-   */
-  async listWorkspaces(projectId: string): Promise<HttpResult<Workspace[]>> {
-    const workspaces = await this.ctx.db.workspaces.findByProjectId(projectId)
-    return ok(workspaces)
   }
 }

@@ -1,231 +1,193 @@
 /**
  * Application Context
  *
- * Wires all dependencies together, enabling Dependency Injection without classes.
- * Manages compute lifecycle with activity-based idle detection.
+ * Wires dependencies together and manages compute lifecycle.
+ * Compute is created on-demand per project and disposed after 5 minutes of inactivity.
+ * Project files are automatically copied from storage on first compute creation.
  */
 
-import { createLogger } from "@ifc-viewer/logger";
-import type { Database, Storage, Computer, AIProvider } from "./ports";
+import { createLogger } from "@ifc-viewer/logger"
+import type { Database, Storage, Computer, AIProvider } from "./ports"
+import { createChangeTracker, type ChangeTracker } from "./services/change-tracker"
 
-const log = createLogger("compute");
+const log = createLogger("context")
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** Idle timeout before disposing compute (5 minutes) */
-const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
-
-/** Interval for checking idle workspaces (30 seconds) */
-const IDLE_CHECK_INTERVAL_MS = 30 * 1000;
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000
 
 // ============================================================================
 // Types
 // ============================================================================
 
-/** Compute factory for creating per-workspace compute instances */
-export type ComputeFactory = (
-  workspaceId: string,
-  workingDirectory: string
-) => Promise<Computer>;
+/** Creates a compute instance for a project */
+export type ComputeFactory = (projectId: string) => Promise<Computer>
 
-/** Callback when workspace becomes idle and should be cleaned up */
-export type OnWorkspaceIdle = (workspaceId: string) => Promise<void>;
-
-/** Activity source for logging */
-export type ActivitySource =
-  | "terminal"
-  | "file-read"
-  | "file-write"
-  | "file-delete"
-  | "ai-chat";
-
-/** Internal state for a compute instance */
 interface ComputeState {
-  computer: Computer;
-  lastActivityAt: number;
+  computer: Computer
+  tracker: ChangeTracker
+  idleTimer: Timer
 }
 
-/** Application context with all infrastructure */
 export type Context = {
-  db: Database;
-  storage: Storage;
-  ai: AIProvider;
-  workspacesDir: string;
-  getCompute(workspaceId: string): Computer | undefined;
-  getOrCreateCompute(
-    workspaceId: string,
-    workingDirectory: string
-  ): Promise<Computer>;
-  touchCompute(workspaceId: string, source: ActivitySource): void;
-  disposeCompute(workspaceId: string): Promise<void>;
-  dispose(): Promise<void>;
-};
+  db: Database
+  storage: Storage
+  ai: AIProvider
+  getCompute(projectId: string): Computer | undefined
+  getTracker(projectId: string): ChangeTracker | undefined
+  getOrCreateCompute(projectId: string): Promise<{ computer: Computer; tracker: ChangeTracker }>
+  touchCompute(projectId: string): void
+  disposeCompute(projectId: string): Promise<void>
+  dispose(): Promise<void>
+}
 
-/** Configuration for creating context */
 export type ContextConfig = {
-  db: Database;
-  storage: Storage;
-  ai: AIProvider;
-  workspacesDir: string;
-  computeFactory: ComputeFactory;
-  onWorkspaceIdle?: OnWorkspaceIdle;
-};
+  db: Database
+  storage: Storage
+  ai: AIProvider
+  computeFactory: ComputeFactory
+}
 
 // ============================================================================
 // Context Factory
 // ============================================================================
 
-/** Create a context from pre-configured infrastructure */
 export function createContext(config: ContextConfig): Context {
-  const computeStates = new Map<string, ComputeState>();
-  const pendingCreations = new Map<string, Promise<Computer>>();
-  let idleCheckInterval: Timer | null = null;
+  const computes = new Map<string, ComputeState>()
+  const pendingCreations = new Map<string, Promise<{ computer: Computer; tracker: ChangeTracker }>>()
 
-  // Start the idle checker
-  const startIdleChecker = (): void => {
-    if (idleCheckInterval) return;
+  const scheduleIdle = (projectId: string): Timer => {
+    return setTimeout(async () => {
+      log.debug("Compute idle, disposing", { projectId })
+      await cleanup(projectId)
+    }, IDLE_TIMEOUT_MS)
+  }
 
-    idleCheckInterval = setInterval(async () => {
-      const now = Date.now();
+  const cleanup = async (projectId: string): Promise<void> => {
+    const state = computes.get(projectId)
+    if (!state) return
 
-      for (const [workspaceId, state] of computeStates) {
-        const idleMs = now - state.lastActivityAt;
+    clearTimeout(state.idleTimer)
+    computes.delete(projectId)
 
-        if (idleMs >= IDLE_TIMEOUT_MS) {
-          log.debug("Workspace idle, disposing", {
-            workspaceId,
-            idleSeconds: Math.round(idleMs / 1000),
-          });
-
-          if (config.onWorkspaceIdle) {
-            try {
-              await config.onWorkspaceIdle(workspaceId);
-            } catch (err) {
-              log.error("Failed to cleanup workspace", { workspaceId, error: err });
-            }
-          } else {
-            // Default: just dispose compute
-            await ctx.disposeCompute(workspaceId);
-          }
-        }
+    // Persist any pending file changes
+    if (state.tracker.hasPending()) {
+      try {
+        log.debug("Persisting pending changes", { projectId })
+        const { persisted } = await state.tracker.persist()
+        log.debug("Persisted changes", { projectId, count: persisted.length })
+      } catch (err) {
+        log.error("Failed to persist changes", { projectId, error: err })
       }
-    }, IDLE_CHECK_INTERVAL_MS);
-  };
-
-  const stopIdleChecker = (): void => {
-    if (idleCheckInterval) {
-      clearInterval(idleCheckInterval);
-      idleCheckInterval = null;
     }
-  };
 
-  const ctx: Context = {
+    try {
+      await state.computer.dispose()
+    } catch (err) {
+      log.error("Failed to dispose compute", { projectId, error: err })
+    }
+  }
+
+  /** Copy project files from storage into compute on first creation */
+  const copyProjectFiles = async (projectId: string, computer: Computer): Promise<void> => {
+    const prefix = `projects/${projectId}/`
+
+    for await (const entry of config.storage.list(prefix)) {
+      const relativePath = entry.key.slice(prefix.length)
+      if (!relativePath) continue
+
+      const obj = await config.storage.get(entry.key)
+      if (!obj) continue
+
+      const parentDir = relativePath.includes("/")
+        ? relativePath.slice(0, relativePath.lastIndexOf("/"))
+        : null
+
+      if (parentDir) {
+        await computer.files.mkdir(parentDir, { recursive: true }).catch(() => {})
+      }
+
+      await computer.files.write(relativePath, obj.data)
+    }
+  }
+
+  return {
     db: config.db,
     storage: config.storage,
     ai: config.ai,
-    workspacesDir: config.workspacesDir,
 
-    getCompute(workspaceId: string): Computer | undefined {
-      return computeStates.get(workspaceId)?.computer;
+    getCompute(projectId: string): Computer | undefined {
+      return computes.get(projectId)?.computer
     },
 
-    async getOrCreateCompute(
-      workspaceId: string,
-      workingDirectory: string
-    ): Promise<Computer> {
-      // Return existing instance and touch activity
-      const existing = computeStates.get(workspaceId);
+    getTracker(projectId: string): ChangeTracker | undefined {
+      return computes.get(projectId)?.tracker
+    },
+
+    async getOrCreateCompute(projectId: string): Promise<{ computer: Computer; tracker: ChangeTracker }> {
+      const existing = computes.get(projectId)
       if (existing) {
-        existing.lastActivityAt = Date.now();
-        return existing.computer;
+        clearTimeout(existing.idleTimer)
+        existing.idleTimer = scheduleIdle(projectId)
+        return { computer: existing.computer, tracker: existing.tracker }
       }
 
-      // Wait for pending creation if already in progress
-      const pending = pendingCreations.get(workspaceId);
-      if (pending) return pending;
+      const pending = pendingCreations.get(projectId)
+      if (pending) return pending
 
-      // Create new instance
-      const creationPromise = (async () => {
+      const promise = (async () => {
         try {
-          log.debug("Creating compute", { workspaceId });
-          const computer = await config.computeFactory(
-            workspaceId,
-            workingDirectory
-          );
+          log.debug("Creating compute", { projectId })
+          const computer = await config.computeFactory(projectId)
 
-          computeStates.set(workspaceId, {
+          // Copy project files from storage into compute
+          await copyProjectFiles(projectId, computer)
+
+          const tracker = createChangeTracker({
             computer,
-            lastActivityAt: Date.now(),
-          });
-
-          // Start idle checker if this is the first compute
-          if (computeStates.size === 1) {
-            startIdleChecker();
-          }
-
-          log.debug("Compute ready", { workspaceId });
-          return computer;
+            storage: config.storage,
+            projectId,
+          })
+          computes.set(projectId, { computer, tracker, idleTimer: scheduleIdle(projectId) })
+          log.debug("Compute ready", { projectId })
+          return { computer, tracker }
         } finally {
-          pendingCreations.delete(workspaceId);
+          pendingCreations.delete(projectId)
         }
-      })();
+      })()
 
-      pendingCreations.set(workspaceId, creationPromise);
-      return creationPromise;
+      pendingCreations.set(projectId, promise)
+      return promise
     },
 
-    touchCompute(workspaceId: string, source: ActivitySource): void {
-      const state = computeStates.get(workspaceId);
+    touchCompute(projectId: string): void {
+      const state = computes.get(projectId)
       if (state) {
-        state.lastActivityAt = Date.now();
-        log.debug("Activity", { workspaceId, source });
+        clearTimeout(state.idleTimer)
+        state.idleTimer = scheduleIdle(projectId)
       }
     },
 
-    async disposeCompute(workspaceId: string): Promise<void> {
-      const state = computeStates.get(workspaceId);
-      if (!state) return;
-
-      log.debug("Disposing compute", { workspaceId });
-      await state.computer.dispose();
-      computeStates.delete(workspaceId);
-
-      // Stop idle checker if no more computes
-      if (computeStates.size === 0) {
-        stopIdleChecker();
-      }
+    async disposeCompute(projectId: string): Promise<void> {
+      await cleanup(projectId)
     },
 
     async dispose(): Promise<void> {
-      stopIdleChecker();
-
-      // Dispose all compute instances
-      for (const [workspaceId, state] of computeStates) {
-        log.debug("Disposing compute", { workspaceId });
-        await state.computer.dispose();
+      const projectIds = Array.from(computes.keys())
+      if (projectIds.length > 0) {
+        log.info("Shutting down compute instances", { count: projectIds.length })
       }
-      computeStates.clear();
-
-      await config.db.dispose();
-      if (config.storage.dispose) {
-        await config.storage.dispose();
+      for (const projectId of projectIds) {
+        await cleanup(projectId)
       }
+      await config.db.dispose()
+      await config.storage.dispose?.()
     },
-  };
-
-  return ctx;
+  }
 }
 
-/** Helper to run a function with context, ensuring cleanup on error */
-export async function withContext<T>(
-  ctx: Context,
-  fn: (ctx: Context) => Promise<T>
-): Promise<T> {
+export async function withContext<T>(ctx: Context, fn: (ctx: Context) => Promise<T>): Promise<T> {
   try {
-    return await fn(ctx);
+    return await fn(ctx)
   } finally {
-    await ctx.dispose();
+    await ctx.dispose()
   }
 }

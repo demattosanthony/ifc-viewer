@@ -2,21 +2,27 @@
  * Shell Tools
  *
  * AI tools for shell command execution.
+ * Automatically detects file changes after command execution via snapshot diff.
  */
 
 import { tool } from "ai"
 import { z } from "zod"
-import type { TerminalSession, AIEvent } from "@ifc-viewer/core"
+import type { TerminalSession, AIEvent, ChangeTracker } from "@ifc-viewer/core"
 import { getErrorMessage } from "../utils"
 
 const MARKER_PREFIX = "<<CMD_DONE:"
 const MARKER_SUFFIX = ">>"
 const MARKER_REGEX = /<<CMD_DONE:(-?\d+)>>/
 
-export function createShellTools(
-  getTerminal: () => Promise<TerminalSession>,
+export interface ShellToolsOptions {
+  getTerminal: () => Promise<TerminalSession>
+  changeTracker: ChangeTracker
   emit: (event: AIEvent) => void
-) {
+}
+
+export function createShellTools(options: ShellToolsOptions) {
+  const { getTerminal, changeTracker, emit } = options
+
   return {
     executeCommand: tool({
       description: `Execute a shell command in the terminal.
@@ -35,6 +41,9 @@ Commands run sequentially and share environment/state between calls.`,
         try {
           emit({ type: "terminal-focus" })
           emit({ type: "terminal-execute" })
+
+          // Snapshot file state before command
+          const beforeSnapshot = await changeTracker.snapshot()
 
           const terminal = await getTerminal()
           const marker = `${MARKER_PREFIX}$?${MARKER_SUFFIX}`
@@ -112,11 +121,25 @@ Commands run sequentially and share environment/state between calls.`,
 
           const result = await outputPromise
 
+          // Detect file changes after command completes
+          const changes = await changeTracker.detectChanges(beforeSnapshot)
+          for (const change of changes) {
+            // Sync to storage immediately so file browser can see changes
+            await changeTracker.sync(change)
+            // Emit events for UI updates
+            if (change.type === "create" || change.type === "update") {
+              emit({ type: "file-created", path: change.path })
+            } else if (change.type === "delete") {
+              emit({ type: "file-deleted", path: change.path })
+            }
+          }
+
           return {
             success: result.exitCode === 0,
             output: result.output,
             exitCode: result.exitCode,
             command,
+            filesChanged: changes.length,
           }
         } catch (error) {
           const errorMessage = getErrorMessage(error)

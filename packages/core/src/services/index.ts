@@ -12,24 +12,28 @@ export {
 } from "./project.service"
 
 export {
-  createWorkspaceWithFiles,
-  getWorkspaceWithCompute,
-  stopWorkspaceWithSync,
-  deleteWorkspace,
-  type CreateWorkspaceInput,
-} from "./workspace.service"
-
-export {
-  normalizeStoragePath,
-  buildStorageKey,
-  deleteStoragePrefix,
-  createStorageSyncCallbacks,
-  type StorageSyncOptions,
-  type StorageSyncCallbacks,
-} from "./storage-sync"
+  createChangeTracker,
+  type ChangeTracker,
+  type FileChange,
+  type FileSnapshot,
+  type ChangeType,
+  type ChangeSource,
+  type CreateChangeTrackerOptions,
+} from "./change-tracker"
 
 export {
   runAgentChat,
   type AgentChatInput,
   type AgentChatResult,
 } from "./agent.service"
+
+export {
+  uploadModel,
+  getModelWithData,
+  listProjectModels,
+  updateModel,
+  deleteModel,
+  deleteProjectModels,
+  type UploadModelInput,
+  type UpdateModelInput,
+} from "./model.service"

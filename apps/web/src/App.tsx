@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useCallback, useRef } from "react";
 import {
   useViewer,
   useViewerEvents,
@@ -7,13 +6,8 @@ import {
   ViewerProvider,
   type ElementSelectedEvent,
 } from "@ifc-viewer/viewer";
-import { createWorkspaceMutation } from "@ifc-viewer/sdk/hooks";
-import { getWorkspace } from "@ifc-viewer/sdk";
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
-import Terminal, {
-  type TerminalHandle,
-} from "@/features/terminal/components/terminal";
 import {
   FileBrowser,
   type FileBrowserHandle,
@@ -24,8 +18,8 @@ import { EditorProvider, useEditor } from "@/features/editor/context";
 import { AgentProvider } from "@/features/agent/context";
 import { useAgentPresence } from "@/features/agent/hooks/use-agent-presence";
 import { ChatPanel } from "@/features/agent/components/chat-panel";
+import { Terminal } from "@/features/terminal";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
-import "@xterm/xterm/css/xterm.css";
 import { ThemeProvider } from "./shared/components/theme-provider";
 
 interface SelectedElement {
@@ -33,45 +27,32 @@ interface SelectedElement {
 }
 
 interface MainContentProps {
-  workspaceId: string;
+  projectId: string;
   showSidebar: boolean;
   showTerminal: boolean;
   showChat: boolean;
-  terminalRef: React.RefObject<TerminalHandle | null>;
   fileBrowserRef: React.RefObject<FileBrowserHandle | null>;
   onToggleSidebar: () => void;
   onToggleTerminal: () => void;
   onToggleChat: () => void;
-  onShowTerminal: () => void;
 }
 
 function MainContent({
-  workspaceId,
+  projectId,
   showSidebar,
   showTerminal,
   showChat,
-  terminalRef,
   fileBrowserRef,
   onToggleSidebar,
   onToggleTerminal,
   onToggleChat,
-  onShowTerminal,
 }: MainContentProps) {
   const { getElement } = useViewer();
   const { tabs, activeTabId } = useEditor();
   const [selectedElement, setSelectedElement] =
     useState<SelectedElement | null>(null);
 
-  useAgentPresence({ terminalRef, fileBrowserRef, onShowTerminal });
-
-  const { size: terminalHeight, handleResizeStart: handleTerminalResizeStart } =
-    useResizable({
-      initialSize: 300,
-      minSize: 150,
-      maxSize: typeof window !== "undefined" ? window.innerHeight - 200 : 600,
-      direction: "vertical",
-      side: "bottom",
-    });
+  useAgentPresence({ fileBrowserRef });
 
   const { size: chatWidth, handleResizeStart: handleChatResizeStart } =
     useResizable({
@@ -80,6 +61,15 @@ function MainContent({
       maxSize: 600,
       direction: "horizontal",
       side: "right",
+    });
+
+  const { size: terminalHeight, handleResizeStart: handleTerminalResizeStart } =
+    useResizable({
+      initialSize: 250,
+      minSize: 120,
+      maxSize: 500,
+      direction: "vertical",
+      side: "bottom",
     });
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -141,7 +131,7 @@ function MainContent({
             {/* Code Editor / Other content - layered on top when active */}
             {!isIfcActive && activeTab && (
               <div className="absolute inset-0 z-10">
-                <EditorPane workspaceId={workspaceId} />
+                <EditorPane projectId={projectId} />
               </div>
             )}
 
@@ -158,24 +148,22 @@ function MainContent({
             )}
 
             {/* IFC Loader - triggers model loading when IFC tab is active */}
-            {isIfcActive && <EditorPane workspaceId={workspaceId} />}
+            {isIfcActive && <EditorPane projectId={projectId} />}
           </div>
 
+          {/* Terminal Panel */}
           {showTerminal && (
-            <div className="relative" style={{ height: terminalHeight }}>
+            <div
+              className="relative shrink-0"
+              style={{ height: terminalHeight }}
+            >
               <div
                 onMouseDown={handleTerminalResizeStart}
                 className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize z-20 group"
               >
                 <div className="absolute inset-x-0 top-0 h-0.5 group-hover:h-1 bg-border group-hover:bg-primary transition-colors" />
               </div>
-              <div className="h-full">
-                <Terminal
-                  ref={terminalRef}
-                  workspaceId={workspaceId}
-                  onClose={onToggleTerminal}
-                />
-              </div>
+              <Terminal projectId={projectId} onClose={onToggleTerminal} />
             </div>
           )}
         </div>
@@ -204,109 +192,33 @@ function MainContent({
 }
 
 const PROJECT_ID = "sample-project";
-const WORKSPACE_STORAGE_KEY = `ifc-viewer:workspace:${PROJECT_ID}`;
 
 function Home() {
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
-  const [showTerminal, setShowTerminal] = useState(true);
+  const [showTerminal, setShowTerminal] = useState(false);
   const [showChat, setShowChat] = useState(true);
-  const initStartedRef = useRef(false);
-  const terminalRef = useRef<TerminalHandle | null>(null);
   const fileBrowserRef = useRef<FileBrowserHandle | null>(null);
-
-  const workspaceMutation = useMutation({
-    ...createWorkspaceMutation(),
-    onSuccess: (data) => {
-      setWorkspaceId(data.id);
-      sessionStorage.setItem(WORKSPACE_STORAGE_KEY, data.id);
-    },
-    onError: (error) => {
-      console.error("Failed to create workspace:", error);
-    },
-  });
-
-  const handleShowTerminal = useCallback(() => {
-    setShowTerminal(true);
-  }, []);
-
-  useEffect(() => {
-    // Prevent double initialization in React StrictMode
-    if (initStartedRef.current) return;
-    initStartedRef.current = true;
-
-    const initWorkspace = async () => {
-      // Check sessionStorage for existing workspace
-      const storedWorkspaceId = sessionStorage.getItem(WORKSPACE_STORAGE_KEY);
-
-      if (storedWorkspaceId) {
-        try {
-          // Try to fetch the existing workspace
-          const { data, error } = await getWorkspace({
-            path: { id: storedWorkspaceId },
-          });
-
-          if (data && !error && data.status === "active") {
-            // Workspace exists and is active, reuse it
-            console.log(`[App] Reconnecting to workspace ${storedWorkspaceId}`);
-            setWorkspaceId(storedWorkspaceId);
-            return;
-          }
-        } catch {
-          // Workspace not found or error, will create new one
-          console.log(`[App] Stored workspace ${storedWorkspaceId} not available`);
-        }
-
-        // Clear stale workspace ID
-        sessionStorage.removeItem(WORKSPACE_STORAGE_KEY);
-      }
-
-      // No valid workspace found, create a new one
-      console.log("[App] Creating new workspace");
-      workspaceMutation.mutate({
-        body: { projectId: PROJECT_ID },
-      });
-    };
-
-    initWorkspace();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (!workspaceId) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-foreground gap-4">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin" />
-          <span className="text-muted-foreground text-sm">
-            Initializing workspace...
-          </span>
-        </div>
-      </div>
-    );
-  }
 
   const projectId = PROJECT_ID;
 
   return (
-    <EditorProvider initialFile="sample.ifc">
-      <AgentProvider projectId={projectId} workspaceId={workspaceId}>
+    <EditorProvider initialFile="models/sample.ifc">
+      <AgentProvider projectId={projectId}>
         <div className="h-screen w-screen bg-background flex overflow-hidden">
           <FileBrowser
             ref={fileBrowserRef}
-            workspaceId={workspaceId}
+            projectId={projectId}
             visible={showSidebar}
           />
           <MainContent
-            workspaceId={workspaceId}
+            projectId={projectId}
             showSidebar={showSidebar}
             showTerminal={showTerminal}
             showChat={showChat}
-            terminalRef={terminalRef}
             fileBrowserRef={fileBrowserRef}
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
             onToggleTerminal={() => setShowTerminal(!showTerminal)}
             onToggleChat={() => setShowChat(!showChat)}
-            onShowTerminal={handleShowTerminal}
           />
         </div>
       </AgentProvider>

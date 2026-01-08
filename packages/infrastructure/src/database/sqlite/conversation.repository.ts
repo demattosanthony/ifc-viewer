@@ -1,17 +1,18 @@
 import { eq, desc } from "drizzle-orm"
-import { NotFoundError, generateId } from "@ifc-viewer/core"
+import { NotFoundError, generateId, ConversationSchema } from "@ifc-viewer/core"
 import type { Conversation, ConversationRepository } from "@ifc-viewer/core"
 import { conversations, type ConversationRow } from "./schema"
 import type { DrizzleDB, DrizzleTransaction } from "./db"
 
-const rowToEntity = (row: ConversationRow): Conversation => ({
-  id: row.id,
-  projectId: row.projectId,
-  title: row.title,
-  status: row.status,
-  createdAt: row.createdAt,
-  updatedAt: row.updatedAt,
-})
+const rowToEntity = (row: ConversationRow): Conversation =>
+  ConversationSchema.parse({
+    id: row.id,
+    projectId: row.projectId,
+    title: row.title,
+    status: row.status,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  })
 
 export function createConversationRepository(db: DrizzleDB | DrizzleTransaction): ConversationRepository {
   return {

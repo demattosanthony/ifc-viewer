@@ -1,34 +1,72 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useViewer } from "@ifc-viewer/viewer";
-import { readFile } from "@ifc-viewer/sdk";
-import { readFileQueryKey } from "@ifc-viewer/sdk/hooks";
+import { listModels, readProjectFile } from "@ifc-viewer/sdk";
+import { listModelsQueryKey } from "@ifc-viewer/sdk/hooks";
+
+/** Get the API base URL for direct fetch calls */
+function getApiBaseUrl(): string {
+  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  return "http://localhost:3000";
+}
 
 export interface IFCViewerProps {
-  workspaceId: string;
+  projectId: string;
   filePath: string;
 }
 
-export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
+export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
   const { loadModel, unloadAllModels, isInitialized } = useViewer();
   const loadedPathRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Query for IFC file content
-  const contentQuery = useQuery({
-    queryKey: readFileQueryKey({
-      path: { id: workspaceId },
-      query: { path: filePath },
-    }),
+  // Query for models list to find the model by filePath
+  const modelsQuery = useQuery({
+    queryKey: listModelsQueryKey({ path: { id: projectId } }),
     queryFn: async () => {
-      const { data } = await readFile({
-        path: { id: workspaceId },
-        query: { path: filePath },
-      });
-      return data ?? undefined;
+      const { data } = await listModels({ path: { id: projectId } });
+      return data ?? [];
     },
-    enabled: isInitialized && loadedPathRef.current !== filePath,
+    staleTime: 60_000, // Models list changes infrequently
+  });
+
+  // Find the model matching this filePath
+  const model = useMemo(() => {
+    if (!modelsQuery.data) return null;
+    return modelsQuery.data.find((m) => m.filePath === filePath) ?? null;
+  }, [modelsQuery.data, filePath]);
+
+  // Query for IFC file content - uses Models API if model is found, else falls back to file API
+  const contentQuery = useQuery({
+    queryKey: ["ifc-content", projectId, filePath, model?.id],
+    queryFn: async () => {
+      if (model) {
+        // Use Models API - fetch raw binary directly
+        // Note: Using fetch() directly here as it returns binary data (not JSON)
+        const response = await fetch(
+          `${getApiBaseUrl()}/api/projects/${projectId}/models/${model.id}/file`
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch model file: ${response.statusText}`);
+        }
+        const buffer = await response.arrayBuffer();
+        return { type: "binary" as const, buffer };
+      } else {
+        // Fall back to file API for unregistered IFC files
+        const { data } = await readProjectFile({
+          path: { id: projectId },
+          query: { path: filePath },
+        });
+        return { type: "file-api" as const, data };
+      }
+    },
+    enabled:
+      isInitialized &&
+      loadedPathRef.current !== filePath &&
+      modelsQuery.isSuccess,
     staleTime: Infinity, // IFC files are large, don't refetch
   });
 
@@ -46,19 +84,24 @@ export function IFCViewer({ workspaceId, filePath }: IFCViewerProps) {
       try {
         await unloadAllModels();
 
-        const data = contentQuery.data;
+        const result = contentQuery.data;
         let buffer: ArrayBuffer;
 
-        if (data?.type === "binary") {
-          const binary = atob(data?.content ?? "");
+        if (result.type === "binary") {
+          // Models API returns ArrayBuffer directly
+          buffer = result.buffer;
+        } else if (result.data?.type === "binary") {
+          // File API returns base64 encoded binary
+          const binary = atob(result.data.content ?? "");
           buffer = new ArrayBuffer(binary.length);
           const view = new Uint8Array(buffer);
           for (let i = 0; i < binary.length; i++) {
             view[i] = binary.charCodeAt(i);
           }
         } else {
+          // File API returns text content
           const encoder = new TextEncoder();
-          buffer = encoder.encode(data?.content ?? "").buffer;
+          buffer = encoder.encode(result.data?.content ?? "").buffer;
         }
 
         const filename = filePath.split("/").pop() || "model.ifc";

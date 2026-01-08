@@ -18,10 +18,10 @@ export {
 // Controllers
 export {
   ProjectController,
-  WorkspaceController,
-  FilesController,
+  ProjectFilesController,
   ConversationController,
-  AgentController, // Alias for backward compatibility
+  AgentController,
+  ModelController,
 } from "./controllers"
 
 // SSE utilities

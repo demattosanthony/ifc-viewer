@@ -1,159 +1,107 @@
+/**
+ * Terminal WebSocket Routes
+ *
+ * Provides WebSocket-based terminal access to project compute instances.
+ * Creates compute on-demand when terminal is opened, keeps it alive while in use.
+ */
+
 import { Elysia, t } from "elysia"
 import type { Context, TerminalServerEvent, TerminalClientMessage } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
 
 const log = createLogger("terminal")
 
-interface TerminalWSData {
-  query: { workspaceId: string }
-  terminalId?: string
-  unsubData?: () => void
-  unsubExit?: () => void
-}
+/** Send typed event to WebSocket */
+const send = (ws: { send: (data: string) => void }, event: TerminalServerEvent) =>
+  ws.send(JSON.stringify(event))
 
 export function terminalRoutes(ctx: Context) {
   return new Elysia({ prefix: "/ws" }).ws("/terminal", {
-    query: t.Object({
-      workspaceId: t.String(),
-    }),
+    query: t.Object({ projectId: t.String() }),
 
     async open(ws) {
-      const data = ws.data as TerminalWSData
-      const workspaceId = data.query.workspaceId
+      const { projectId } = ws.data.query
+      let terminalId: string | undefined
+      let unsubData: (() => void) | undefined
+      let unsubExit: (() => void) | undefined
+
+      log.debug("Terminal connection opened", { projectId })
 
       try {
-        const workspace = await ctx.db.workspaces.findById(workspaceId)
-        if (!workspace) {
-          ws.send(
-            JSON.stringify({
-              type: "error",
-              message: "Workspace not found",
-            } satisfies TerminalServerEvent)
-          )
-          ws.close()
-          return
+        const project = await ctx.db.projects.findById(projectId)
+        if (!project) {
+          send(ws, { type: "error", message: "Project not found" })
+          return ws.close()
         }
 
-        const computer = await ctx.getOrCreateCompute(workspace.id, workspace.workingDirectory)
+        const { computer } = await ctx.getOrCreateCompute(projectId)
         const terminal = await computer.createTerminal()
-        data.terminalId = terminal.id
+        terminalId = terminal.id
 
-        data.unsubData = terminal.onData((output: string) => {
+        // Store cleanup functions on ws.data for close handler
+        ;(ws.data as Record<string, unknown>).terminalId = terminalId
+
+        unsubData = terminal.onData((data) => {
           if (ws.readyState === 1) {
-            const cleanData = output.replace(/\x1b\[\?1034h/g, "")
-            ws.send(
-              JSON.stringify({
-                type: "output",
-                data: cleanData,
-              } satisfies TerminalServerEvent)
-            )
+            send(ws, { type: "output", data: data.replace(/\x1b\[\?1034h/g, "") })
           }
         })
+        ;(ws.data as Record<string, unknown>).unsubData = unsubData
 
-        data.unsubExit = terminal.onExit((code: number) => {
+        unsubExit = terminal.onExit((code) => {
           if (ws.readyState === 1) {
-            ws.send(
-              JSON.stringify({
-                type: "exit",
-                code,
-              } satisfies TerminalServerEvent)
-            )
+            send(ws, { type: "exit", code })
             ws.close()
           }
         })
+        ;(ws.data as Record<string, unknown>).unsubExit = unsubExit
 
-        ws.send(
-          JSON.stringify({
-            type: "ready",
-            terminalId: terminal.id,
-          } satisfies TerminalServerEvent)
-        )
+        send(ws, { type: "ready", terminalId })
       } catch (error) {
-        ws.send(
-          JSON.stringify({
-            type: "error",
-            message: error instanceof Error ? error.message : "Failed to create terminal",
-          } satisfies TerminalServerEvent)
-        )
+        log.error("Failed to create terminal", { projectId, error })
+        send(ws, { type: "error", message: error instanceof Error ? error.message : "Failed to create terminal" })
         ws.close()
       }
     },
 
     async message(ws, rawMessage) {
-      const data = ws.data as TerminalWSData
-      const workspaceId = data.query.workspaceId
-      const terminalId = data.terminalId
+      const { projectId } = ws.data.query
+      const terminalId = (ws.data as Record<string, unknown>).terminalId as string | undefined
 
-      if (!terminalId) {
-        ws.send(
-          JSON.stringify({
-            type: "error",
-            message: "Terminal not initialized",
-          } satisfies TerminalServerEvent)
-        )
-        return
-      }
+      if (!terminalId) return send(ws, { type: "error", message: "Terminal not initialized" })
 
-      const computer = ctx.getCompute(workspaceId)
-      if (!computer) {
-        ws.send(
-          JSON.stringify({
-            type: "error",
-            message: "Workspace compute not found",
-          } satisfies TerminalServerEvent)
-        )
-        return
-      }
+      const computer = ctx.getCompute(projectId)
+      if (!computer) return send(ws, { type: "error", message: "Compute not found" })
 
       const terminal = computer.getTerminal(terminalId)
-      if (!terminal) {
-        ws.send(
-          JSON.stringify({
-            type: "error",
-            message: "Terminal not found",
-          } satisfies TerminalServerEvent)
-        )
-        return
-      }
+      if (!terminal) return send(ws, { type: "error", message: "Terminal not found" })
 
       try {
-        let message: TerminalClientMessage
-        if (typeof rawMessage === "object" && rawMessage !== null && !Buffer.isBuffer(rawMessage)) {
-          message = rawMessage as TerminalClientMessage
-        } else {
-          const messageStr =
-            typeof rawMessage === "string"
-              ? rawMessage
-              : rawMessage instanceof Buffer
-                ? rawMessage.toString()
-                : String(rawMessage)
-          message = JSON.parse(messageStr)
-        }
+        const message = (typeof rawMessage === "string" ? JSON.parse(rawMessage) : rawMessage) as TerminalClientMessage
 
         if (message.type === "input" && message.data) {
-          ctx.touchCompute(workspaceId, "terminal")
+          ctx.touchCompute(projectId)
           await terminal.write(message.data)
         } else if (message.type === "resize" && message.cols && message.rows) {
           terminal.resize(message.cols, message.rows)
         }
       } catch (error) {
-        log.error("Error processing message", { error })
+        log.error("Error processing terminal message", { projectId, error })
       }
     },
 
     async close(ws) {
-      const data = ws.data as TerminalWSData
-      const workspaceId = data.query.workspaceId
-      const terminalId = data.terminalId
+      const { projectId } = ws.data.query
+      const data = ws.data as Record<string, unknown>
+      const terminalId = data.terminalId as string | undefined
 
-      data.unsubData?.()
-      data.unsubExit?.()
+      log.debug("Terminal connection closed", { projectId, terminalId })
+
+      ;(data.unsubData as (() => void) | undefined)?.()
+      ;(data.unsubExit as (() => void) | undefined)?.()
 
       if (terminalId) {
-        const computer = ctx.getCompute(workspaceId)
-        if (computer) {
-          await computer.disposeTerminal(terminalId)
-        }
+        await ctx.getCompute(projectId)?.disposeTerminal(terminalId)
       }
     },
   })

@@ -8,13 +8,12 @@ import { describe, test, expect } from "bun:test"
 import {
   createProject,
   isValidProjectId,
-  isWorkspaceActive,
   isConversationActive,
   isUserMessage,
   isAssistantMessage,
   isSystemMessage,
 } from "../../src/domain"
-import type { Workspace, Conversation, Message } from "../../src/domain"
+import type { Conversation, Message } from "../../src/domain"
 
 describe("Project Entity", () => {
   describe("createProject", () => {
@@ -78,34 +77,6 @@ describe("Project Entity", () => {
       expect(isValidProjectId("MyProject")).toBe(false)
       expect(isValidProjectId("")).toBe(false)
       expect(isValidProjectId("my--project")).toBe(false)
-    })
-  })
-})
-
-describe("Workspace Entity", () => {
-  describe("isWorkspaceActive", () => {
-    const createWorkspace = (status: Workspace["status"]): Workspace => ({
-      id: "ws-123",
-      projectId: "project",
-      status,
-      workingDirectory: "/tmp/workspaces/ws-123",
-      createdAt: new Date(),
-      lastAccessedAt: new Date(),
-    })
-
-    test("returns true for 'active' status", () => {
-      const ws = createWorkspace("active")
-      expect(isWorkspaceActive(ws)).toBe(true)
-    })
-
-    test("returns true for 'idle' status", () => {
-      const ws = createWorkspace("idle")
-      expect(isWorkspaceActive(ws)).toBe(true)
-    })
-
-    test("returns false for 'stopped' status", () => {
-      const ws = createWorkspace("stopped")
-      expect(isWorkspaceActive(ws)).toBe(false)
     })
   })
 })

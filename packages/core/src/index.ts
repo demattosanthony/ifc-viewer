@@ -13,7 +13,10 @@
  * ## Domain Model
  *
  * Project (persistent) -> Conversation -> Message
- *                      -> Workspace (ephemeral compute)
+ *                      -> Model (IFC file metadata)
+ *
+ * Compute is ephemeral - created on-demand when AI chat starts,
+ * disposed after 5 minutes of inactivity.
  *
  * ## Usage Pattern
  *
@@ -35,12 +38,6 @@ export {
   ProjectSchema,
   createProject,
   isValidProjectId,
-  // Workspace
-  type Workspace,
-  type WorkspaceStatus,
-  WorkspaceSchema,
-  WorkspaceStatusSchema,
-  isWorkspaceActive,
   // Conversation
   type Conversation,
   type ConversationStatus,
@@ -55,13 +52,25 @@ export {
   isUserMessage,
   isAssistantMessage,
   isSystemMessage,
+  // Model
+  type Model,
+  type ModelDiscipline,
+  ModelSchema,
+  ModelDisciplineSchema,
+  getModelStorageKey,
+  inferDiscipline,
 } from "./domain"
 
 // Domain Layer - Value Objects
 export { Slug } from "./domain/value-objects"
 
 // Utilities
-export { generateId } from "./utils"
+export {
+  generateId,
+  normalizeStoragePath,
+  buildStorageKey,
+  deleteStoragePrefix,
+} from "./utils"
 
 // Domain Layer - Agent Types
 export type {
@@ -89,23 +98,30 @@ export {
 
 // Application Services
 export {
+  // Project
   createProjectWithStorage,
-  createWorkspaceWithFiles,
-  getWorkspaceWithCompute,
-  stopWorkspaceWithSync,
-  deleteWorkspace,
-  runAgentChat,
-  // Storage sync utilities
-  normalizeStoragePath,
-  buildStorageKey,
-  deleteStoragePrefix,
-  createStorageSyncCallbacks,
   type CreateProjectInput,
-  type CreateWorkspaceInput,
+  // Agent
+  runAgentChat,
   type AgentChatInput,
   type AgentChatResult,
-  type StorageSyncOptions,
-  type StorageSyncCallbacks,
+  // Model
+  uploadModel,
+  getModelWithData,
+  listProjectModels,
+  updateModel,
+  deleteModel,
+  deleteProjectModels,
+  type UploadModelInput,
+  type UpdateModelInput,
+  // Change tracking
+  createChangeTracker,
+  type ChangeTracker,
+  type FileChange,
+  type FileSnapshot,
+  type ChangeType,
+  type ChangeSource,
+  type CreateChangeTrackerOptions,
 } from "./services"
 
 // Ports - Infrastructure Interfaces
@@ -114,9 +130,9 @@ export type {
   Database,
   UnitOfWork,
   ProjectRepository,
-  WorkspaceRepository,
   ConversationRepository,
   MessageRepository,
+  ModelRepository,
   // Storage
   Storage,
   StorageInput,
@@ -177,7 +193,7 @@ export type {
   AIStopMessage,
   AIApproveToolMessage,
   AIRejectToolMessage,
-  // Terminal WebSocket events
+  // Terminal WebSocket events (internal - used by compute system)
   TerminalServerEvent,
   TerminalReadyEvent,
   TerminalDataEvent,
@@ -195,6 +211,4 @@ export {
   type Context,
   type ContextConfig,
   type ComputeFactory,
-  type OnWorkspaceIdle,
-  type ActivitySource,
 } from "./context"

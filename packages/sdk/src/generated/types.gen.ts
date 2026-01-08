@@ -196,64 +196,16 @@ export type UpdateProjectResponses = {
 
 export type UpdateProjectResponse = UpdateProjectResponses[keyof UpdateProjectResponses];
 
-export type ListProjectWorkspacesData = {
+export type ListModelsData = {
     body?: never;
     path: {
         id: string;
     };
     query?: never;
-    url: '/api/projects/{id}/workspaces';
+    url: '/api/projects/{id}/models/';
 };
 
-export type ListProjectWorkspacesResponses = {
-    /**
-     * Response for status 200
-     */
-    200: Array<{
-        id: string;
-        projectId: string;
-        status: 'active' | 'idle' | 'stopped';
-        workingDirectory: string;
-        createdAt: string;
-        lastAccessedAt: string;
-    }>;
-};
-
-export type ListProjectWorkspacesResponse = ListProjectWorkspacesResponses[keyof ListProjectWorkspacesResponses];
-
-export type ListWorkspacesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/workspaces/';
-};
-
-export type ListWorkspacesResponses = {
-    /**
-     * Response for status 200
-     */
-    200: Array<{
-        id: string;
-        projectId: string;
-        status: 'active' | 'idle' | 'stopped';
-        workingDirectory: string;
-        createdAt: string;
-        lastAccessedAt: string;
-    }>;
-};
-
-export type ListWorkspacesResponse = ListWorkspacesResponses[keyof ListWorkspacesResponses];
-
-export type CreateWorkspaceData = {
-    body: {
-        projectId: string;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/workspaces/';
-};
-
-export type CreateWorkspaceErrors = {
+export type ListModelsErrors = {
     /**
      * Response for status 404
      */
@@ -262,57 +214,87 @@ export type CreateWorkspaceErrors = {
     };
 };
 
-export type CreateWorkspaceError = CreateWorkspaceErrors[keyof CreateWorkspaceErrors];
+export type ListModelsError = ListModelsErrors[keyof ListModelsErrors];
 
-export type CreateWorkspaceResponses = {
+export type ListModelsResponses = {
+    /**
+     * Response for status 200
+     */
+    200: Array<{
+        id: string;
+        projectId: string;
+        name: string;
+        discipline: 'architecture' | 'structure' | 'mep' | 'site' | 'other';
+        filePath: string;
+        fileSize: number;
+        visible: boolean;
+        createdAt: string;
+        updatedAt: string;
+    }>;
+};
+
+export type ListModelsResponse = ListModelsResponses[keyof ListModelsResponses];
+
+export type UploadModelData = {
+    body: {
+        file: unknown;
+        name?: string;
+        discipline?: 'architecture' | 'structure' | 'mep' | 'site' | 'other';
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/projects/{id}/models/';
+};
+
+export type UploadModelErrors = {
+    /**
+     * Response for status 400
+     */
+    400: {
+        error: string;
+    };
+    /**
+     * Response for status 404
+     */
+    404: {
+        error: string;
+    };
+};
+
+export type UploadModelError = UploadModelErrors[keyof UploadModelErrors];
+
+export type UploadModelResponses = {
     /**
      * Response for status 200
      */
     200: {
         id: string;
         projectId: string;
-        status: 'active' | 'idle' | 'stopped';
-        workingDirectory: string;
+        name: string;
+        discipline: 'architecture' | 'structure' | 'mep' | 'site' | 'other';
+        filePath: string;
+        fileSize: number;
+        visible: boolean;
         createdAt: string;
-        lastAccessedAt: string;
+        updatedAt: string;
     };
 };
 
-export type CreateWorkspaceResponse = CreateWorkspaceResponses[keyof CreateWorkspaceResponses];
+export type UploadModelResponse = UploadModelResponses[keyof UploadModelResponses];
 
-export type ListActiveWorkspacesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/workspaces/active';
-};
-
-export type ListActiveWorkspacesResponses = {
-    /**
-     * Response for status 200
-     */
-    200: Array<{
-        id: string;
-        projectId: string;
-        status: 'active' | 'idle' | 'stopped';
-        workingDirectory: string;
-        createdAt: string;
-        lastAccessedAt: string;
-    }>;
-};
-
-export type ListActiveWorkspacesResponse = ListActiveWorkspacesResponses[keyof ListActiveWorkspacesResponses];
-
-export type DeleteWorkspaceData = {
+export type DeleteModelData = {
     body?: never;
     path: {
         id: string;
+        modelId: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}';
+    url: '/api/projects/{id}/models/{modelId}';
 };
 
-export type DeleteWorkspaceErrors = {
+export type DeleteModelErrors = {
     /**
      * Response for status 404
      */
@@ -321,9 +303,9 @@ export type DeleteWorkspaceErrors = {
     };
 };
 
-export type DeleteWorkspaceError = DeleteWorkspaceErrors[keyof DeleteWorkspaceErrors];
+export type DeleteModelError = DeleteModelErrors[keyof DeleteModelErrors];
 
-export type DeleteWorkspaceResponses = {
+export type DeleteModelResponses = {
     /**
      * Response for status 200
      */
@@ -332,18 +314,19 @@ export type DeleteWorkspaceResponses = {
     };
 };
 
-export type DeleteWorkspaceResponse = DeleteWorkspaceResponses[keyof DeleteWorkspaceResponses];
+export type DeleteModelResponse = DeleteModelResponses[keyof DeleteModelResponses];
 
-export type GetWorkspaceData = {
+export type GetModelData = {
     body?: never;
     path: {
         id: string;
+        modelId: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}';
+    url: '/api/projects/{id}/models/{modelId}';
 };
 
-export type GetWorkspaceErrors = {
+export type GetModelErrors = {
     /**
      * Response for status 404
      */
@@ -352,34 +335,42 @@ export type GetWorkspaceErrors = {
     };
 };
 
-export type GetWorkspaceError = GetWorkspaceErrors[keyof GetWorkspaceErrors];
+export type GetModelError = GetModelErrors[keyof GetModelErrors];
 
-export type GetWorkspaceResponses = {
+export type GetModelResponses = {
     /**
      * Response for status 200
      */
     200: {
         id: string;
         projectId: string;
-        status: 'active' | 'idle' | 'stopped';
-        workingDirectory: string;
+        name: string;
+        discipline: 'architecture' | 'structure' | 'mep' | 'site' | 'other';
+        filePath: string;
+        fileSize: number;
+        visible: boolean;
         createdAt: string;
-        lastAccessedAt: string;
+        updatedAt: string;
     };
 };
 
-export type GetWorkspaceResponse = GetWorkspaceResponses[keyof GetWorkspaceResponses];
+export type GetModelResponse = GetModelResponses[keyof GetModelResponses];
 
-export type TouchWorkspaceData = {
-    body?: never;
+export type UpdateModelData = {
+    body: {
+        name?: string;
+        discipline?: 'architecture' | 'structure' | 'mep' | 'site' | 'other';
+        visible?: boolean;
+    };
     path: {
         id: string;
+        modelId: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}/touch';
+    url: '/api/projects/{id}/models/{modelId}';
 };
 
-export type TouchWorkspaceErrors = {
+export type UpdateModelErrors = {
     /**
      * Response for status 404
      */
@@ -388,61 +379,38 @@ export type TouchWorkspaceErrors = {
     };
 };
 
-export type TouchWorkspaceError = TouchWorkspaceErrors[keyof TouchWorkspaceErrors];
+export type UpdateModelError = UpdateModelErrors[keyof UpdateModelErrors];
 
-export type TouchWorkspaceResponses = {
+export type UpdateModelResponses = {
     /**
      * Response for status 200
      */
     200: {
         id: string;
         projectId: string;
-        status: 'active' | 'idle' | 'stopped';
-        workingDirectory: string;
+        name: string;
+        discipline: 'architecture' | 'structure' | 'mep' | 'site' | 'other';
+        filePath: string;
+        fileSize: number;
+        visible: boolean;
         createdAt: string;
-        lastAccessedAt: string;
+        updatedAt: string;
     };
 };
 
-export type TouchWorkspaceResponse = TouchWorkspaceResponses[keyof TouchWorkspaceResponses];
+export type UpdateModelResponse = UpdateModelResponses[keyof UpdateModelResponses];
 
-export type StopWorkspaceData = {
+export type GetModelFileData = {
     body?: never;
     path: {
         id: string;
+        modelId: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}/stop';
+    url: '/api/projects/{id}/models/{modelId}/file';
 };
 
-export type StopWorkspaceErrors = {
-    /**
-     * Response for status 404
-     */
-    404: {
-        error: string;
-    };
-};
-
-export type StopWorkspaceError = StopWorkspaceErrors[keyof StopWorkspaceErrors];
-
-export type StopWorkspaceResponses = {
-    /**
-     * Response for status 200
-     */
-    200: {
-        id: string;
-        projectId: string;
-        status: 'active' | 'idle' | 'stopped';
-        workingDirectory: string;
-        createdAt: string;
-        lastAccessedAt: string;
-    };
-};
-
-export type StopWorkspaceResponse = StopWorkspaceResponses[keyof StopWorkspaceResponses];
-
-export type DeleteFileData = {
+export type DeleteProjectFileData = {
     body?: never;
     path: {
         id: string;
@@ -450,14 +418,20 @@ export type DeleteFileData = {
     query: {
         path: string | Array<string>;
     };
-    url: '/api/workspaces/{id}/files/';
+    url: '/api/projects/{id}/files/';
 };
 
-export type DeleteFileErrors = {
+export type DeleteProjectFileErrors = {
     /**
      * Response for status 400
      */
     400: {
+        error: string;
+    };
+    /**
+     * Response for status 404
+     */
+    404: {
         error: string;
     };
     /**
@@ -468,9 +442,9 @@ export type DeleteFileErrors = {
     };
 };
 
-export type DeleteFileError = DeleteFileErrors[keyof DeleteFileErrors];
+export type DeleteProjectFileError = DeleteProjectFileErrors[keyof DeleteProjectFileErrors];
 
-export type DeleteFileResponses = {
+export type DeleteProjectFileResponses = {
     /**
      * Response for status 200
      */
@@ -480,9 +454,9 @@ export type DeleteFileResponses = {
     };
 };
 
-export type DeleteFileResponse = DeleteFileResponses[keyof DeleteFileResponses];
+export type DeleteProjectFileResponse = DeleteProjectFileResponses[keyof DeleteProjectFileResponses];
 
-export type ListFilesData = {
+export type ListProjectFilesData = {
     body?: never;
     path: {
         id: string;
@@ -490,10 +464,10 @@ export type ListFilesData = {
     query?: {
         path?: string | Array<string>;
     };
-    url: '/api/workspaces/{id}/files/';
+    url: '/api/projects/{id}/files/';
 };
 
-export type ListFilesResponses = {
+export type ListProjectFilesResponses = {
     /**
      * Response for status 200
      */
@@ -509,9 +483,9 @@ export type ListFilesResponses = {
     };
 };
 
-export type ListFilesResponse = ListFilesResponses[keyof ListFilesResponses];
+export type ListProjectFilesResponse = ListProjectFilesResponses[keyof ListProjectFilesResponses];
 
-export type ReadFileData = {
+export type ReadProjectFileData = {
     body?: never;
     path: {
         id: string;
@@ -519,10 +493,10 @@ export type ReadFileData = {
     query: {
         path: string | Array<string>;
     };
-    url: '/api/workspaces/{id}/files/content';
+    url: '/api/projects/{id}/files/content';
 };
 
-export type ReadFileErrors = {
+export type ReadProjectFileErrors = {
     /**
      * Response for status 400
      */
@@ -537,9 +511,9 @@ export type ReadFileErrors = {
     };
 };
 
-export type ReadFileError = ReadFileErrors[keyof ReadFileErrors];
+export type ReadProjectFileError = ReadProjectFileErrors[keyof ReadProjectFileErrors];
 
-export type ReadFileResponses = {
+export type ReadProjectFileResponses = {
     /**
      * Response for status 200
      */
@@ -550,9 +524,9 @@ export type ReadFileResponses = {
     };
 };
 
-export type ReadFileResponse = ReadFileResponses[keyof ReadFileResponses];
+export type ReadProjectFileResponse = ReadProjectFileResponses[keyof ReadProjectFileResponses];
 
-export type WriteFileData = {
+export type WriteProjectFileData = {
     body: {
         path: string;
         content: string;
@@ -562,10 +536,16 @@ export type WriteFileData = {
         id: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}/files/content';
+    url: '/api/projects/{id}/files/content';
 };
 
-export type WriteFileErrors = {
+export type WriteProjectFileErrors = {
+    /**
+     * Response for status 404
+     */
+    404: {
+        error: string;
+    };
     /**
      * Response for status 500
      */
@@ -574,9 +554,9 @@ export type WriteFileErrors = {
     };
 };
 
-export type WriteFileError = WriteFileErrors[keyof WriteFileErrors];
+export type WriteProjectFileError = WriteProjectFileErrors[keyof WriteProjectFileErrors];
 
-export type WriteFileResponses = {
+export type WriteProjectFileResponses = {
     /**
      * Response for status 200
      */
@@ -586,9 +566,9 @@ export type WriteFileResponses = {
     };
 };
 
-export type WriteFileResponse = WriteFileResponses[keyof WriteFileResponses];
+export type WriteProjectFileResponse = WriteProjectFileResponses[keyof WriteProjectFileResponses];
 
-export type CreateDirectoryData = {
+export type CreateProjectDirectoryData = {
     body: {
         path: string;
     };
@@ -596,10 +576,16 @@ export type CreateDirectoryData = {
         id: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}/files/directory';
+    url: '/api/projects/{id}/files/directory';
 };
 
-export type CreateDirectoryErrors = {
+export type CreateProjectDirectoryErrors = {
+    /**
+     * Response for status 404
+     */
+    404: {
+        error: string;
+    };
     /**
      * Response for status 500
      */
@@ -608,9 +594,9 @@ export type CreateDirectoryErrors = {
     };
 };
 
-export type CreateDirectoryError = CreateDirectoryErrors[keyof CreateDirectoryErrors];
+export type CreateProjectDirectoryError = CreateProjectDirectoryErrors[keyof CreateProjectDirectoryErrors];
 
-export type CreateDirectoryResponses = {
+export type CreateProjectDirectoryResponses = {
     /**
      * Response for status 200
      */
@@ -620,9 +606,9 @@ export type CreateDirectoryResponses = {
     };
 };
 
-export type CreateDirectoryResponse = CreateDirectoryResponses[keyof CreateDirectoryResponses];
+export type CreateProjectDirectoryResponse = CreateProjectDirectoryResponses[keyof CreateProjectDirectoryResponses];
 
-export type UploadFileData = {
+export type UploadProjectFileData = {
     body: {
         file: Blob | File;
         path: string;
@@ -631,10 +617,10 @@ export type UploadFileData = {
         id: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}/files/upload';
+    url: '/api/projects/{id}/files/upload';
 };
 
-export type UploadFileErrors = {
+export type UploadProjectFileErrors = {
     /**
      * Response for status 400
      */
@@ -655,9 +641,9 @@ export type UploadFileErrors = {
     };
 };
 
-export type UploadFileError = UploadFileErrors[keyof UploadFileErrors];
+export type UploadProjectFileError = UploadProjectFileErrors[keyof UploadProjectFileErrors];
 
-export type UploadFileResponses = {
+export type UploadProjectFileResponses = {
     /**
      * Response for status 200
      */
@@ -667,9 +653,9 @@ export type UploadFileResponses = {
     };
 };
 
-export type UploadFileResponse = UploadFileResponses[keyof UploadFileResponses];
+export type UploadProjectFileResponse = UploadProjectFileResponses[keyof UploadProjectFileResponses];
 
-export type GetPresignedUrlData = {
+export type GetProjectPresignedUrlData = {
     body: {
         path: string;
         contentType?: string;
@@ -678,10 +664,10 @@ export type GetPresignedUrlData = {
         id: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}/files/presigned-url';
+    url: '/api/projects/{id}/files/presigned-url';
 };
 
-export type GetPresignedUrlErrors = {
+export type GetProjectPresignedUrlErrors = {
     /**
      * Response for status 404
      */
@@ -702,9 +688,9 @@ export type GetPresignedUrlErrors = {
     };
 };
 
-export type GetPresignedUrlError = GetPresignedUrlErrors[keyof GetPresignedUrlErrors];
+export type GetProjectPresignedUrlError = GetProjectPresignedUrlErrors[keyof GetProjectPresignedUrlErrors];
 
-export type GetPresignedUrlResponses = {
+export type GetProjectPresignedUrlResponses = {
     /**
      * Response for status 200
      */
@@ -717,9 +703,9 @@ export type GetPresignedUrlResponses = {
     };
 };
 
-export type GetPresignedUrlResponse = GetPresignedUrlResponses[keyof GetPresignedUrlResponses];
+export type GetProjectPresignedUrlResponse = GetProjectPresignedUrlResponses[keyof GetProjectPresignedUrlResponses];
 
-export type ConfirmUploadData = {
+export type ConfirmProjectUploadData = {
     body: {
         path: string;
     };
@@ -727,10 +713,10 @@ export type ConfirmUploadData = {
         id: string;
     };
     query?: never;
-    url: '/api/workspaces/{id}/files/confirm-upload';
+    url: '/api/projects/{id}/files/confirm-upload';
 };
 
-export type ConfirmUploadErrors = {
+export type ConfirmProjectUploadErrors = {
     /**
      * Response for status 404
      */
@@ -745,9 +731,9 @@ export type ConfirmUploadErrors = {
     };
 };
 
-export type ConfirmUploadError = ConfirmUploadErrors[keyof ConfirmUploadErrors];
+export type ConfirmProjectUploadError = ConfirmProjectUploadErrors[keyof ConfirmProjectUploadErrors];
 
-export type ConfirmUploadResponses = {
+export type ConfirmProjectUploadResponses = {
     /**
      * Response for status 200
      */
@@ -757,7 +743,7 @@ export type ConfirmUploadResponses = {
     };
 };
 
-export type ConfirmUploadResponse = ConfirmUploadResponses[keyof ConfirmUploadResponses];
+export type ConfirmProjectUploadResponse = ConfirmProjectUploadResponses[keyof ConfirmProjectUploadResponses];
 
 export type ClearConversationsData = {
     body?: never;
@@ -920,7 +906,6 @@ export type GetConversationResponse = GetConversationResponses[keyof GetConversa
 
 export type SendMessageData = {
     body: {
-        workspaceId: string;
         content: string;
         history?: Array<{
             role: 'user' | 'assistant';

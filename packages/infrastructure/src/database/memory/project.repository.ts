@@ -1,3 +1,4 @@
+import { ProjectSchema } from "@ifc-viewer/core"
 import type { Project, ProjectRepository } from "@ifc-viewer/core"
 
 export function createProjectRepository(): ProjectRepository {
@@ -6,12 +7,12 @@ export function createProjectRepository(): ProjectRepository {
   return {
     async create(input: Project.CreateInput): Promise<Project> {
       const now = new Date()
-      const entity: Project = {
+      const entity = ProjectSchema.parse({
         id: input.id,
         description: input.description ?? null,
         createdAt: now,
         updatedAt: now,
-      }
+      })
       store.set(entity.id, entity)
       return entity
     },
@@ -28,11 +29,11 @@ export function createProjectRepository(): ProjectRepository {
       const existing = store.get(id)
       if (!existing) throw new Error(`Project ${id} not found`)
 
-      const updated: Project = {
+      const updated = ProjectSchema.parse({
         ...existing,
         description: input.description ?? existing.description,
         updatedAt: new Date(),
-      }
+      })
       store.set(id, updated)
       return updated
     },

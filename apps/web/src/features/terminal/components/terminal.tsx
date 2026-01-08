@@ -1,14 +1,15 @@
-import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Terminal as XTerm, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { Minus } from "lucide-react";
+import { Minus, Loader2 } from "lucide-react";
 
 /**
  * Gets the computed value of a CSS variable.
- * Terminal CSS variables should be defined as hex/rgba values in globals.css.
  */
 function getCssVar(varName: string, fallback: string): string {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(varName)
+    .trim();
   return value || fallback;
 }
 
@@ -20,13 +21,11 @@ function isDarkMode(): boolean {
 }
 
 /**
- * Creates an xterm theme from CSS variables defined in globals.css.
- * Falls back to sensible defaults if CSS variables aren't available.
+ * Creates an xterm theme from CSS variables.
  */
 function getTerminalTheme(): ITheme {
   const dark = isDarkMode();
 
-  // Fallback colors for light and dark modes
   const defaults = dark
     ? {
         background: "#121212",
@@ -92,26 +91,15 @@ function getTerminalTheme(): ITheme {
     green: getCssVar("--terminal-green", defaults.green),
     brightGreen: getCssVar("--terminal-bright-green", defaults.brightGreen),
     magenta: getCssVar("--terminal-magenta", defaults.magenta),
-    brightMagenta: getCssVar("--terminal-bright-magenta", defaults.brightMagenta),
+    brightMagenta: getCssVar(
+      "--terminal-bright-magenta",
+      defaults.brightMagenta
+    ),
     red: getCssVar("--terminal-red", defaults.red),
     brightRed: getCssVar("--terminal-bright-red", defaults.brightRed),
     yellow: getCssVar("--terminal-yellow", defaults.yellow),
     brightYellow: getCssVar("--terminal-bright-yellow", defaults.brightYellow),
   };
-}
-
-export interface TerminalHandle {
-  typeText: (text: string, speed?: number) => void;
-  appendText: (text: string) => void; // For streaming - appends without prefix
-  startStreamingCommand: () => void; // Start a new streaming command line
-  execute: () => void;
-  writeOutput: (data: string) => void;
-  focus: () => void;
-}
-
-interface TerminalProps {
-  workspaceId: string;
-  onClose?: () => void;
 }
 
 interface TerminalMessage {
@@ -122,26 +110,18 @@ interface TerminalMessage {
   code?: number;
 }
 
-// Filter out command completion markers from display
-const MARKER_REGEX = /<<CMD_DONE:(-?\d+)>>/g;
-const ECHO_MARKER_REGEX = /; echo ["']<<CMD_DONE:\$\?>>["']/g;
-
-function filterTerminalOutput(data: string): string {
-  // Remove the marker output and the echo command from display
-  return data
-    .replace(ECHO_MARKER_REGEX, "")  // Remove "; echo '<<CMD_DONE:$?>>'" from command line
-    .replace(MARKER_REGEX, "");       // Remove "<<CMD_DONE:0>>" from output
+interface TerminalProps {
+  projectId: string;
+  onClose?: () => void;
 }
 
-const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
-  { workspaceId, onClose },
-  ref
-) {
+type ConnectionState = "connecting" | "connected" | "disconnected" | "error";
+
+export function Terminal({ projectId, onClose }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<XTerm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isStreamingRef = useRef<boolean>(false); // Track if we're in streaming mode
+  const connectionStateRef = useRef<ConnectionState>("disconnected");
 
   const sendResize = useCallback(() => {
     const term = terminalRef.current;
@@ -152,87 +132,11 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
     );
   }, []);
 
-  // Expose methods for AI agent control
-  useImperativeHandle(ref, () => ({
-    typeText: (text: string, speed = 30) => {
-      const term = terminalRef.current;
-      if (!term) return;
-
-      // Clear any existing typing timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      // Show AI indicator and type directly to display (visual only, no execution)
-      term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
-      isStreamingRef.current = false; // Not in streaming mode
-
-      // Type characters one at a time for visual effect
-      let index = 0;
-      const typeChar = () => {
-        if (index < text.length) {
-          const char = text[index];
-          if (char !== undefined) {
-            term.write(char);
-          }
-          index++;
-          typingTimeoutRef.current = setTimeout(typeChar, speed);
-        }
-      };
-      typeChar();
-    },
-    startStreamingCommand: () => {
-      const term = terminalRef.current;
-      if (!term) return;
-
-      // Clear any existing typing timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
-      }
-
-      // Show AI indicator for streaming command
-      term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
-      isStreamingRef.current = true;
-    },
-    appendText: (text: string) => {
-      const term = terminalRef.current;
-      if (!term) return;
-
-      // Start streaming if not already
-      if (!isStreamingRef.current) {
-        term.write("\r\n\x1b[38;5;141m❯ AI: \x1b[0m");
-        isStreamingRef.current = true;
-      }
-
-      // Write text directly without delay
-      term.write(text);
-    },
-    execute: () => {
-      const term = terminalRef.current;
-      if (!term) return;
-      // Just show a newline - execution happens separately via agent's shell
-      term.write("\r\n");
-      isStreamingRef.current = false; // End streaming mode
-    },
-    writeOutput: (data: string) => {
-      const term = terminalRef.current;
-      if (term) {
-        const filtered = filterTerminalOutput(data);
-        if (filtered) term.write(filtered);
-      }
-    },
-    focus: () => {
-      const term = terminalRef.current;
-      if (term) {
-        term.focus();
-      }
-    },
-  }), []);
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container || terminalRef.current) return;
+
+    connectionStateRef.current = "connecting";
 
     const terminal = new XTerm({
       cursorBlink: true,
@@ -248,29 +152,31 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
     terminal.open(container);
     terminalRef.current = terminal;
 
-    // Helper to safely fit the terminal only when container has dimensions
+    // Helper to safely fit the terminal
     const safeFit = () => {
       if (container.offsetWidth > 0 && container.offsetHeight > 0) {
         try {
           fitAddon.fit();
-        } catch (e) {
+        } catch {
           // Ignore fit errors during initialization
         }
       }
     };
 
-    // ResizeObserver handles all resize events (window + container)
+    // ResizeObserver handles all resize events
     const resizeObserver = new ResizeObserver(() => {
       safeFit();
       sendResize();
     });
     resizeObserver.observe(container);
 
-    // Watch for theme changes (dark class toggle on html element)
+    // Watch for theme changes
     const themeObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
-        if (mutation.type === "attributes" && mutation.attributeName === "class") {
-          // Theme changed, update terminal colors
+        if (
+          mutation.type === "attributes" &&
+          mutation.attributeName === "class"
+        ) {
           terminal.options.theme = getTerminalTheme();
         }
       }
@@ -280,71 +186,66 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
       attributeFilter: ["class"],
     });
 
-    // Delay initial fit to ensure container has dimensions
+    // Initial fit
     requestAnimationFrame(() => {
       safeFit();
     });
 
-    // WebSocket connection - connect directly to API server
-    const ws = new WebSocket(
-      `ws://localhost:3000/ws/terminal?workspaceId=${workspaceId}`
-    );
+    // WebSocket connection
+    const wsUrl = `ws://localhost:3000/ws/terminal?projectId=${encodeURIComponent(
+      projectId
+    )}`;
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
+    let isCleaningUp = false;
+    let wasConnected = false;
+
     ws.onopen = () => {
-      terminal.writeln("\x1b[90mBIM IDE Terminal\x1b[0m");
+      wasConnected = true;
+      terminal.writeln("\x1b[90mConnecting to compute environment...\x1b[0m");
     };
 
     ws.onmessage = (event) => {
       const message: TerminalMessage = JSON.parse(event.data);
       switch (message.type) {
         case "ready":
+          connectionStateRef.current = "connected";
+          terminal.writeln("\x1b[32mConnected.\x1b[0m\r\n");
           sendResize();
           break;
         case "output":
           if (message.data) {
-            const filtered = filterTerminalOutput(message.data);
-            if (filtered) terminal.write(filtered);
+            terminal.write(message.data);
           }
           break;
         case "exit":
-          terminal.writeln(`\r\n[Process exited with code ${message.code}]`);
+          terminal.writeln(
+            `\r\n\x1b[33m[Process exited with code ${message.code}]\x1b[0m`
+          );
           break;
         case "error":
-          console.error("[Terminal] Server error:", message.message);
+          connectionStateRef.current = "error";
           terminal.writeln(`\r\n\x1b[31m[Error: ${message.message}]\x1b[0m`);
           break;
       }
     };
 
-    // Track if cleanup has been called (for StrictMode double-mount handling)
-    let isCleaningUp = false;
-    let wasConnected = false;
-
-    const originalOnOpen = ws.onopen;
-    ws.onopen = (event) => {
-      wasConnected = true;
-      if (originalOnOpen) {
-        (originalOnOpen as (ev: Event) => void)(event);
-      }
-    };
-
     ws.onerror = () => {
-      // Only log errors if we're not cleaning up and were previously connected
       if (!isCleaningUp && wasConnected) {
-        console.error("[Terminal] WebSocket error");
-        terminal.writeln("\r\n[Connection error]");
+        connectionStateRef.current = "error";
+        terminal.writeln("\r\n\x1b[31m[Connection error]\x1b[0m");
       }
     };
 
     ws.onclose = (event) => {
-      // Only show unexpected close message if we're not cleaning up and were connected
       if (!isCleaningUp && wasConnected && !event.wasClean) {
-        console.log("[Terminal] WebSocket closed:", event.code, event.reason);
-        terminal.writeln("\r\n\x1b[33m[Connection closed unexpectedly]\x1b[0m");
+        connectionStateRef.current = "disconnected";
+        terminal.writeln("\r\n\x1b[33m[Connection closed]\x1b[0m");
       }
     };
 
+    // Handle user input
     terminal.onData((data) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "input", data }));
@@ -355,24 +256,27 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
       isCleaningUp = true;
       resizeObserver.disconnect();
       themeObserver.disconnect();
-      // Only close if not already closed/closing
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      if (
+        ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING
+      ) {
         ws.close();
       }
       terminal.dispose();
       terminalRef.current = null;
       wsRef.current = null;
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
     };
-  }, [workspaceId, sendResize]);
+  }, [projectId, sendResize]);
 
   return (
     <div className="terminal-container h-full border-t border-border bg-background overflow-hidden flex flex-col">
       <div className="flex items-center justify-between px-3 py-1.5 bg-secondary/50 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500/80" />
+          {connectionStateRef.current === "connecting" ? (
+            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+          ) : (
+            <div className="w-2 h-2 rounded-full bg-green-500/80" />
+          )}
           <span className="text-xs text-muted-foreground">Terminal</span>
         </div>
         {onClose && (
@@ -388,6 +292,4 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
       <div ref={containerRef} className="flex-1 min-h-0" />
     </div>
   );
-});
-
-export default Terminal;
+}

@@ -24,9 +24,8 @@ export const ChatHistoryMessage = z.object({
 })
 export type ChatHistoryMessage = z.infer<typeof ChatHistoryMessage>
 
-/** Start chat request - requires workspaceId for compute */
+/** Start chat request - compute is created on-demand for the project */
 export const StartChatRequest = z.object({
-  workspaceId: z.string().uuid(),
   content: z.string(),
   history: z.array(ChatHistoryMessage).optional(),
 })

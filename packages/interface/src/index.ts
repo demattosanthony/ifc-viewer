@@ -58,11 +58,6 @@ export {
   ProjectIdParam,
   ProjectResponse,
   ProjectListResponse,
-  // Workspace
-  CreateWorkspaceRequest,
-  WorkspaceIdParam,
-  WorkspaceResponse,
-  WorkspaceListResponse,
   // Conversations
   CreateConversationRequest,
   ChatHistoryMessage,
@@ -85,6 +80,14 @@ export {
   GetPresignedUrlRequest,
   GetPresignedUrlResponse,
   ConfirmUploadRequest,
+  // Models
+  UploadModelRequest,
+  UpdateModelRequest,
+  ModelIdParam,
+  ProjectModelParams,
+  ModelResponse,
+  ModelListResponse,
+  UploadModelResponse,
 } from "./dto"
 
 // HTTP
@@ -99,10 +102,10 @@ export {
   serverError,
   // Controllers
   ProjectController,
-  WorkspaceController,
-  FilesController,
+  ProjectFilesController,
   ConversationController,
-  AgentController, // Alias for backward compatibility
+  AgentController,
+  ModelController,
   // SSE utilities
   createSSEStream,
   sseResponse,

@@ -2,7 +2,7 @@
  * Project Entity
  *
  * Represents a project in the system. Projects are persistent containers
- * that hold files and can have multiple workspaces.
+ * that hold files, models, and conversations.
  */
 
 import { z } from "zod"

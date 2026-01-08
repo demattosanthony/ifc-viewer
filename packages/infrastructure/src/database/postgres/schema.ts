@@ -1,26 +1,11 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer } from "drizzle-orm/pg-core"
 
 export const projects = pgTable("projects", {
-  id: text("id").primaryKey(), // Slug (e.g., "sample-project")
+  id: text("id").primaryKey(),
   description: text("description"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
-});
-
-export const workspaces = pgTable("workspaces", {
-  id: text("id").primaryKey(),
-  projectId: text("project_id")
-    .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
-  status: text("status", {
-    enum: ["active", "idle", "stopped"],
-  })
-    .notNull()
-    .default("active"),
-  workingDirectory: text("working_directory").notNull(),
-  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
-  lastAccessedAt: timestamp("last_accessed_at", { mode: "date", withTimezone: true }).notNull(),
-});
+})
 
 export const conversations = pgTable("conversations", {
   id: text("id").primaryKey(),
@@ -28,14 +13,12 @@ export const conversations = pgTable("conversations", {
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
   title: text("title"),
-  status: text("status", {
-    enum: ["active", "streaming", "completed", "aborted"],
-  })
+  status: text("status", { enum: ["active", "streaming", "completed", "aborted"] })
     .notNull()
     .default("active"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
-});
+})
 
 export const messages = pgTable("messages", {
   id: text("id").primaryKey(),
@@ -45,14 +28,28 @@ export const messages = pgTable("messages", {
   role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
-});
+})
 
-// Type exports for use in repositories
-export type ProjectRow = typeof projects.$inferSelect;
-export type NewProjectRow = typeof projects.$inferInsert;
-export type WorkspaceRow = typeof workspaces.$inferSelect;
-export type NewWorkspaceRow = typeof workspaces.$inferInsert;
-export type ConversationRow = typeof conversations.$inferSelect;
-export type NewConversationRow = typeof conversations.$inferInsert;
-export type MessageRow = typeof messages.$inferSelect;
-export type NewMessageRow = typeof messages.$inferInsert;
+export const models = pgTable("models", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  discipline: text("discipline", { enum: ["architecture", "structure", "mep", "site", "other"] })
+    .notNull()
+    .default("other"),
+  filePath: text("file_path").notNull(),
+  fileSize: integer("file_size").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+})
+
+export type ProjectRow = typeof projects.$inferSelect
+export type NewProjectRow = typeof projects.$inferInsert
+export type ConversationRow = typeof conversations.$inferSelect
+export type NewConversationRow = typeof conversations.$inferInsert
+export type MessageRow = typeof messages.$inferSelect
+export type NewMessageRow = typeof messages.$inferInsert
+export type ModelRow = typeof models.$inferSelect
+export type NewModelRow = typeof models.$inferInsert

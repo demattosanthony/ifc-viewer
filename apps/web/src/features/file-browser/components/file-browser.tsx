@@ -8,10 +8,10 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  listFiles,
-  type ListFilesResponse,
+  listProjectFiles,
+  type ListProjectFilesResponse,
 } from "@ifc-viewer/sdk";
-import { listFilesQueryKey } from "@ifc-viewer/sdk/hooks";
+import { listProjectFilesQueryKey } from "@ifc-viewer/sdk/hooks";
 import { useEditor } from "@/features/editor/context";
 import { useResizable } from "@/features/editor/hooks/use-resizable";
 import { useFileOperations } from "../hooks/use-file-operations";
@@ -20,10 +20,10 @@ import { FileTreeItem } from "./file-tree-item";
 import { NewItemInput } from "./new-item-input";
 import { DeleteDialog } from "./delete-dialog";
 
-type FileEntry = ListFilesResponse["files"][number];
+type FileEntry = ListProjectFilesResponse["files"][number];
 
 interface FileBrowserProps {
-  workspaceId: string;
+  projectId: string;
   visible?: boolean;
 }
 
@@ -37,7 +37,7 @@ const DEFAULT_WIDTH = 275;
 const COLLAPSED_WIDTH = 48;
 
 export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
-  function FileBrowser({ workspaceId, visible = true }, ref) {
+  function FileBrowser({ projectId, visible = true }, ref) {
     const queryClient = useQueryClient();
     const { openFile, closeTab, tabs } = useEditor();
     const [fileTree, setFileTree] = useState<Map<string, FileEntry[]>>(
@@ -67,13 +67,13 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
     // Query for root files
     const rootFilesQuery = useQuery({
-      queryKey: listFilesQueryKey({
-        path: { id: workspaceId },
+      queryKey: listProjectFilesQueryKey({
+        path: { id: projectId },
         query: { path: "." },
       }),
       queryFn: async () => {
-        const { data } = await listFiles({
-          path: { id: workspaceId },
+        const { data } = await listProjectFiles({
+          path: { id: projectId },
           query: { path: "." },
         });
         return data!;
@@ -96,8 +96,8 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
 
         setLoadingPaths((prev) => new Set(prev).add(path));
         try {
-          const { data } = await listFiles({
-            path: { id: workspaceId },
+          const { data } = await listProjectFiles({
+            path: { id: projectId },
             query: { path },
           });
           setFileTree((prev) => new Map(prev).set(path, data?.files ?? []));
@@ -111,22 +111,22 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
           });
         }
       },
-      [workspaceId, fileTree]
+      [projectId, fileTree]
     );
 
     const refreshFolder = useCallback(
       (path: string) => {
         // Invalidate the query cache for this path
         queryClient.invalidateQueries({
-          queryKey: listFilesQueryKey({
-            path: { id: workspaceId },
+          queryKey: listProjectFilesQueryKey({
+            path: { id: projectId },
             query: { path },
           }),
         });
         // Also refetch directly
         fetchFiles(path, true);
       },
-      [fetchFiles, queryClient, workspaceId]
+      [fetchFiles, queryClient, projectId]
     );
 
     // Expose refresh method to parent via ref
@@ -152,7 +152,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(
       confirmDelete,
       cancelDelete,
     } = useFileOperations({
-      workspaceId,
+      projectId,
       onRefresh: refreshFolder,
     });
 

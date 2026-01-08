@@ -25,14 +25,6 @@ export {
   ProjectListResponse,
 } from "./project.dto"
 
-// Workspace
-export {
-  CreateWorkspaceRequest,
-  WorkspaceIdParam,
-  WorkspaceResponse,
-  WorkspaceListResponse,
-} from "./workspace.dto"
-
 // Conversations
 export {
   CreateConversationRequest,
@@ -60,3 +52,14 @@ export {
   GetPresignedUrlResponse,
   ConfirmUploadRequest,
 } from "./files.dto"
+
+// Models
+export {
+  UploadModelRequest,
+  UpdateModelRequest,
+  ModelIdParam,
+  ProjectModelParams,
+  ModelResponse,
+  ModelListResponse,
+  UploadModelResponse,
+} from "./model.dto"

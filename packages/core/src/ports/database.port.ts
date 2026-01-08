@@ -5,7 +5,7 @@
  * Implementations: SQLite, Postgres, memory
  */
 
-import type { Project, Workspace, Conversation, Message } from "../domain"
+import type { Project, Conversation, Message, Model } from "../domain"
 
 // ============================================================================
 // Repository Interfaces
@@ -18,18 +18,6 @@ export interface ProjectRepository {
   findAll(): Promise<Project[]>
   update(id: string, input: Project.UpdateInput): Promise<Project>
   delete(id: string): Promise<void>
-}
-
-/** Workspace repository interface */
-export interface WorkspaceRepository {
-  create(input: Workspace.CreateInput): Promise<Workspace>
-  findById(id: string): Promise<Workspace | null>
-  findAll(): Promise<Workspace[]>
-  findByProjectId(projectId: string): Promise<Workspace[]>
-  findActive(): Promise<Workspace[]>
-  update(id: string, input: Workspace.UpdateInput): Promise<Workspace>
-  delete(id: string): Promise<void>
-  touch(id: string): Promise<Workspace>
 }
 
 /** Conversation repository interface */
@@ -48,6 +36,16 @@ export interface MessageRepository {
   findByConversationId(conversationId: string): Promise<Message[]>
 }
 
+/** Model repository interface */
+export interface ModelRepository {
+  create(input: Model.CreateInput): Promise<Model>
+  findById(id: string): Promise<Model | null>
+  findByProjectId(projectId: string): Promise<Model[]>
+  update(id: string, input: Model.UpdateInput): Promise<Model>
+  delete(id: string): Promise<void>
+  deleteByProjectId(projectId: string): Promise<void>
+}
+
 // ============================================================================
 // Unit of Work
 // ============================================================================
@@ -58,9 +56,9 @@ export interface MessageRepository {
  */
 export interface UnitOfWork {
   projects: ProjectRepository
-  workspaces: WorkspaceRepository
   conversations: ConversationRepository
   messages: MessageRepository
+  models: ModelRepository
 }
 
 // ============================================================================

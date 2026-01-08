@@ -2,7 +2,6 @@
  * Conversation Entity
  *
  * Represents an AI chat session within a project.
- * Conversations persist across workspace lifecycles.
  */
 
 import { z } from "zod"

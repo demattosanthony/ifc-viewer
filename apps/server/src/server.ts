@@ -9,9 +9,9 @@ import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface";
 const log = createLogger("server");
 import {
   projectsRoutes,
-  workspacesRoutes,
-  filesRoutes,
+  projectFilesRoutes,
   conversationRoutes,
+  modelsRoutes,
   terminalRoutes,
 } from "./routes";
 
@@ -37,17 +37,16 @@ const app = new Elysia()
       specPath: "/swagger/json",
       documentation: {
         info: {
-          title: "BIM IDE API",
+          title: "IFC Viewer API",
           version: "2.0.0",
           description:
-            "API for BIM IDE platform with project/workspace management, file operations, and AI agent",
+            "API for IFC Viewer platform with project management, file operations, and AI agent",
         },
         tags: [
           { name: "Projects", description: "Project management" },
-          { name: "Workspaces", description: "Workspace management" },
-          { name: "Files", description: "File operations" },
+          { name: "Models", description: "IFC model management" },
+          { name: "Project Files", description: "Project file operations" },
           { name: "Conversations", description: "AI conversations and chat" },
-          { name: "Terminal", description: "Terminal WebSocket" },
         ],
       },
       // Map Zod schemas to JSON Schema for OpenAPI docs
@@ -63,7 +62,7 @@ const app = new Elysia()
   .get(
     "/",
     () => ({
-      message: "BIM IDE API",
+      message: "IFC Viewer API",
       version: "2.0.0",
       docs: "/swagger",
     }),
@@ -96,8 +95,8 @@ const app = new Elysia()
     }
   )
   .use(projectsRoutes(ctx))
-  .use(workspacesRoutes(ctx))
-  .use(filesRoutes(ctx))
+  .use(projectFilesRoutes(ctx))
+  .use(modelsRoutes(ctx))
   .use(conversationRoutes(ctx))
   .use(terminalRoutes(ctx))
   .listen({
@@ -117,8 +116,16 @@ export type App = typeof app;
 
 // Graceful shutdown
 async function shutdown(signal: string) {
-  log.info("Shutting down", { signal });
-  await ctx.dispose();
+  log.info("Received shutdown signal, cleaning up...", { signal });
+
+  try {
+    // dispose() will sync all compute instances to storage and stop containers
+    await ctx.dispose();
+    log.info("Shutdown complete");
+  } catch (err) {
+    log.error("Error during shutdown", { error: err });
+  }
+
   await closeLogs();
   process.exit(0);
 }

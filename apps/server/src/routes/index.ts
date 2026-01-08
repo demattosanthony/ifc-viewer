@@ -1,5 +1,5 @@
 export { projectsRoutes } from "./projects"
-export { workspacesRoutes } from "./workspaces"
-export { filesRoutes } from "./files"
+export { projectFilesRoutes } from "./project-files"
 export { conversationRoutes } from "./conversations"
+export { modelsRoutes } from "./models"
 export { terminalRoutes } from "./terminal"

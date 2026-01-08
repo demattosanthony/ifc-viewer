@@ -126,13 +126,11 @@ function toAgentMessages(
 
 interface AgentProviderProps {
   projectId: string;
-  workspaceId: string;
   children: ReactNode;
 }
 
 export function AgentProvider({
   projectId,
-  workspaceId,
   children,
 }: AgentProviderProps) {
   const queryClient = useQueryClient();
@@ -723,7 +721,6 @@ export function AgentProvider({
       fetchSSE<AIEvent>({
         url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/chat`,
         body: {
-          workspaceId,
           content,
           history: messages.map((m) => ({
             role: m.role,
@@ -751,7 +748,6 @@ export function AgentProvider({
     [
       apiUrl,
       projectId,
-      workspaceId,
       conversationId,
       messages,
       createConvMutation,

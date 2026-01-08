@@ -1,4 +1,4 @@
-import type { Computer, ComputeConfig, FileSystem, Shell, TerminalSession } from "@ifc-viewer/core"
+import type { Computer, FileSystem, Shell, TerminalSession } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
 import Docker from "dockerode"
 import type { Container } from "dockerode"
@@ -13,7 +13,7 @@ const DEFAULT_WORK_DIR = "/workspace"
 /**
  * Docker-specific compute configuration
  */
-export interface DockerComputeConfig extends ComputeConfig {
+export interface DockerComputeConfig {
   /** Docker image to use (default: bim-ide:latest) */
   image?: string
   /** Custom container name (auto-generated if not provided) */
@@ -28,6 +28,8 @@ export interface DockerComputeConfig extends ComputeConfig {
   host?: string
   /** Docker port (used with host) */
   port?: number
+  /** Environment variables to set in container */
+  environment?: Record<string, string>
 }
 
 /**
@@ -54,12 +56,13 @@ export class DockerComputer implements Computer {
   private terminals = new Map<string, TerminalSession>()
   private agentTerminal: TerminalSession | null = null
 
-  constructor(config: DockerComputeConfig) {
+  constructor(config: DockerComputeConfig = {}) {
     this.id = `docker-computer-${Date.now()}-${Math.random().toString(36).slice(2)}`
     this.config = config
-    this.workingDirectory = config.workingDirectory
     this.image = config.image ?? DEFAULT_IMAGE
     this.containerWorkDir = DEFAULT_WORK_DIR
+    // Working directory is the container's internal path (no host mount)
+    this.workingDirectory = this.containerWorkDir
 
     // Initialize Docker client
     const dockerOptions: Docker.DockerOptions = {}
@@ -89,6 +92,9 @@ export class DockerComputer implements Computer {
       this.config.containerName ?? `bim-ide-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
     // Build container options
+    // Note: No bind mounts - files live entirely within the container.
+    // Files are copied from storage on startup and changes are tracked
+    // via ChangeTracker, then persisted back to storage on disposal.
     const createOptions: Docker.ContainerCreateOptions = {
       Image: this.image,
       name: containerName,
@@ -98,8 +104,6 @@ export class DockerComputer implements Computer {
       Env: this.buildEnvArray(),
       HostConfig: {
         AutoRemove: false, // We'll remove manually on dispose
-        // Bind mount host working directory to container workspace
-        Binds: [`${this.workingDirectory}:${this.containerWorkDir}`],
       },
     }
 

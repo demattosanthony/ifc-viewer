@@ -10,9 +10,9 @@ export type {
   Database,
   UnitOfWork,
   ProjectRepository,
-  WorkspaceRepository,
   ConversationRepository,
   MessageRepository,
+  ModelRepository,
 } from "./database.port"
 
 // Storage

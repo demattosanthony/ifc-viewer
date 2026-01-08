@@ -9,7 +9,9 @@ import { $ } from "bun"
 
 async function startDb() {
   console.log("Starting database container...")
-  await $`docker compose up -d postgres`
+  // --wait ensures health check passes before returning
+  await $`docker compose up -d postgres --wait`
+  console.log("Database ready")
 }
 
 async function stopDb() {

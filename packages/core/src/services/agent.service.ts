@@ -1,88 +1,60 @@
 /**
  * Agent Service
  *
- * Application service for orchestrating AI chat with compute environment.
- * Handles message persistence and AI streaming.
- *
- * Note: Simple CRUD operations (create, list, delete conversations) should
- * use ctx.db.conversations directly. This service only contains operations
- * that require orchestration logic.
+ * Orchestrates AI chat with compute environment.
+ * Compute is created on-demand and disposed after 5 minutes of inactivity.
+ * File changes are tracked via ChangeTracker and persisted on compute disposal.
  */
 
 import type { Context } from "../context"
 import type { AIEvent, AIMessage } from "../ports"
 import type { Conversation } from "../domain"
 import { NotFoundError } from "../domain/errors"
-import { createStorageSyncCallbacks } from "./storage-sync"
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** Maximum length for auto-generated conversation titles */
 const MAX_TITLE_LENGTH = 50
 
 // ============================================================================
 // Types
 // ============================================================================
 
-/** Input for starting an agent chat */
 export type AgentChatInput = {
-  /** Project ID (for conversation ownership) */
   projectId: string
-  /** Conversation ID to chat within */
   conversationId: string
-  /** Workspace ID (for compute environment) */
-  workspaceId: string
-  /** User message content */
   content: string
-  /** Optional message history override (if not provided, fetches from DB) */
   history?: Array<{ role: "user" | "assistant"; content: string }>
-  /** Abort signal for cancellation */
   signal?: AbortSignal
 }
 
-/** Result of an agent chat */
 export type AgentChatResult = {
-  /** Conversation ID */
   conversationId: string
-  /** Assistant's response text */
   text: string
-  /** Token usage */
-  usage: {
-    promptTokens: number
-    completionTokens: number
-    totalTokens: number
-  }
+  usage: { promptTokens: number; completionTokens: number; totalTokens: number }
 }
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
-/**
- * Generate a title from the first user message.
- */
 function generateTitle(content: string): string {
   const trimmed = content.trim()
-  if (trimmed.length <= MAX_TITLE_LENGTH) {
-    return trimmed
-  }
-  return trimmed.slice(0, MAX_TITLE_LENGTH - 3) + "..."
+  return trimmed.length <= MAX_TITLE_LENGTH ? trimmed : trimmed.slice(0, MAX_TITLE_LENGTH - 3) + "..."
 }
 
 /**
  * Run an agent chat session within an existing conversation.
  *
  * This service handles the full orchestration:
- * 1. Validates conversation exists
- * 2. Fetches message history from DB
- * 3. Saves user message and updates status (transaction)
- * 4. Streams AI response
- * 5. Saves assistant response and updates status (transaction)
+ * 1. Validates project and conversation exist
+ * 2. Creates compute environment on-demand (if not already running)
+ * 3. Fetches message history from DB
+ * 4. Saves user message and updates status (transaction)
+ * 5. Streams AI response
+ * 6. Saves assistant response and updates status (transaction)
+ *
+ * File changes are tracked via ChangeTracker and persisted when compute is disposed.
  *
  * @param ctx - Application context
- * @param input - Chat input
+ * @param input - Chat input (projectId, conversationId, content)
  * @yields AIEvent - Stream of events for real-time updates
  * @returns AgentChatResult - Final result with conversation ID and response
  */
@@ -90,15 +62,21 @@ export async function* runAgentChat(
   ctx: Context,
   input: AgentChatInput
 ): AsyncGenerator<AIEvent, AgentChatResult> {
-  const conversationId = input.conversationId
+  const { projectId, conversationId } = input
 
-  // 1. Validate conversation exists
+  // 1. Validate project exists
+  const project = await ctx.db.projects.findById(projectId)
+  if (!project) {
+    throw new NotFoundError("Project", projectId)
+  }
+
+  // 2. Validate conversation exists
   const conversation = await ctx.db.conversations.findById(conversationId)
   if (!conversation) {
     throw new NotFoundError("Conversation", conversationId)
   }
 
-  // 2. Build message history
+  // 3. Build message history
   let messageHistory: AIMessage[]
 
   if (input.history && input.history.length > 0) {
@@ -120,7 +98,7 @@ export async function* runAgentChat(
   // Add user message to history
   messageHistory.push({ role: "user", content: input.content })
 
-  // 3. Save user message and update conversation status (atomic operation)
+  // 4. Save user message and update conversation status (atomic operation)
   await ctx.db.transaction(async (uow) => {
     await uow.messages.create({
       conversationId,
@@ -137,19 +115,8 @@ export async function* runAgentChat(
     await uow.conversations.update(conversationId, updates)
   })
 
-  // 4. Get workspace and compute, then stream AI response
-  const workspace = await ctx.db.workspaces.findById(input.workspaceId)
-  if (!workspace) {
-    throw new NotFoundError("Workspace", input.workspaceId)
-  }
-
-  const computer = await ctx.getOrCreateCompute(workspace.id, workspace.workingDirectory)
-
-  // Storage callbacks for write-through persistence
-  const { onFileWrite, onFileDelete, onFileMove } = createStorageSyncCallbacks({
-    storage: ctx.storage,
-    projectId: workspace.projectId,
-  })
+  // 5. Get or create compute for this project (on-demand)
+  const { computer, tracker } = await ctx.getOrCreateCompute(projectId)
 
   let assistantText = ""
   let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
@@ -159,14 +126,12 @@ export async function* runAgentChat(
       messages: messageHistory,
       signal: input.signal,
       computer,
+      changeTracker: tracker,
       getTerminal: () => computer.getOrCreateAgentTerminal(),
-      onFileWrite,
-      onFileDelete,
-      onFileMove,
     })) {
-      // Touch activity on significant events to keep workspace alive during long AI sessions
+      // Keep compute alive during long AI sessions
       if (event.type === "step-start" || event.type === "tool-call") {
-        ctx.touchCompute(workspace.id, "ai-chat")
+        ctx.touchCompute(projectId)
       }
 
       // Track text for final result
@@ -183,7 +148,7 @@ export async function* runAgentChat(
       yield event
     }
 
-    // 5. Save assistant message and update conversation status (atomic operation)
+    // 6. Save assistant message and update conversation status (atomic operation)
     await ctx.db.transaction(async (uow) => {
       if (assistantText) {
         await uow.messages.create({

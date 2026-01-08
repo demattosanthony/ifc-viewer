@@ -1,4 +1,4 @@
-import { generateId } from "@ifc-viewer/core"
+import { generateId, ConversationSchema } from "@ifc-viewer/core"
 import type { Conversation, ConversationRepository } from "@ifc-viewer/core"
 
 export function createConversationRepository(): ConversationRepository {
@@ -7,14 +7,14 @@ export function createConversationRepository(): ConversationRepository {
   return {
     async create(input: Conversation.CreateInput): Promise<Conversation> {
       const now = new Date()
-      const entity: Conversation = {
+      const entity = ConversationSchema.parse({
         id: generateId(),
         projectId: input.projectId,
         title: input.title ?? null,
         status: "active",
         createdAt: now,
         updatedAt: now,
-      }
+      })
       store.set(entity.id, entity)
       return entity
     },
@@ -38,12 +38,12 @@ export function createConversationRepository(): ConversationRepository {
       const existing = store.get(id)
       if (!existing) throw new Error(`Conversation ${id} not found`)
 
-      const updated: Conversation = {
+      const updated = ConversationSchema.parse({
         ...existing,
         title: input.title !== undefined ? input.title : existing.title,
         status: input.status ?? existing.status,
         updatedAt: new Date(),
-      }
+      })
       store.set(id, updated)
       return updated
     },

@@ -114,7 +114,6 @@ export type {
   Computer,
   AIProvider,
   ProjectRepository,
-  WorkspaceRepository,
   ConversationRepository,
   MessageRepository,
 } from "@ifc-viewer/core"

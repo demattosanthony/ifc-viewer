@@ -59,12 +59,14 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
         const tools = {
           ...createFileTools({
             computer: options.computer,
+            changeTracker: options.changeTracker,
             emit: emitToolEvent,
-            onFileWrite: options.onFileWrite,
-            onFileDelete: options.onFileDelete,
-            onFileMove: options.onFileMove,
           }),
-          ...createShellTools(options.getTerminal, emitToolEvent),
+          ...createShellTools({
+            getTerminal: options.getTerminal,
+            changeTracker: options.changeTracker,
+            emit: emitToolEvent,
+          }),
         }
 
         const agent = new ToolLoopAgent({
