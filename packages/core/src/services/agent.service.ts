@@ -93,27 +93,15 @@ export async function* runAgentChat(
   }
 
   // Check if this is the first message (for auto-generating title)
-  const isFirstMessage = messageHistory.length === 0
+  // Note: The user message is already in history (created by the route)
+  const isFirstMessage = messageHistory.length <= 1
 
-  // Add user message to history
-  messageHistory.push({ role: "user", content: input.content })
-
-  // 4. Save user message and update conversation status (atomic operation)
-  await ctx.db.transaction(async (uow) => {
-    await uow.messages.create({
-      conversationId,
-      role: "user",
-      content: input.content,
-    })
-
-    // Auto-generate title from first message if not set
-    const updates: Conversation.UpdateInput = { status: "streaming" }
-    if (isFirstMessage && !conversation.title) {
-      updates.title = generateTitle(input.content)
-    }
-
-    await uow.conversations.update(conversationId, updates)
-  })
+  // 4. Update conversation status (user message already created by route)
+  const updates: Conversation.UpdateInput = { status: "streaming" }
+  if (isFirstMessage && !conversation.title) {
+    updates.title = generateTitle(input.content)
+  }
+  await ctx.db.conversations.update(conversationId, updates)
 
   // 5. Get or create compute for this project (on-demand)
   const { computer, tracker } = await ctx.getOrCreateCompute(projectId)

@@ -7,7 +7,7 @@
  */
 
 import { createLogger } from "@ifc-viewer/logger"
-import type { Database, Storage, Computer, AIProvider } from "./ports"
+import type { Database, Storage, Computer, AIProvider, StreamStore } from "./ports"
 import { createChangeTracker, type ChangeTracker } from "./services/change-tracker"
 
 const log = createLogger("context")
@@ -31,6 +31,7 @@ export type Context = {
   db: Database
   storage: Storage
   ai: AIProvider
+  streams: StreamStore
   getCompute(projectId: string): Computer | undefined
   getTracker(projectId: string): ChangeTracker | undefined
   getOrCreateCompute(projectId: string): Promise<{ computer: Computer; tracker: ChangeTracker }>
@@ -43,6 +44,7 @@ export type ContextConfig = {
   db: Database
   storage: Storage
   ai: AIProvider
+  streams: StreamStore
   computeFactory: ComputeFactory
 }
 
@@ -113,6 +115,7 @@ export function createContext(config: ContextConfig): Context {
     db: config.db,
     storage: config.storage,
     ai: config.ai,
+    streams: config.streams,
 
     getCompute(projectId: string): Computer | undefined {
       return computes.get(projectId)?.computer
@@ -178,6 +181,7 @@ export function createContext(config: ContextConfig): Context {
       for (const projectId of projectIds) {
         await cleanup(projectId)
       }
+      await config.streams.dispose()
       await config.db.dispose()
       await config.storage.dispose?.()
     },

@@ -44,6 +44,9 @@ export type {
   Shell,
 } from "./compute.port"
 
+// Stream Store
+export type { StreamStore, StreamEvent, Stream, StreamStatus } from "./stream-store.port"
+
 // AI
 export type {
   AIProvider,
@@ -54,6 +57,9 @@ export type {
   // Events
   AIEvent,
   AIReadyEvent,
+  AIStreamStartEvent,
+  AIReplayStartEvent,
+  AIReplayEndEvent,
   AITextDeltaEvent,
   AIStepStartEvent,
   AIStepEndEvent,

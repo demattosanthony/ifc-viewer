@@ -51,9 +51,30 @@ export interface AIUsageStats {
 // AI Stream Events (Domain-level, provider-agnostic)
 // ============================================================================
 
-/** Ready event - connection established */
+/** Ready event - connection established (deprecated, use stream-start) */
 export interface AIReadyEvent {
   type: "ready"
+}
+
+/** Stream start event - includes stream ID for reconnection */
+export interface AIStreamStartEvent {
+  type: "stream-start"
+  streamId: string
+  sequence: number
+}
+
+/** Replay start event - sent when replaying a stream */
+export interface AIReplayStartEvent {
+  type: "replay-start"
+  streamId: string
+  status: string
+  fromSequence: number
+}
+
+/** Replay end event - sent when replay is complete */
+export interface AIReplayEndEvent {
+  type: "replay-end"
+  status: string
 }
 
 /** Text delta event - streaming text content */
@@ -200,6 +221,9 @@ export interface AIFileDeletedEvent {
 /** Union type of all AI events */
 export type AIEvent =
   | AIReadyEvent
+  | AIStreamStartEvent
+  | AIReplayStartEvent
+  | AIReplayEndEvent
   | AITextDeltaEvent
   | AIStepStartEvent
   | AIStepEndEvent

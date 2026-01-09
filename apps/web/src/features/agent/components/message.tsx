@@ -153,11 +153,36 @@ function AssistantText({ content }: { content: string }) {
   );
 }
 
+/**
+ * Merge consecutive text parts into single text parts.
+ * This prevents visual line breaks between text from different steps
+ * when there are no tool calls in between.
+ */
+function mergeConsecutiveTextParts(parts: MessagePart[]): MessagePart[] {
+  const merged: MessagePart[] = [];
+
+  for (const part of parts) {
+    const last = merged[merged.length - 1];
+
+    if (part.type === "text" && last?.type === "text") {
+      // Merge with previous text part
+      merged[merged.length - 1] = {
+        ...last,
+        content: last.content + part.content,
+      };
+    } else {
+      merged.push(part);
+    }
+  }
+
+  return merged;
+}
+
 function renderMessagePart(part: MessagePart, index: number) {
   if (part.type === "text") {
     return (
       <AssistantText
-        key={`text-${part.stepIndex}-${index}`}
+        key={`text-${index}`}
         content={part.content}
       />
     );
@@ -199,10 +224,13 @@ export const ChatMessage = memo(function ChatMessage({
   }
 
   // Assistant message - flowing text with inline tools
+  // Merge consecutive text parts to prevent visual breaks between steps
+  const partsToRender = hasParts ? mergeConsecutiveTextParts(message.parts!) : [];
+
   return (
     <div className="w-full space-y-3">
       {hasParts ? (
-        message.parts!.map((part, index) => renderMessagePart(part, index))
+        partsToRender.map((part, index) => renderMessagePart(part, index))
       ) : (
         <>
           {hasContent && <AssistantText content={message.content} />}

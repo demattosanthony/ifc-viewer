@@ -60,8 +60,8 @@ export {
   ProjectListResponse,
   // Conversations
   CreateConversationRequest,
-  ChatHistoryMessage,
-  StartChatRequest,
+  SendMessageRequest,
+  SendMessageResponse,
   MessageResponse,
   ConversationResponse,
   ConversationListResponse,

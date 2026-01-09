@@ -17,19 +17,11 @@ export const CreateConversationRequest = z.object({
 })
 export type CreateConversationRequest = z.infer<typeof CreateConversationRequest>
 
-/** Chat message in history */
-export const ChatHistoryMessage = z.object({
-  role: z.enum(["user", "assistant"]),
+/** Send message request */
+export const SendMessageRequest = z.object({
   content: z.string(),
 })
-export type ChatHistoryMessage = z.infer<typeof ChatHistoryMessage>
-
-/** Start chat request - compute is created on-demand for the project */
-export const StartChatRequest = z.object({
-  content: z.string(),
-  history: z.array(ChatHistoryMessage).optional(),
-})
-export type StartChatRequest = z.infer<typeof StartChatRequest>
+export type SendMessageRequest = z.infer<typeof SendMessageRequest>
 
 // ============================================================================
 // Response DTOs
@@ -47,8 +39,20 @@ export type ConversationResponse = z.infer<typeof ConversationResponse>
 export const ConversationListResponse = z.array(ConversationResponse)
 export type ConversationListResponse = z.infer<typeof ConversationListResponse>
 
-/** Conversation with messages response */
-export const ConversationWithMessagesResponse = ConversationSchema.extend({
+/** Conversation with messages (internal - without isGenerating) */
+export const ConversationWithMessages = ConversationSchema.extend({
   messages: z.array(MessageResponse),
 })
+export type ConversationWithMessages = z.infer<typeof ConversationWithMessages>
+
+/** Conversation with messages response (API response - includes isGenerating) */
+export const ConversationWithMessagesResponse = ConversationWithMessages.extend({
+  isGenerating: z.boolean(),
+})
 export type ConversationWithMessagesResponse = z.infer<typeof ConversationWithMessagesResponse>
+
+/** Send message response */
+export const SendMessageResponse = z.object({
+  message: MessageResponse,
+})
+export type SendMessageResponse = z.infer<typeof SendMessageResponse>

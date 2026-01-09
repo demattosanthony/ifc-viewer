@@ -28,11 +28,12 @@ export {
 // Conversations
 export {
   CreateConversationRequest,
-  ChatHistoryMessage,
-  StartChatRequest,
+  SendMessageRequest,
+  SendMessageResponse,
   MessageResponse,
   ConversationResponse,
   ConversationListResponse,
+  ConversationWithMessages,
   ConversationWithMessagesResponse,
 } from "./agent.dto"
 

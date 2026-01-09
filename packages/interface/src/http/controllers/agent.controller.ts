@@ -11,7 +11,7 @@ import type { Context } from "@ifc-viewer/core"
 import type {
   ConversationResponse,
   ConversationListResponse,
-  ConversationWithMessagesResponse,
+  ConversationWithMessages,
 } from "../../dto"
 import { type HttpResult, ok, notFound } from "../types"
 
@@ -43,7 +43,7 @@ export class ConversationController {
    */
   async getById(
     conversationId: string
-  ): Promise<HttpResult<ConversationWithMessagesResponse>> {
+  ): Promise<HttpResult<ConversationWithMessages>> {
     const conversation = await this.ctx.db.conversations.findById(conversationId)
     if (!conversation) {
       return notFound("Conversation not found")

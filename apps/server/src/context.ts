@@ -4,6 +4,7 @@ import {
   createLocalComputer,
   createDockerComputer,
   createAIProviderFromEnv,
+  createMemoryStreamStore,
   type DatabaseConfig,
 } from "@ifc-viewer/infrastructure"
 import { createContext, uploadModel, type Context, type Computer } from "@ifc-viewer/core"
@@ -61,6 +62,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
   const db = await createDatabase(dbConfig)
   const storage = createStorage({ type: "local", baseDir: storageDirectory })
   const ai = createAIProviderFromEnv()
+  const streams = createMemoryStreamStore({ ttlMs: 30 * 60 * 1000 }) // 30 minutes
 
   // Local compute needs a host directory for workspaces
   const localWorkspacesDir = config.localWorkspacesDir ?? process.env.WORKSPACES_DIR ?? resolve(MONOREPO_ROOT, ".data", "workspaces")
@@ -72,6 +74,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     db,
     storage,
     ai,
+    streams,
 
     async computeFactory(projectId: string): Promise<Computer> {
       if (computeProvider === "docker") {

@@ -7,10 +7,12 @@
  */
 
 export interface FetchSSEOptions<T> {
-  /** URL to POST to */
+  /** URL to fetch */
   url: string
-  /** Request body (will be JSON stringified) */
-  body: unknown
+  /** HTTP method (default: "POST") */
+  method?: "GET" | "POST"
+  /** Request body (will be JSON stringified, only used for POST) */
+  body?: unknown
   /** Callback for each received event */
   onEvent: (event: T) => void
   /** Callback when stream completes */
@@ -70,18 +72,27 @@ function parseSSEChunk(chunk: string): Array<{ event: string; data: string }> {
  * ```
  */
 export async function fetchSSE<T>(options: FetchSSEOptions<T>): Promise<void> {
-  const { url, body, onEvent, onComplete, onError, signal, eventName = "message" } = options
+  const { url, method = "POST", body, onEvent, onComplete, onError, signal, eventName = "message" } = options
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
+    const fetchOptions: RequestInit = {
+      method,
       headers: {
-        "Content-Type": "application/json",
         Accept: "text/event-stream",
       },
-      body: JSON.stringify(body),
       signal,
-    })
+    }
+
+    // Only add body and Content-Type for POST requests
+    if (method === "POST" && body !== undefined) {
+      fetchOptions.headers = {
+        ...fetchOptions.headers,
+        "Content-Type": "application/json",
+      }
+      fetchOptions.body = JSON.stringify(body)
+    }
+
+    const response = await fetch(url, fetchOptions)
 
     if (!response.ok) {
       const errorText = await response.text()

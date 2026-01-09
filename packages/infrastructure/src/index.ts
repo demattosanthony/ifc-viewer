@@ -107,12 +107,19 @@ export {
   formatUsageStats,
 } from "./ai"
 
+// Streams
+export { createMemoryStreamStore, type MemoryStreamStoreConfig } from "./streams"
+
 // Re-export port types for convenience
 export type {
   Database,
   Storage,
   Computer,
   AIProvider,
+  StreamStore,
+  StreamEvent,
+  Stream,
+  StreamStatus,
   ProjectRepository,
   ConversationRepository,
   MessageRepository,

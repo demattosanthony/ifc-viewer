@@ -20,25 +20,17 @@ import type {
 import {
   listConversationsOptions,
   listConversationsQueryKey,
-  getConversationOptions,
   createConversationMutation,
   deleteConversationMutation,
   stopGenerationMutation,
 } from "@ifc-viewer/sdk/hooks";
-import type {
-  ListConversationsResponse,
-  GetConversationResponse,
-} from "@ifc-viewer/sdk";
+import type { ListConversationsResponse } from "@ifc-viewer/sdk";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-/** Conversation type from API (derived from SDK) */
 type Conversation = ListConversationsResponse[number];
-
-/** Conversation with messages from API (derived from SDK) */
-type ConversationWithMessages = GetConversationResponse;
 
 interface StreamingToolState {
   id: string;
@@ -59,7 +51,7 @@ interface AgentContextValue {
   stop: () => void;
   clearMessages: () => void;
   deselectConversation: () => void;
-  selectConversation: (conversationId: string) => Promise<void>;
+  selectConversation: (conversationId: string) => void;
   createNewConversation: () => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
   onPresenceEvent: (callback: (event: AIEvent) => void) => () => void;
@@ -71,10 +63,27 @@ const AgentContext = createContext<AgentContextValue | null>(null);
 // Helpers
 // ============================================================================
 
-function extractStreamingField(
-  buffer: string,
-  fieldName: string
-): string | null {
+function getSessionStorageKey(projectId: string): string {
+  return `ifc-viewer:conversation:${projectId}`;
+}
+
+interface ApiMessage {
+  id: string;
+  role: string;
+  content: string;
+  createdAt: string;
+}
+
+function toAgentMessages(messages: ApiMessage[]): AgentMessage[] {
+  return messages.map((m) => ({
+    id: m.id,
+    role: m.role as "user" | "assistant",
+    content: m.content,
+    createdAt: new Date(m.createdAt),
+  }));
+}
+
+function extractStreamingField(buffer: string, fieldName: string): string | null {
   const pattern = `"${fieldName}":`;
   const idx = buffer.indexOf(pattern);
   if (idx === -1) return null;
@@ -103,23 +112,6 @@ function extractStreamingField(
   return content;
 }
 
-/** Get the session storage key for storing conversation ID */
-function getSessionStorageKey(projectId: string): string {
-  return `ifc-viewer:conversation:${projectId}`;
-}
-
-/** Convert API messages to AgentMessage format */
-function toAgentMessages(
-  messages: ConversationWithMessages["messages"]
-): AgentMessage[] {
-  return messages.map((m) => ({
-    id: m.id,
-    role: m.role as "user" | "assistant",
-    content: m.content,
-    createdAt: new Date(m.createdAt),
-  }));
-}
-
 // ============================================================================
 // Provider
 // ============================================================================
@@ -129,15 +121,11 @@ interface AgentProviderProps {
   children: ReactNode;
 }
 
-export function AgentProvider({
-  projectId,
-  children,
-}: AgentProviderProps) {
+export function AgentProvider({ projectId, children }: AgentProviderProps) {
   const queryClient = useQueryClient();
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(() => {
-    // Initialize from session storage
     return sessionStorage.getItem(getSessionStorageKey(projectId));
   });
 
@@ -145,96 +133,27 @@ export function AgentProvider({
   const presenceCallbacksRef = useRef<Set<(event: AIEvent) => void>>(new Set());
   const currentStepRef = useRef<number>(0);
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map());
+  const isActivelyStreamingRef = useRef(false);
 
   const apiUrl = import.meta.env.VITE_API_URL || "";
 
   // ============================================================================
-  // SDK Queries & Mutations
+  // Queries & Mutations
   // ============================================================================
 
-  const EMPTY_CONVERSATIONS: Conversation[] = [];
-
-  // Fetch conversations list
   const conversationsQuery = useQuery({
     ...listConversationsOptions({ path: { id: projectId } }),
   });
 
-  const conversations = conversationsQuery.data ?? EMPTY_CONVERSATIONS;
+  const conversations = conversationsQuery.data ?? [];
 
-  // Create conversation mutation
-  const createConvMutation = useMutation({
-    ...createConversationMutation(),
-  });
+  const createConvMutation = useMutation({ ...createConversationMutation() });
+  const deleteConvMutation = useMutation({ ...deleteConversationMutation() });
+  const stopMutation = useMutation({ ...stopGenerationMutation() });
 
-  // Delete conversation mutation
-  const deleteConvMutation = useMutation({
-    ...deleteConversationMutation(),
-  });
-
-  // Stop generation mutation
-  const stopMutation = useMutation({
-    ...stopGenerationMutation(),
-  });
-
-  // Clear messages when no conversation selected
-  useEffect(() => {
-    if (!conversationId) {
-      setMessages([]);
-    }
-  }, [conversationId]);
-
-  // Load conversation messages when conversationId changes (and list is loaded)
-  // Skip if we already have messages (active chat session)
-  useEffect(() => {
-    if (!conversationId) return;
-    if (!conversationsQuery.isSuccess) return;
-
-    // Skip verification and fetching if we already have messages
-    // This prevents resetting state during an active chat session
-    if (messages.length > 0) return;
-
-    // Verify conversation exists in the list
-    const list = conversationsQuery.data ?? EMPTY_CONVERSATIONS;
-    const exists = list.some((c) => c.id === conversationId);
-    if (!exists) {
-      setConversationId(null);
-      return;
-    }
-
-    // Fetch conversation messages
-    const fetchMessages = async () => {
-      try {
-        const data = await queryClient.fetchQuery(
-          getConversationOptions({
-            path: { id: projectId, conversationId },
-          })
-        );
-        if (data) {
-          setMessages(toAgentMessages(data.messages));
-        }
-      } catch (error) {
-        console.error("[Agent] Failed to fetch conversation:", error);
-      }
-    };
-
-    fetchMessages();
-  }, [
-    conversationId,
-    conversationsQuery.isSuccess,
-    conversationsQuery.dataUpdatedAt,
-    projectId,
-    queryClient,
-    messages.length,
-  ]);
-
-  // Save conversation ID to session storage when it changes
-  useEffect(() => {
-    if (conversationId) {
-      sessionStorage.setItem(getSessionStorageKey(projectId), conversationId);
-    } else {
-      sessionStorage.removeItem(getSessionStorageKey(projectId));
-    }
-  }, [conversationId, projectId]);
+  // ============================================================================
+  // Event Handling
+  // ============================================================================
 
   const emitPresenceEvent = useCallback((event: AIEvent) => {
     for (const callback of presenceCallbacksRef.current) {
@@ -255,37 +174,22 @@ export function AgentProvider({
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
             const lastMsg = prev[lastIdx];
-            if (lastMsg?.role === "assistant") {
-              const currentStep = currentStepRef.current;
-              const parts = [...(lastMsg.parts || [])];
+            if (lastMsg?.role !== "assistant") return prev;
 
-              const lastPart = parts[parts.length - 1];
-              if (
-                lastPart?.type === "text" &&
-                lastPart.stepIndex === currentStep
-              ) {
-                parts[parts.length - 1] = {
-                  ...lastPart,
-                  content: lastPart.content + event.content,
-                };
-              } else {
-                parts.push({
-                  type: "text",
-                  content: event.content,
-                  stepIndex: currentStep,
-                });
-              }
+            const currentStep = currentStepRef.current;
+            const parts = [...(lastMsg.parts || [])];
+            const lastPart = parts[parts.length - 1];
 
-              return [
-                ...prev.slice(0, lastIdx),
-                {
-                  ...lastMsg,
-                  content: lastMsg.content + event.content,
-                  parts,
-                },
-              ];
+            if (lastPart?.type === "text" && lastPart.stepIndex === currentStep) {
+              parts[parts.length - 1] = { ...lastPart, content: lastPart.content + event.content };
+            } else {
+              parts.push({ type: "text", content: event.content, stepIndex: currentStep });
             }
-            return prev;
+
+            return [
+              ...prev.slice(0, lastIdx),
+              { ...lastMsg, content: lastMsg.content + event.content, parts },
+            ];
           });
           break;
 
@@ -302,35 +206,27 @@ export function AgentProvider({
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
             const lastMsg = prev[lastIdx];
-            if (lastMsg?.role === "assistant") {
-              const currentStep = currentStepRef.current;
-              const toolInvocation: ToolInvocation = {
-                id: event.id,
-                toolName: event.name,
-                args: {},
-                state: "streaming" as const,
-              };
+            if (lastMsg?.role !== "assistant") return prev;
 
-              const parts: MessagePart[] = [...(lastMsg.parts || [])];
-              parts.push({
-                type: "tool",
-                toolInvocation,
-                stepIndex: currentStep,
-              });
+            const toolInvocation: ToolInvocation = {
+              id: event.id,
+              toolName: event.name,
+              args: {},
+              state: "streaming",
+            };
+            const parts: MessagePart[] = [
+              ...(lastMsg.parts || []),
+              { type: "tool", toolInvocation, stepIndex: currentStepRef.current },
+            ];
 
-              return [
-                ...prev.slice(0, lastIdx),
-                {
-                  ...lastMsg,
-                  parts,
-                  toolInvocations: [
-                    ...(lastMsg.toolInvocations || []),
-                    toolInvocation,
-                  ],
-                },
-              ];
-            }
-            return prev;
+            return [
+              ...prev.slice(0, lastIdx),
+              {
+                ...lastMsg,
+                parts,
+                toolInvocations: [...(lastMsg.toolInvocations || []), toolInvocation],
+              },
+            ];
           });
           break;
 
@@ -339,7 +235,6 @@ export function AgentProvider({
           if (!toolState) break;
 
           toolState.buffer += event.delta;
-
           const extractedArgs: Record<string, unknown> = {};
 
           if (toolState.name === "writeFile") {
@@ -369,10 +264,7 @@ export function AgentProvider({
                       emitPresenceEvent({
                         type: "editor-insert",
                         path,
-                        position: {
-                          line: toolState.currentLine,
-                          column: toolState.currentColumn,
-                        },
+                        position: { line: toolState.currentLine, column: toolState.currentColumn },
                         text: char,
                       });
                       toolState.currentColumn++;
@@ -383,17 +275,12 @@ export function AgentProvider({
             }
           } else if (toolState.name === "executeCommand") {
             const command = extractStreamingField(toolState.buffer, "command");
-
             if (command !== null) {
               extractedArgs.command = command;
               if (command.length > toolState.lastContentLength) {
                 const newChunk = command.slice(toolState.lastContentLength);
                 toolState.lastContentLength = command.length;
-
-                emitPresenceEvent({
-                  type: "terminal-append",
-                  text: newChunk,
-                });
+                emitPresenceEvent({ type: "terminal-append", text: newChunk });
               }
             }
           }
@@ -402,36 +289,21 @@ export function AgentProvider({
             setMessages((prev) => {
               const lastIdx = prev.length - 1;
               const lastMsg = prev[lastIdx];
-              if (lastMsg?.role === "assistant") {
-                const newToolInvocations = lastMsg.toolInvocations?.map((t) =>
-                  t.id === event.id
-                    ? { ...t, args: { ...t.args, ...extractedArgs } }
-                    : t
-                );
-                const newParts: MessagePart[] = (lastMsg.parts || []).map(
-                  (p) => {
-                    if (p.type === "tool" && p.toolInvocation.id === event.id) {
-                      return {
-                        ...p,
-                        toolInvocation: {
-                          ...p.toolInvocation,
-                          args: { ...p.toolInvocation.args, ...extractedArgs },
-                        },
-                      };
-                    }
-                    return p;
-                  }
-                );
-                return [
-                  ...prev.slice(0, lastIdx),
-                  {
-                    ...lastMsg,
-                    toolInvocations: newToolInvocations,
-                    parts: newParts,
-                  },
-                ];
-              }
-              return prev;
+              if (lastMsg?.role !== "assistant") return prev;
+
+              const newToolInvocations = lastMsg.toolInvocations?.map((t) =>
+                t.id === event.id ? { ...t, args: { ...t.args, ...extractedArgs } } : t
+              );
+              const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
+                p.type === "tool" && p.toolInvocation.id === event.id
+                  ? { ...p, toolInvocation: { ...p.toolInvocation, args: { ...p.toolInvocation.args, ...extractedArgs } } }
+                  : p
+              );
+
+              return [
+                ...prev.slice(0, lastIdx),
+                { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
+              ];
             });
           }
           break;
@@ -445,72 +317,37 @@ export function AgentProvider({
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
             const lastMsg = prev[lastIdx];
-            if (lastMsg?.role === "assistant") {
-              const existingToolIndex = lastMsg.toolInvocations?.findIndex(
-                (t) => t.id === event.id
+            if (lastMsg?.role !== "assistant") return prev;
+
+            const existingIdx = lastMsg.toolInvocations?.findIndex((t) => t.id === event.id) ?? -1;
+
+            if (existingIdx >= 0) {
+              const newToolInvocations = lastMsg.toolInvocations!.map((t) =>
+                t.id === event.id ? { ...t, args: event.args, state: "running" as const } : t
               );
-
-              if (existingToolIndex !== undefined && existingToolIndex >= 0) {
-                const newToolInvocations = lastMsg.toolInvocations!.map((t) =>
-                  t.id === event.id
-                    ? { ...t, args: event.args, state: "running" as const }
-                    : t
-                );
-
-                const newParts: MessagePart[] = (lastMsg.parts || []).map(
-                  (p) => {
-                    if (p.type === "tool" && p.toolInvocation.id === event.id) {
-                      return {
-                        ...p,
-                        toolInvocation: {
-                          ...p.toolInvocation,
-                          args: event.args,
-                          state: "running" as const,
-                        },
-                      };
-                    }
-                    return p;
-                  }
-                );
-
-                return [
-                  ...prev.slice(0, lastIdx),
-                  {
-                    ...lastMsg,
-                    toolInvocations: newToolInvocations,
-                    parts: newParts,
-                  },
-                ];
-              } else {
-                const currentStep = currentStepRef.current;
-                const toolInvocation: ToolInvocation = {
-                  id: event.id,
-                  toolName: event.name,
-                  args: event.args,
-                  state: "running" as const,
-                };
-
-                const parts: MessagePart[] = [...(lastMsg.parts || [])];
-                parts.push({
-                  type: "tool",
-                  toolInvocation,
-                  stepIndex: currentStep,
-                });
-
-                return [
-                  ...prev.slice(0, lastIdx),
-                  {
-                    ...lastMsg,
-                    parts,
-                    toolInvocations: [
-                      ...(lastMsg.toolInvocations || []),
-                      toolInvocation,
-                    ],
-                  },
-                ];
-              }
+              const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
+                p.type === "tool" && p.toolInvocation.id === event.id
+                  ? { ...p, toolInvocation: { ...p.toolInvocation, args: event.args, state: "running" as const } }
+                  : p
+              );
+              return [...prev.slice(0, lastIdx), { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts }];
             }
-            return prev;
+
+            const toolInvocation: ToolInvocation = {
+              id: event.id,
+              toolName: event.name,
+              args: event.args,
+              state: "running",
+            };
+            const parts: MessagePart[] = [
+              ...(lastMsg.parts || []),
+              { type: "tool", toolInvocation, stepIndex: currentStepRef.current },
+            ];
+
+            return [
+              ...prev.slice(0, lastIdx),
+              { ...lastMsg, parts, toolInvocations: [...(lastMsg.toolInvocations || []), toolInvocation] },
+            ];
           });
           break;
 
@@ -518,37 +355,18 @@ export function AgentProvider({
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
             const lastMsg = prev[lastIdx];
-            if (lastMsg?.role === "assistant" && lastMsg.toolInvocations) {
-              const newToolInvocations = lastMsg.toolInvocations.map((t) =>
-                t.id === event.id
-                  ? { ...t, result: event.result, state: "completed" as const }
-                  : t
-              );
+            if (lastMsg?.role !== "assistant" || !lastMsg.toolInvocations) return prev;
 
-              const newParts: MessagePart[] = (lastMsg.parts || []).map((p) => {
-                if (p.type === "tool" && p.toolInvocation.id === event.id) {
-                  return {
-                    ...p,
-                    toolInvocation: {
-                      ...p.toolInvocation,
-                      result: event.result,
-                      state: "completed" as const,
-                    },
-                  };
-                }
-                return p;
-              });
+            const newToolInvocations = lastMsg.toolInvocations.map((t) =>
+              t.id === event.id ? { ...t, result: event.result, state: "completed" as const } : t
+            );
+            const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
+              p.type === "tool" && p.toolInvocation.id === event.id
+                ? { ...p, toolInvocation: { ...p.toolInvocation, result: event.result, state: "completed" as const } }
+                : p
+            );
 
-              return [
-                ...prev.slice(0, lastIdx),
-                {
-                  ...lastMsg,
-                  toolInvocations: newToolInvocations,
-                  parts: newParts,
-                },
-              ];
-            }
-            return prev;
+            return [...prev.slice(0, lastIdx), { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts }];
           });
           break;
 
@@ -559,43 +377,21 @@ export function AgentProvider({
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
             const lastMsg = prev[lastIdx];
-            if (lastMsg?.role === "assistant" && lastMsg.toolInvocations) {
-              const newToolInvocations = lastMsg.toolInvocations.map((t) =>
-                t.state === "running" ||
-                t.state === "pending" ||
-                t.state === "streaming"
-                  ? { ...t, state: "completed" as const }
-                  : t
-              );
+            if (lastMsg?.role !== "assistant" || !lastMsg.toolInvocations) return prev;
 
-              const newParts: MessagePart[] = (lastMsg.parts || []).map((p) => {
-                if (
-                  p.type === "tool" &&
-                  (p.toolInvocation.state === "running" ||
-                    p.toolInvocation.state === "pending" ||
-                    p.toolInvocation.state === "streaming")
-                ) {
-                  return {
-                    ...p,
-                    toolInvocation: {
-                      ...p.toolInvocation,
-                      state: "completed" as const,
-                    },
-                  };
-                }
-                return p;
-              });
+            const newToolInvocations = lastMsg.toolInvocations.map((t) =>
+              t.state === "running" || t.state === "pending" || t.state === "streaming"
+                ? { ...t, state: "completed" as const }
+                : t
+            );
+            const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
+              p.type === "tool" &&
+              (p.toolInvocation.state === "running" || p.toolInvocation.state === "pending" || p.toolInvocation.state === "streaming")
+                ? { ...p, toolInvocation: { ...p.toolInvocation, state: "completed" as const } }
+                : p
+            );
 
-              return [
-                ...prev.slice(0, lastIdx),
-                {
-                  ...lastMsg,
-                  toolInvocations: newToolInvocations,
-                  parts: newParts,
-                },
-              ];
-            }
-            return prev;
+            return [...prev.slice(0, lastIdx), { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts }];
           });
           break;
 
@@ -611,18 +407,108 @@ export function AgentProvider({
   );
 
   // ============================================================================
+  // Conversation Loading
+  // ============================================================================
+
+  // Save conversationId to session storage
+  useEffect(() => {
+    if (conversationId) {
+      sessionStorage.setItem(getSessionStorageKey(projectId), conversationId);
+    } else {
+      sessionStorage.removeItem(getSessionStorageKey(projectId));
+    }
+  }, [conversationId, projectId]);
+
+  // Load conversation: check isGenerating, connect to /events if needed
+  useEffect(() => {
+    if (!conversationId) {
+      setMessages([]);
+      return;
+    }
+
+    // Don't interfere if sendMessage is actively streaming
+    if (isActivelyStreamingRef.current) return;
+
+    const convId = conversationId;
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadConversation() {
+      try {
+        // Fetch conversation (includes isGenerating flag)
+        const convRes = await fetch(
+          `${apiUrl}/api/projects/${projectId}/conversations/${convId}`
+        );
+
+        if (!convRes.ok || cancelled) return;
+
+        const conv = await convRes.json();
+        const dbMessages = toAgentMessages(conv.messages);
+
+        if (conv.isGenerating) {
+          // Active generation - connect to /events
+          console.log("[Agent] Reconnecting to active generation");
+
+          // Get user messages, add empty assistant for streaming
+          const userMessages = dbMessages.filter((m) => m.role === "user");
+          setMessages([
+            ...userMessages,
+            {
+              id: `msg-replay-${Date.now()}`,
+              role: "assistant",
+              content: "",
+              toolInvocations: [],
+              parts: [],
+              createdAt: new Date(),
+            },
+          ]);
+          setIsLoading(true);
+          abortControllerRef.current = controller;
+
+          // Connect to events stream
+          await fetchSSE<AIEvent>({
+            url: `${apiUrl}/api/projects/${projectId}/conversations/${convId}/events`,
+            method: "GET",
+            onEvent: handleAgentEvent,
+            signal: controller.signal,
+            eventName: "message",
+          });
+
+          if (!cancelled) {
+            setIsLoading(false);
+            abortControllerRef.current = null;
+          }
+        } else {
+          // No active generation - just show messages from DB
+          if (!cancelled) {
+            setMessages(dbMessages);
+          }
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("[Agent] Failed to load conversation:", error);
+        }
+      }
+    }
+
+    loadConversation();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [conversationId, projectId, apiUrl, handleAgentEvent]);
+
+  // ============================================================================
   // Conversation Management
   // ============================================================================
 
-  const selectConversation = useCallback(async (convId: string) => {
+  const selectConversation = useCallback((convId: string) => {
     setConversationId(convId);
-    setMessages([]);
-    // Messages will be fetched by the useEffect above
   }, []);
 
   const deselectConversation = useCallback(() => {
     setConversationId(null);
-    setMessages([]);
   }, []);
 
   const createNewConversation = useCallback(async () => {
@@ -646,14 +532,11 @@ export function AgentProvider({
         await deleteConvMutation.mutateAsync({
           path: { id: projectId, conversationId: convId },
         });
-        // Invalidate conversations list to update UI
         queryClient.invalidateQueries({
           queryKey: listConversationsQueryKey({ path: { id: projectId } }),
         });
-        // If deleting active conversation, clear state
         if (convId === conversationId) {
           setConversationId(null);
-          setMessages([]);
         }
       } catch (error) {
         console.error("[Agent] Failed to delete conversation:", error);
@@ -668,12 +551,11 @@ export function AgentProvider({
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      abortControllerRef.current?.abort();
+      isActivelyStreamingRef.current = true;
 
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
       // Create conversation if needed
       let activeConvId = conversationId;
@@ -683,22 +565,20 @@ export function AgentProvider({
             path: { id: projectId },
             body: {},
           });
-          if (!conv) {
-            console.error("[Agent] Failed to create conversation");
-            return;
-          }
+          if (!conv) return;
           activeConvId = conv.id;
           setConversationId(activeConvId);
-          // Invalidate conversations list so new conversation appears in list
           queryClient.invalidateQueries({
             queryKey: listConversationsQueryKey({ path: { id: projectId } }),
           });
         } catch (error) {
           console.error("[Agent] Failed to create conversation:", error);
+          isActivelyStreamingRef.current = false;
           return;
         }
       }
 
+      // Optimistically add user message + empty assistant message
       const userMessage: AgentMessage = {
         id: `msg-${Date.now()}`,
         role: "user",
@@ -718,57 +598,54 @@ export function AgentProvider({
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
       setIsLoading(true);
 
-      fetchSSE<AIEvent>({
-        url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/chat`,
-        body: {
-          content,
-          history: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        },
-        onEvent: handleAgentEvent,
-        onComplete: () => {
-          setIsLoading(false);
-          abortControllerRef.current = null;
-          // Refresh conversations to update the title (auto-generated from first message)
-          queryClient.invalidateQueries({
-            queryKey: listConversationsQueryKey({ path: { id: projectId } }),
-          });
-        },
-        onError: (err: Error) => {
-          console.error("[Agent] SSE error:", err);
-          setIsLoading(false);
-          abortControllerRef.current = null;
-        },
-        signal: abortController.signal,
-        eventName: "message",
-      });
+      try {
+        // POST to /messages to start generation
+        const res = await fetch(
+          `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/messages`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content }),
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(`Failed to send message: ${res.status}`);
+        }
+
+        // Connect to /events to receive generation events
+        await fetchSSE<AIEvent>({
+          url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/events`,
+          method: "GET",
+          onEvent: handleAgentEvent,
+          signal: controller.signal,
+          eventName: "message",
+        });
+      } catch (error) {
+        if (!(error instanceof Error && error.name === "AbortError")) {
+          console.error("[Agent] Error:", error);
+        }
+      } finally {
+        setIsLoading(false);
+        isActivelyStreamingRef.current = false;
+        abortControllerRef.current = null;
+        queryClient.invalidateQueries({
+          queryKey: listConversationsQueryKey({ path: { id: projectId } }),
+        });
+      }
     },
-    [
-      apiUrl,
-      projectId,
-      conversationId,
-      messages,
-      createConvMutation,
-      handleAgentEvent,
-      queryClient,
-    ]
+    [apiUrl, projectId, conversationId, createConvMutation, handleAgentEvent, queryClient]
   );
 
   const stop = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    isActivelyStreamingRef.current = false;
 
     if (conversationId) {
       try {
-        await stopMutation.mutateAsync({
-          path: { id: projectId, conversationId },
-        });
+        await stopMutation.mutateAsync({ path: { id: projectId, conversationId } });
       } catch (error) {
-        // 404 is expected if there's no active generation
         if (!(error instanceof Error && error.message.includes("404"))) {
           console.error("[Agent] Failed to stop:", error);
         }
@@ -782,10 +659,7 @@ export function AgentProvider({
   const clearMessages = useCallback(async () => {
     if (conversationId) {
       try {
-        await deleteConvMutation.mutateAsync({
-          path: { id: projectId, conversationId },
-        });
-        // Invalidate conversations list to update UI
+        await deleteConvMutation.mutateAsync({ path: { id: projectId, conversationId } });
         queryClient.invalidateQueries({
           queryKey: listConversationsQueryKey({ path: { id: projectId } }),
         });

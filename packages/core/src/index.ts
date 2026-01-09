@@ -126,6 +126,11 @@ export {
 
 // Ports - Infrastructure Interfaces
 export type {
+  // Stream Store
+  StreamStore,
+  StreamEvent,
+  Stream,
+  StreamStatus,
   // Database
   Database,
   UnitOfWork,
@@ -164,6 +169,9 @@ export type {
   AIUsageStats,
   AIEvent,
   AIReadyEvent,
+  AIStreamStartEvent,
+  AIReplayStartEvent,
+  AIReplayEndEvent,
   AITextDeltaEvent,
   AIStepStartEvent,
   AIStepEndEvent,
