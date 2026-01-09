@@ -65,11 +65,14 @@ bun test --test-name-pattern "creates project"    # Filter by test name
 ```
 
 Test structure:
+
 ```typescript
-import { describe, test, expect } from "bun:test"
+import { describe, test, expect } from "bun:test";
 describe("Feature", () => {
-  test("does something", () => { expect(result).toBe(expected) })
-})
+  test("does something", () => {
+    expect(result).toBe(expected);
+  });
+});
 ```
 
 ## Code Style
@@ -77,7 +80,7 @@ describe("Feature", () => {
 ### Naming Conventions
 
 | Type          | Convention       | Example                       |
-|---------------|------------------|-------------------------------|
+| ------------- | ---------------- | ----------------------------- |
 | Files         | kebab-case       | `file-tools.ts`, `use-sse.ts` |
 | Functions     | camelCase        | `createAgent`, `toBytes`      |
 | Classes/Types | PascalCase       | `BimAgent`, `StorageProvider` |
@@ -104,11 +107,12 @@ Use `import type` for type-only imports.
 ### Error Handling
 
 Extend `DomainError` from `@ifc-viewer/core`:
+
 ```typescript
 export class SessionNotFoundError extends DomainError {
   constructor(sessionId: string) {
-    super(`Session ${sessionId} not found`, "SESSION_NOT_FOUND", 404)
-    this.name = "SessionNotFoundError"
+    super(`Session ${sessionId} not found`, "SESSION_NOT_FOUND", 404);
+    this.name = "SessionNotFoundError";
   }
 }
 ```
@@ -116,10 +120,11 @@ export class SessionNotFoundError extends DomainError {
 ### Logging
 
 Use `@ifc-viewer/logger` for server-side logging. Create child loggers for subsystems:
+
 ```typescript
-const log = createLogger("server")
-log.info("Started", { port: 3000 })
-const dbLog = log.child("database")  // Creates "server:database" namespace
+const log = createLogger("server");
+log.info("Started", { port: 3000 });
+const dbLog = log.child("database"); // Creates "server:database" namespace
 ```
 
 ### Package Structure
@@ -131,15 +136,20 @@ Each package has `src/` (with `index.ts` barrel exports), `tests/*.test.ts`, `pa
 **NEVER use `fetch()` directly in `apps/web/`.** Always use `@ifc-viewer/sdk`.
 
 ```typescript
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { listFilesOptions, writeFileMutation } from "@ifc-viewer/sdk/hooks"
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { listFilesOptions, writeFileMutation } from "@ifc-viewer/sdk/hooks";
 
 // Queries
-const { data } = useQuery(listFilesOptions({ path: { id }, query: { path: "." } }))
+const { data } = useQuery(
+  listFilesOptions({ path: { id }, query: { path: "." } })
+);
 
 // Mutations
-const writeFile = useMutation(writeFileMutation())
-await writeFile.mutateAsync({ path: { id }, body: { path: "file.txt", content: "hi" } })
+const writeFile = useMutation(writeFileMutation());
+await writeFile.mutateAsync({
+  path: { id },
+  body: { path: "file.txt", content: "hi" },
+});
 ```
 
 **When you modify API routes, regenerate the SDK:** `bun run generate:sdk`

@@ -1,7 +1,5 @@
 ---
 description: git commit and push
-model: anthropic/claude-sonnet-4-5
-subtask: true
 ---
 
 # Git Commit and Push
