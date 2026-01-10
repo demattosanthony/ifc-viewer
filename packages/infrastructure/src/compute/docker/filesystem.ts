@@ -1,6 +1,12 @@
-import type { FileSystem, FileEntry, FileStat, FileContent, FileReadOptions } from "@ifc-viewer/core"
+import { resolve } from "node:path"
+import type {
+  FileContent,
+  FileEntry,
+  FileReadOptions,
+  FileStat,
+  FileSystem,
+} from "@ifc-viewer/core"
 import type { Container } from "dockerode"
-import { resolve, normalize } from "node:path"
 
 export class DockerFileSystem implements FileSystem {
   constructor(
@@ -9,10 +15,7 @@ export class DockerFileSystem implements FileSystem {
   ) {}
 
   private resolvePath(path: string): string {
-    const resolved = resolve(
-      this.baseDir,
-      path.startsWith("/") ? path.slice(1) : path
-    )
+    const resolved = resolve(this.baseDir, path.startsWith("/") ? path.slice(1) : path)
 
     if (!resolved.startsWith(this.baseDir)) {
       throw new Error(`Path escapes sandbox: ${path}`)
@@ -21,7 +24,10 @@ export class DockerFileSystem implements FileSystem {
     return resolved
   }
 
-  private async exec(cmd: string[], options: { encoding?: "binary" } = {}): Promise<string | Buffer> {
+  private async exec(
+    cmd: string[],
+    options: { encoding?: "binary" } = {}
+  ): Promise<string | Buffer> {
     const exec = await this.container.exec({
       Cmd: cmd,
       AttachStdout: true,
@@ -35,7 +41,7 @@ export class DockerFileSystem implements FileSystem {
       const stdoutChunks: Buffer[] = []
       const stderrChunks: Buffer[] = []
 
-      const { PassThrough } = require("stream")
+      const { PassThrough } = require("node:stream")
       const stdout = new PassThrough()
       const stderr = new PassThrough()
 
@@ -55,7 +61,11 @@ export class DockerFileSystem implements FileSystem {
 
         const inspection = await exec.inspect()
         if (inspection.ExitCode !== 0) {
-          reject(new Error(stderrData.toString() || `Command failed with exit code ${inspection.ExitCode}`))
+          reject(
+            new Error(
+              stderrData.toString() || `Command failed with exit code ${inspection.ExitCode}`
+            )
+          )
           return
         }
 
@@ -82,8 +92,14 @@ export class DockerFileSystem implements FileSystem {
     header.write("0000644\0", 100, 8)
     header.write("0000000\0", 108, 8)
     header.write("0000000\0", 116, 8)
-    header.write(content.length.toString(8).padStart(11, "0") + " ", 124, 12)
-    header.write(Math.floor(Date.now() / 1000).toString(8).padStart(11, "0") + " ", 136, 12)
+    header.write(`${content.length.toString(8).padStart(11, "0")} `, 124, 12)
+    header.write(
+      `${Math.floor(Date.now() / 1000)
+        .toString(8)
+        .padStart(11, "0")} `,
+      136,
+      12
+    )
     header.fill(" ", 148, 156)
     header.write("0", 156, 1)
     header.write("ustar\0", 257, 6)
@@ -95,7 +111,7 @@ export class DockerFileSystem implements FileSystem {
     for (let i = 0; i < headerSize; i++) {
       checksum += header[i]!
     }
-    header.write(checksum.toString(8).padStart(6, "0") + "\0 ", 148, 8)
+    header.write(`${checksum.toString(8).padStart(6, "0")}\0 `, 148, 8)
 
     const paddedSize = Math.ceil(content.length / 512) * 512
     const paddedContent = Buffer.alloc(paddedSize)
@@ -168,7 +184,9 @@ export class DockerFileSystem implements FileSystem {
       if (!type || !name) continue
 
       const entryPath =
-        fullPath === this.baseDir ? `/${name}` : `/${fullPath.slice(this.baseDir.length + 1)}/${name}`
+        fullPath === this.baseDir
+          ? `/${name}`
+          : `/${fullPath.slice(this.baseDir.length + 1)}/${name}`
 
       entries.push({
         name,
@@ -217,12 +235,7 @@ export class DockerFileSystem implements FileSystem {
   async stat(path: string): Promise<FileStat> {
     const fullPath = this.resolvePath(path)
 
-    const output = (await this.exec([
-      "stat",
-      "-c",
-      "%F|%s|%W|%Y|%X",
-      fullPath,
-    ])) as string
+    const output = (await this.exec(["stat", "-c", "%F|%s|%W|%Y|%X", fullPath])) as string
 
     const [typeStr, sizeStr, ctimeStr, mtimeStr, atimeStr] = output.trim().split("|")
 

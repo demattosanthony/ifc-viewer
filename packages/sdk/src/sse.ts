@@ -72,7 +72,16 @@ function parseSSEChunk(chunk: string): Array<{ event: string; data: string }> {
  * ```
  */
 export async function fetchSSE<T>(options: FetchSSEOptions<T>): Promise<void> {
-  const { url, method = "POST", body, onEvent, onComplete, onError, signal, eventName = "message" } = options
+  const {
+    url,
+    method = "POST",
+    body,
+    onEvent,
+    onComplete,
+    onError,
+    signal,
+    eventName = "message",
+  } = options
 
   try {
     const fetchOptions: RequestInit = {
@@ -136,7 +145,7 @@ export async function fetchSSE<T>(options: FetchSSEOptions<T>): Promise<void> {
       for (const part of parts) {
         if (!part.trim()) continue
 
-        const events = parseSSEChunk(part + "\n\n")
+        const events = parseSSEChunk(`${part}\n\n`)
         for (const { event, data } of events) {
           if (event === eventName && data) {
             try {

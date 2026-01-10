@@ -1,5 +1,5 @@
-import { ProjectSchema } from "@ifc-viewer/core"
 import type { Project, ProjectRepository } from "@ifc-viewer/core"
+import { ProjectSchema } from "@ifc-viewer/core"
 
 export function createProjectRepository(): ProjectRepository {
   const store = new Map<string, Project>()

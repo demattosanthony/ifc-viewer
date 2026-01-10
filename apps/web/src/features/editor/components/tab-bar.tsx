@@ -1,6 +1,6 @@
-import { useEditor, type Tab } from "../context";
-import { FileIcon } from "@/features/file-browser/utils/file-icons";
-import { X, FileBox, Globe, FileType } from "lucide-react";
+import { FileBox, FileType, Globe, X } from "lucide-react"
+import { FileIcon } from "@/features/file-browser/utils/file-icons"
+import { type Tab, useEditor } from "../context"
 
 function SidebarIcon({ active }: { active: boolean }) {
   return (
@@ -13,17 +13,10 @@ function SidebarIcon({ active }: { active: boolean }) {
       strokeWidth="1"
     >
       <rect x="1.5" y="1.5" width="13" height="13" rx="1" />
-      <rect
-        x="1.5"
-        y="1.5"
-        width="4"
-        height="13"
-        rx="1"
-        fill={active ? "currentColor" : "none"}
-      />
+      <rect x="1.5" y="1.5" width="4" height="13" rx="1" fill={active ? "currentColor" : "none"} />
       <line x1="5.5" y1="1.5" x2="5.5" y2="14.5" />
     </svg>
-  );
+  )
 }
 
 function RightSidebarIcon({ active }: { active: boolean }) {
@@ -37,17 +30,10 @@ function RightSidebarIcon({ active }: { active: boolean }) {
       strokeWidth="1"
     >
       <rect x="1.5" y="1.5" width="13" height="13" rx="1" />
-      <rect
-        x="10.5"
-        y="1.5"
-        width="4"
-        height="13"
-        rx="1"
-        fill={active ? "currentColor" : "none"}
-      />
+      <rect x="10.5" y="1.5" width="4" height="13" rx="1" fill={active ? "currentColor" : "none"} />
       <line x1="10.5" y1="1.5" x2="10.5" y2="14.5" />
     </svg>
-  );
+  )
 }
 
 function TerminalIcon({ active }: { active: boolean }) {
@@ -61,40 +47,32 @@ function TerminalIcon({ active }: { active: boolean }) {
       strokeWidth="1"
     >
       <rect x="1.5" y="1.5" width="13" height="13" rx="1" />
-      <rect
-        x="1.5"
-        y="9.5"
-        width="13"
-        height="5"
-        rx="1"
-        fill={active ? "currentColor" : "none"}
-      />
+      <rect x="1.5" y="9.5" width="13" height="5" rx="1" fill={active ? "currentColor" : "none"} />
       <line x1="1.5" y1="9.5" x2="14.5" y2="9.5" />
     </svg>
-  );
+  )
 }
 
 function TabIcon({ type, name }: { type: Tab["type"]; name: string }) {
   switch (type) {
     case "ifc":
-      return <FileBox className="w-4 h-4 text-[#6b9f78] shrink-0" />;
+      return <FileBox className="w-4 h-4 text-[#6b9f78] shrink-0" />
     case "html":
-      return <Globe className="w-4 h-4 text-[#e34c26] shrink-0" />;
+      return <Globe className="w-4 h-4 text-[#e34c26] shrink-0" />
     case "pdf":
-      return <FileType className="w-4 h-4 text-[#b30b00] shrink-0" />;
-    case "code":
+      return <FileType className="w-4 h-4 text-[#b30b00] shrink-0" />
     default:
-      return <FileIcon filename={name} className="w-4 h-4 shrink-0" />;
+      return <FileIcon filename={name} className="w-4 h-4 shrink-0" />
   }
 }
 
 interface TabBarProps {
-  showSidebar: boolean;
-  showTerminal: boolean;
-  showChat: boolean;
-  onToggleSidebar: () => void;
-  onToggleTerminal: () => void;
-  onToggleChat: () => void;
+  showSidebar: boolean
+  showTerminal: boolean
+  showChat: boolean
+  onToggleSidebar: () => void
+  onToggleTerminal: () => void
+  onToggleChat: () => void
 }
 
 export function TabBar({
@@ -105,14 +83,14 @@ export function TabBar({
   onToggleTerminal,
   onToggleChat,
 }: TabBarProps) {
-  const { tabs, activeTabId, setActiveTab, closeTab } = useEditor();
+  const { tabs, activeTabId, setActiveTab, closeTab } = useEditor()
 
   return (
     <div className="h-[35px] bg-secondary border-b border-border flex items-center">
       {/* Tabs */}
       <div className="flex-1 flex items-center h-full overflow-x-auto">
         {tabs.map((tab) => {
-          const isActive = tab.id === activeTabId;
+          const isActive = tab.id === activeTabId
 
           return (
             <div
@@ -136,8 +114,8 @@ export function TabBar({
               </span>
               <button
                 onClick={(e) => {
-                  e.stopPropagation();
-                  closeTab(tab.id);
+                  e.stopPropagation()
+                  closeTab(tab.id)
                 }}
                 className={`p-0.5 rounded hover:bg-accent ${
                   isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -146,7 +124,7 @@ export function TabBar({
                 <X className="w-4 h-4" />
               </button>
             </div>
-          );
+          )
         })}
       </div>
 
@@ -175,5 +153,5 @@ export function TabBar({
         </button>
       </div>
     </div>
-  );
+  )
 }

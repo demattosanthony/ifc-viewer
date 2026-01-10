@@ -6,17 +6,17 @@
 
 import {
   type Context,
-  type Model,
-  uploadModel,
-  listProjectModels,
-  updateModel,
   deleteModel,
   getModelWithData,
   isDomainError,
+  listProjectModels,
+  type Model,
+  updateModel,
+  uploadModel,
 } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-import type { UploadModelRequest, UpdateModelRequest } from "../../dto"
-import { type HttpResult, ok, notFound, err, serverError } from "../types"
+import type { UpdateModelRequest, UploadModelRequest } from "../../dto"
+import { err, type HttpResult, notFound, ok, serverError } from "../types"
 
 const log = createLogger("model-controller")
 
@@ -143,10 +143,7 @@ export class ModelController {
   /**
    * Delete a model
    */
-  async delete(
-    projectId: string,
-    modelId: string
-  ): Promise<HttpResult<{ success: true }>> {
+  async delete(projectId: string, modelId: string): Promise<HttpResult<{ success: true }>> {
     try {
       // Verify model exists and belongs to project
       const existing = await this.ctx.db.models.findById(modelId)

@@ -1,11 +1,11 @@
-import { useViewer } from "./context";
-import type { ViewerProps } from "./types";
-import { useEffect, useMemo, useRef, type CSSProperties } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef } from "react"
+import { useViewer } from "./context"
+import type { ViewerProps } from "./types"
 
 export function Viewer({ onReady, onError }: ViewerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { initialize, isInitialized, error, camera, resize } = useViewer();
-  const hasInitialized = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { initialize, isInitialized, error, camera, resize } = useViewer()
+  const hasInitialized = useRef(false)
 
   const styles = useMemo<CSSProperties>(
     () => ({
@@ -16,48 +16,48 @@ export function Viewer({ onReady, onError }: ViewerProps) {
       cursor: camera?.cursor ?? "default",
     }),
     [camera?.cursor]
-  );
+  )
 
   // Init the viewer when the container mounts
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || hasInitialized.current) return;
+    const container = containerRef.current
+    if (!container || hasInitialized.current) return
 
-    hasInitialized.current = true;
+    hasInitialized.current = true
     initialize(container).catch((error) => {
-      onError?.(error);
-    });
-  }, [initialize, onError]);
+      onError?.(error)
+    })
+  }, [initialize, onError])
 
   // Notify when ready
   useEffect(() => {
     if (isInitialized) {
-      onReady?.();
+      onReady?.()
     }
-  }, [isInitialized, onReady]);
+  }, [isInitialized, onReady])
 
   // Notify on errors
   useEffect(() => {
     if (error) {
-      onError?.(error);
+      onError?.(error)
     }
-  }, [error, onError]);
+  }, [error, onError])
 
   // Watch container for resize events and trigger renderer resize
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !isInitialized) return;
+    const container = containerRef.current
+    if (!container || !isInitialized) return
 
     const resizeObserver = new ResizeObserver(() => {
-      resize();
-    });
+      resize()
+    })
 
-    resizeObserver.observe(container);
+    resizeObserver.observe(container)
 
     return () => {
-      resizeObserver.disconnect();
-    };
-  }, [isInitialized, resize]);
+      resizeObserver.disconnect()
+    }
+  }, [isInitialized, resize])
 
-  return <div ref={containerRef} style={styles}></div>;
+  return <div ref={containerRef} style={styles}></div>
 }

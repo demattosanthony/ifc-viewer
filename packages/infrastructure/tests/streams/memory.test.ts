@@ -4,9 +4,9 @@
  * Tests for the in-memory stream store implementation.
  */
 
-import { describe, test, expect, beforeEach, afterEach } from "bun:test"
-import { createMemoryStreamStore } from "../../src/streams/memory-stream-store.ts"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import type { StreamStore } from "@ifc-viewer/core"
+import { createMemoryStreamStore } from "../../src/streams/memory-stream-store.ts"
 
 describe("MemoryStreamStore", () => {
   let store: StreamStore
@@ -68,7 +68,7 @@ describe("MemoryStreamStore", () => {
     })
 
     test("returns a copy of the stream", async () => {
-      const created = await store.create("stream-1")
+      const _created = await store.create("stream-1")
       const retrieved = await store.get("stream-1")
 
       // Mutating the retrieved stream should not affect the stored one

@@ -1,29 +1,29 @@
-import { useState } from "react";
+import type { ListProjectFilesResponse } from "@ifc-viewer/sdk"
 import {
-  ChevronRight,
   ChevronDown,
+  ChevronRight,
   Folder,
   FolderOpen,
-  Plus,
   FolderPlus,
+  Plus,
   Trash2,
-} from "lucide-react";
-import type { ListProjectFilesResponse } from "@ifc-viewer/sdk";
-import { FileIcon } from "../utils/file-icons";
+} from "lucide-react"
+import { useState } from "react"
+import { FileIcon } from "../utils/file-icons"
 
-type FileEntry = ListProjectFilesResponse["files"][number];
+type FileEntry = ListProjectFilesResponse["files"][number]
 
 interface FileTreeItemProps {
-  file: FileEntry;
-  depth: number;
-  isExpanded: boolean;
-  isLoading: boolean;
-  onToggle: () => void;
-  onClick: () => void;
-  onNewFile: (path: string) => void;
-  onNewFolder: (path: string) => void;
-  onDelete: (path: string, isDirectory: boolean) => void;
-  children?: React.ReactNode;
+  file: FileEntry
+  depth: number
+  isExpanded: boolean
+  isLoading: boolean
+  onToggle: () => void
+  onClick: () => void
+  onNewFile: (path: string) => void
+  onNewFolder: (path: string) => void
+  onDelete: (path: string, isDirectory: boolean) => void
+  children?: React.ReactNode
 }
 
 export function FileTreeItem({
@@ -38,17 +38,17 @@ export function FileTreeItem({
   onDelete,
   children,
 }: FileTreeItemProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const isDir = file.type === "directory";
-  const indent = depth * 12;
+  const [isHovered, setIsHovered] = useState(false)
+  const isDir = file.type === "directory"
+  const indent = depth * 12
 
   const handleClick = () => {
     if (isDir) {
-      onToggle();
+      onToggle()
     } else {
-      onClick();
+      onClick()
     }
-  };
+  }
 
   return (
     <div>
@@ -80,9 +80,7 @@ export function FileTreeItem({
             </span>
           </>
         )}
-        <span className="truncate select-none ml-1.5 text-[13px] flex-1">
-          {file.name}
-        </span>
+        <span className="truncate select-none ml-1.5 text-[13px] flex-1">{file.name}</span>
 
         {/* Hover actions */}
         {isHovered && (
@@ -91,8 +89,8 @@ export function FileTreeItem({
               <>
                 <button
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onNewFile(file.path);
+                    e.stopPropagation()
+                    onNewFile(file.path)
                   }}
                   className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
                   title="New File"
@@ -101,8 +99,8 @@ export function FileTreeItem({
                 </button>
                 <button
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onNewFolder(file.path);
+                    e.stopPropagation()
+                    onNewFolder(file.path)
                   }}
                   className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
                   title="New Folder"
@@ -113,8 +111,8 @@ export function FileTreeItem({
             )}
             <button
               onClick={(e) => {
-                e.stopPropagation();
-                onDelete(file.path, isDir);
+                e.stopPropagation()
+                onDelete(file.path, isDir)
               }}
               className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-destructive"
               title="Delete"
@@ -139,5 +137,5 @@ export function FileTreeItem({
           children
         ))}
     </div>
-  );
+  )
 }

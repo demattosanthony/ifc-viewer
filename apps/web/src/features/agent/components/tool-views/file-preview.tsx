@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import { useMemo } from "react";
-import { File, Copy, Check } from "lucide-react";
-import { CodeBlockCode } from "@ifc-viewer/ui/components";
-import { getLanguageFromPath, getFileName } from "./types";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import { CodeBlockCode } from "@ifc-viewer/ui/components"
+import { Check, Copy, File } from "lucide-react"
+import { useMemo } from "react"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
+import { getFileName, getLanguageFromPath } from "./types"
 
 interface FilePreviewProps {
-  path: string;
-  content: string;
-  isStreaming: boolean;
+  path: string
+  content: string
+  isStreaming: boolean
 }
 
 export function FilePreview({ path, content, isStreaming }: FilePreviewProps) {
-  const { copied, copy } = useCopyToClipboard();
-  const language = useMemo(() => getLanguageFromPath(path), [path]);
-  const fileName = useMemo(() => getFileName(path), [path]);
+  const { copied, copy } = useCopyToClipboard()
+  const language = useMemo(() => getLanguageFromPath(path), [path])
+  const fileName = useMemo(() => getFileName(path), [path])
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-muted/40 dark:bg-muted/30">
@@ -48,5 +48,5 @@ export function FilePreview({ path, content, isStreaming }: FilePreviewProps) {
         )}
       </div>
     </div>
-  );
+  )
 }

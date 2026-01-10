@@ -4,8 +4,8 @@
  * Request/response schemas for conversation and chat operations.
  */
 
-import { z } from "zod"
 import { ConversationSchema, MessageSchema } from "@ifc-viewer/core"
+import { z } from "zod"
 
 // ============================================================================
 // Request DTOs

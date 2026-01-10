@@ -37,10 +37,12 @@ export type FileContentType = z.infer<typeof FileContentType>
  * Query parameters with commas may be parsed as arrays by some frameworks.
  * This schema accepts both string and string[] and normalizes to string.
  */
-const PathParam = z.union([z.string(), z.array(z.string())])
-  .transform((val) => Array.isArray(val) ? val.join(",") : val)
+const PathParam = z
+  .union([z.string(), z.array(z.string())])
+  .transform((val) => (Array.isArray(val) ? val.join(",") : val))
 
-const OptionalPathParam = z.union([z.string(), z.array(z.string())])
+const OptionalPathParam = z
+  .union([z.string(), z.array(z.string())])
   .optional()
   .transform((val) => {
     if (val === undefined) return undefined

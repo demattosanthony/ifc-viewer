@@ -1,45 +1,30 @@
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@ifc-viewer/ui/components";
-import { cn } from "@ifc-viewer/ui/lib";
-import {
-  CheckCircle2,
-  ChevronRight,
-  Loader2,
-  XCircle,
-  Terminal,
-} from "lucide-react";
-import { useState } from "react";
-import { GenericToolView } from "./tool-views/generic-view";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@ifc-viewer/ui/components"
+import { cn } from "@ifc-viewer/ui/lib"
+import { CheckCircle2, ChevronRight, Loader2, Terminal, XCircle } from "lucide-react"
+import { useState } from "react"
+import { GenericToolView } from "./tool-views/generic-view"
 
 export type ToolPart = {
-  type: string;
-  state:
-    | "streaming"
-    | "input-streaming"
-    | "input-available"
-    | "output-available"
-    | "output-error";
-  input?: Record<string, unknown>;
-  output?: Record<string, unknown>;
-  toolCallId?: string;
-  errorText?: string;
-};
+  type: string
+  state: "streaming" | "input-streaming" | "input-available" | "output-available" | "output-error"
+  input?: Record<string, unknown>
+  output?: Record<string, unknown>
+  toolCallId?: string
+  errorText?: string
+}
 
 export type ToolProps = {
-  toolPart: ToolPart;
-  defaultOpen?: boolean;
-  className?: string;
-};
+  toolPart: ToolPart
+  defaultOpen?: boolean
+  className?: string
+}
 
 // Get a friendly display name for the tool
 function getToolDisplayName(type: string): string {
   return type
     .replace(/_/g, " ")
     .replace(/([A-Z])/g, " $1")
-    .trim();
+    .trim()
 }
 
 /**
@@ -48,19 +33,17 @@ function getToolDisplayName(type: string): string {
  * dedicated components directly (FilePreview, CommandPreview).
  */
 const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const { state, input, output } = toolPart;
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  const { state, input, output } = toolPart
 
   const isLoading =
-    state === "streaming" ||
-    state === "input-streaming" ||
-    state === "input-available";
-  const isStreaming = state === "streaming";
-  const isError = state === "output-error";
-  const isSuccess = state === "output-available";
+    state === "streaming" || state === "input-streaming" || state === "input-available"
+  const isStreaming = state === "streaming"
+  const isError = state === "output-error"
+  const isSuccess = state === "output-available"
 
-  const summary = input ? Object.values(input)[0] : undefined;
-  const summaryText = typeof summary === "string" ? summary : "";
+  const summary = input ? Object.values(input)[0] : undefined
+  const summaryText = typeof summary === "string" ? summary : ""
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -86,13 +69,9 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
 
         {/* Tool name and summary */}
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="font-medium text-foreground">
-            {getToolDisplayName(toolPart.type)}
-          </span>
+          <span className="font-medium text-foreground">{getToolDisplayName(toolPart.type)}</span>
           {summaryText && (
-            <span className="truncate font-mono text-xs text-muted-foreground">
-              {summaryText}
-            </span>
+            <span className="truncate font-mono text-xs text-muted-foreground">{summaryText}</span>
           )}
         </div>
 
@@ -116,7 +95,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
         </div>
       </CollapsibleContent>
     </Collapsible>
-  );
-};
+  )
+}
 
-export { Tool };
+export { Tool }

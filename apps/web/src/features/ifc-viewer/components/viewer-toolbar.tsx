@@ -1,19 +1,7 @@
-import { useState } from "react";
-import { useViewer, type CameraMode } from "@ifc-viewer/viewer";
-import { Button } from "@ifc-viewer/ui/components";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ifc-viewer/ui/components";
-import {
-  HandGrab,
-  Rotate3D,
-  PersonStanding,
-  Layers,
-  Check,
-  X,
-} from "lucide-react";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@ifc-viewer/ui/components"
+import { type CameraMode, useViewer } from "@ifc-viewer/viewer"
+import { Check, HandGrab, Layers, PersonStanding, Rotate3D, X } from "lucide-react"
+import { useState } from "react"
 
 // ============================================================================
 // Constants
@@ -23,48 +11,36 @@ const CAMERA_MODES = [
   { mode: "Orbit" as CameraMode, label: "Orbit", icon: Rotate3D },
   { mode: "Plan" as CameraMode, label: "Pan", icon: HandGrab },
   { mode: "FirstPerson" as CameraMode, label: "Walk", icon: PersonStanding },
-] as const;
+] as const
 
 // ============================================================================
 // Camera Mode Selector
 // ============================================================================
 
 interface CameraModeSelectorProps {
-  currentMode: CameraMode | undefined;
-  onModeChange: (mode: CameraMode) => void;
+  currentMode: CameraMode | undefined
+  onModeChange: (mode: CameraMode) => void
 }
 
-function CameraModeSelector({
-  currentMode,
-  onModeChange,
-}: CameraModeSelectorProps) {
-  const [open, setOpen] = useState(false);
+function CameraModeSelector({ currentMode, onModeChange }: CameraModeSelectorProps) {
+  const [open, setOpen] = useState(false)
 
-  const currentConfig = CAMERA_MODES.find((m) => m.mode === currentMode);
-  const CurrentIcon = currentConfig?.icon ?? Rotate3D;
+  const currentConfig = CAMERA_MODES.find((m) => m.mode === currentMode)
+  const CurrentIcon = currentConfig?.icon ?? Rotate3D
 
   const handleSelect = (mode: CameraMode) => {
-    onModeChange(mode);
-    setOpen(false);
-  };
+    onModeChange(mode)
+    setOpen(false)
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          title={`Camera: ${currentConfig?.label ?? "Orbit"}`}
-        >
+        <Button variant="ghost" size="icon" title={`Camera: ${currentConfig?.label ?? "Orbit"}`}>
           <CurrentIcon className="size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-36 p-1"
-        align="center"
-        side="top"
-        sideOffset={8}
-      >
+      <PopoverContent className="w-36 p-1" align="center" side="top" sideOffset={8}>
         <div className="flex flex-col">
           {CAMERA_MODES.map(({ mode, label, icon: Icon }) => (
             <Button
@@ -81,7 +57,7 @@ function CameraModeSelector({
         </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 // ============================================================================
@@ -89,28 +65,24 @@ function CameraModeSelector({
 // ============================================================================
 
 interface Plan {
-  id: string;
-  name: string;
+  id: string
+  name: string
 }
 
 interface PlanViewSelectorProps {
-  plans: Plan[];
-  activePlanId: string | null;
-  onPlanSelect: (planId: string) => void;
+  plans: Plan[]
+  activePlanId: string | null
+  onPlanSelect: (planId: string) => void
 }
 
-function PlanViewSelector({
-  plans,
-  activePlanId,
-  onPlanSelect,
-}: PlanViewSelectorProps) {
-  const [open, setOpen] = useState(false);
+function PlanViewSelector({ plans, activePlanId, onPlanSelect }: PlanViewSelectorProps) {
+  const [open, setOpen] = useState(false)
 
-  if (plans.length === 0) return null;
+  if (plans.length === 0) return null
 
   const handleSelect = (planId: string) => {
-    onPlanSelect(planId);
-  };
+    onPlanSelect(planId)
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -124,12 +96,7 @@ function PlanViewSelector({
           <Layers className="size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-56 p-0 overflow-hidden"
-        align="center"
-        side="top"
-        sideOffset={8}
-      >
+      <PopoverContent className="w-56 p-0 overflow-hidden" align="center" side="top" sideOffset={8}>
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-2">
@@ -150,7 +117,7 @@ function PlanViewSelector({
         {/* Floor Plans List */}
         <div className="py-1.5 max-h-64 overflow-y-auto">
           {plans.map((plan, index) => {
-            const isActive = activePlanId === plan.id;
+            const isActive = activePlanId === plan.id
             return (
               <button
                 key={plan.id}
@@ -170,11 +137,7 @@ function PlanViewSelector({
                   className={`
                   flex items-center justify-center size-7 rounded-md text-xs font-medium
                   transition-colors duration-150
-                  ${
-                    isActive
-                      ? "bg-foreground text-background"
-                      : "bg-muted text-muted-foreground"
-                  }
+                  ${isActive ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}
                 `}
                 >
                   {index + 1}
@@ -184,16 +147,14 @@ function PlanViewSelector({
                 <span className="flex-1 text-sm truncate">{plan.name}</span>
 
                 {/* Active Check */}
-                {isActive && (
-                  <Check className="size-4 text-foreground shrink-0" />
-                )}
+                {isActive && <Check className="size-4 text-foreground shrink-0" />}
               </button>
-            );
+            )
           })}
         </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 // ============================================================================
@@ -201,7 +162,7 @@ function PlanViewSelector({
 // ============================================================================
 
 interface ToolbarContainerProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 function ToolbarContainer({ children }: ToolbarContainerProps) {
@@ -211,7 +172,7 @@ function ToolbarContainer({ children }: ToolbarContainerProps) {
         {children}
       </div>
     </div>
-  );
+  )
 }
 
 // ============================================================================
@@ -219,7 +180,7 @@ function ToolbarContainer({ children }: ToolbarContainerProps) {
 // ============================================================================
 
 function ToolbarDivider() {
-  return <div className="w-px h-6 bg-border/50 mx-1" />;
+  return <div className="w-px h-6 bg-border/50 mx-1" />
 }
 
 // ============================================================================
@@ -227,28 +188,25 @@ function ToolbarDivider() {
 // ============================================================================
 
 export function ViewerToolBar() {
-  const { camera, planViews } = useViewer();
+  const { camera, planViews } = useViewer()
 
   // Camera mode handler
   const handleCameraModeChange = (mode: CameraMode) => {
-    camera?.setMode(mode);
-  };
+    camera?.setMode(mode)
+  }
 
   // Plan view handler
   const handlePlanSelect = (planId: string) => {
     if (planViews?.activePlanId === planId) {
-      planViews.close();
+      planViews.close()
     } else {
-      planViews?.open(planId);
+      planViews?.open(planId)
     }
-  };
+  }
 
   return (
     <ToolbarContainer>
-      <CameraModeSelector
-        currentMode={camera?.mode}
-        onModeChange={handleCameraModeChange}
-      />
+      <CameraModeSelector currentMode={camera?.mode} onModeChange={handleCameraModeChange} />
 
       {planViews && planViews.plans.length > 0 && (
         <>
@@ -261,5 +219,5 @@ export function ViewerToolBar() {
         </>
       )}
     </ToolbarContainer>
-  );
+  )
 }

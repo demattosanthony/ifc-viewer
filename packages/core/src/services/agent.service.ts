@@ -7,9 +7,9 @@
  */
 
 import type { Context } from "../context"
-import type { AIEvent, AIMessage } from "../ports"
 import type { Conversation } from "../domain"
 import { NotFoundError } from "../domain/errors"
+import type { AIEvent, AIMessage } from "../ports"
 
 const MAX_TITLE_LENGTH = 50
 
@@ -37,7 +37,9 @@ export type AgentChatResult = {
 
 function generateTitle(content: string): string {
   const trimmed = content.trim()
-  return trimmed.length <= MAX_TITLE_LENGTH ? trimmed : trimmed.slice(0, MAX_TITLE_LENGTH - 3) + "..."
+  return trimmed.length <= MAX_TITLE_LENGTH
+    ? trimmed
+    : `${trimmed.slice(0, MAX_TITLE_LENGTH - 3)}...`
 }
 
 /**

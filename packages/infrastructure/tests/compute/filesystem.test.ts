@@ -5,11 +5,11 @@
  * CRITICAL security tests for path traversal prevention.
  */
 
-import { describe, test, expect, beforeEach, afterEach } from "bun:test"
-import { LocalFileSystem } from "../../src/compute/local/filesystem"
-import { mkdir, rm, writeFile, readFile } from "node:fs/promises"
-import { join } from "node:path"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { LocalFileSystem } from "../../src/compute/local/filesystem"
 
 describe("LocalFileSystem", () => {
   let baseDir: string

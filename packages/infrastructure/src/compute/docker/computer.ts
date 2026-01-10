@@ -1,7 +1,7 @@
 import type { Computer, FileSystem, Shell, TerminalSession } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-import Docker from "dockerode"
 import type { Container } from "dockerode"
+import Docker from "dockerode"
 import { DockerFileSystem } from "./filesystem"
 import { DockerShell } from "./shell"
 
@@ -44,7 +44,6 @@ export class DockerComputer implements Computer {
 
   private docker: Docker
   private container: Container | null = null
-  private containerId: string | null = null
 
   private readonly config: DockerComputeConfig
   private readonly image: string
@@ -125,7 +124,6 @@ export class DockerComputer implements Computer {
 
     // Create container
     this.container = await this.docker.createContainer(createOptions)
-    this.containerId = this.container.id
 
     // Start container
     await this.container.start()
@@ -192,10 +190,7 @@ export class DockerComputer implements Computer {
    * Build environment variables array for container
    */
   private buildEnvArray(): string[] {
-    const env: string[] = [
-      `TERM=xterm-256color`,
-      `SHELL=/bin/bash`,
-    ]
+    const env: string[] = [`TERM=xterm-256color`, `SHELL=/bin/bash`]
 
     if (this.config.environment) {
       for (const [key, value] of Object.entries(this.config.environment)) {
@@ -333,7 +328,6 @@ export class DockerComputer implements Computer {
       }
 
       this.container = null
-      this.containerId = null
     }
 
     this._files = null

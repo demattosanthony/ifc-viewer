@@ -26,13 +26,12 @@
  * }
  * ```
  */
-"use client";
+"use client"
 
 // Import client to ensure it's configured before hooks are used
-import "./client";
-
-// Re-export types
-export * from "./generated/types.gen";
+import "./client"
 
 // Re-export TanStack Query hooks and options
-export * from "./generated/@tanstack/react-query.gen";
+export * from "./generated/@tanstack/react-query.gen"
+// Re-export types
+export * from "./generated/types.gen"

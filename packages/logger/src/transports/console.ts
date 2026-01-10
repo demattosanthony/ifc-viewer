@@ -5,8 +5,8 @@ const RESET = "\x1b[0m"
 const DIM = "\x1b[2m"
 const COLORS: Record<LogLevel, string> = {
   debug: "\x1b[36m", // cyan
-  info: "\x1b[32m",  // green
-  warn: "\x1b[33m",  // yellow
+  info: "\x1b[32m", // green
+  warn: "\x1b[33m", // yellow
   error: "\x1b[31m", // red
 }
 
@@ -46,7 +46,7 @@ function formatData(data: Record<string, unknown> | undefined): string {
 
 /**
  * Console transport with colored output.
- * 
+ *
  * Output format: HH:MM:SS LEVEL [namespace] message key=value...
  */
 export class ConsoleTransport implements Transport {

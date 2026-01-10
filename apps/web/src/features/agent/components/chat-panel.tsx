@@ -1,49 +1,40 @@
-import { useState } from "react";
-import { useAgent } from "../context";
+import type { ListConversationsResponse } from "@ifc-viewer/sdk"
 import {
-  ChatContainerRoot,
+  Button,
   ChatContainerContent,
+  ChatContainerRoot,
   ChatContainerScrollAnchor,
-} from "@ifc-viewer/ui/components";
-import {
+  ErrorBoundary,
   PromptInput,
-  PromptInputTextarea,
   PromptInputActions,
-} from "@ifc-viewer/ui/components";
-import { Button } from "@ifc-viewer/ui/components";
-import { ErrorBoundary } from "@ifc-viewer/ui/components";
-import { ChatMessage } from "./message";
-import { PulseDotLoader } from "@ifc-viewer/ui/components";
-import {
-  X,
-  Trash2,
-  ArrowUp,
-  Square,
-  Plus,
-  ChevronLeft,
-} from "lucide-react";
-import type { ListConversationsResponse } from "@ifc-viewer/sdk";
+  PromptInputTextarea,
+  PulseDotLoader,
+} from "@ifc-viewer/ui/components"
+import { ArrowUp, ChevronLeft, Plus, Square, Trash2, X } from "lucide-react"
+import { useState } from "react"
+import { useAgent } from "../context"
+import { ChatMessage } from "./message"
 
 /** Conversation type from API (derived from SDK) */
-type Conversation = ListConversationsResponse[number];
+type Conversation = ListConversationsResponse[number]
 
 interface ChatPanelProps {
-  onClose?: () => void;
+  onClose?: () => void
 }
 
 /** Format relative time for conversation list */
 function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  if (diffMins < 1) return "Just now"
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  return date.toLocaleDateString()
 }
 
 /** Conversation list item - for empty state view */
@@ -52,9 +43,9 @@ function ConversationItem({
   onSelect,
   onDelete,
 }: {
-  conversation: Conversation;
-  onSelect: () => void;
-  onDelete: () => void;
+  conversation: Conversation
+  onSelect: () => void
+  onDelete: () => void
 }) {
   return (
     <div
@@ -63,8 +54,8 @@ function ConversationItem({
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
+          e.preventDefault()
+          onSelect()
         }
       }}
       className="group flex w-full cursor-pointer items-center justify-between rounded py-1 text-left transition-colors hover:text-foreground"
@@ -81,8 +72,8 @@ function ConversationItem({
           size="icon"
           className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
           onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
+            e.stopPropagation()
+            onDelete()
           }}
           title="Delete conversation"
         >
@@ -90,7 +81,7 @@ function ConversationItem({
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
 function EmptyStateView({
@@ -103,14 +94,14 @@ function EmptyStateView({
   onSelectConversation,
   onDeleteConversation,
 }: {
-  inputValue: string;
-  setInputValue: (value: string) => void;
-  isLoading: boolean;
-  conversations: Conversation[];
-  onSubmit: () => void;
-  onStop: () => void;
-  onSelectConversation: (id: string) => void;
-  onDeleteConversation: (id: string) => void;
+  inputValue: string
+  setInputValue: (value: string) => void
+  isLoading: boolean
+  conversations: Conversation[]
+  onSubmit: () => void
+  onStop: () => void
+  onSelectConversation: (id: string) => void
+  onDeleteConversation: (id: string) => void
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -178,7 +169,7 @@ function EmptyStateView({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function ChatPanel({ onClose }: ChatPanelProps) {
@@ -194,46 +185,45 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     selectConversation,
     createNewConversation,
     deleteConversation,
-  } = useAgent();
-  const [inputValue, setInputValue] = useState("");
+  } = useAgent()
+  const [inputValue, setInputValue] = useState("")
 
-  const hasMessages = messages.length > 0;
+  const hasMessages = messages.length > 0
 
   // Show chat view if we have a conversation selected (even if messages are still loading)
   // This ensures the view switches immediately when selecting a conversation
-  const showChatView = hasMessages || conversationId !== null;
+  const showChatView = hasMessages || conversationId !== null
 
   // Check if we're waiting for the first token (loading but no content yet)
   const isAwaitingFirstToken = (() => {
-    if (!isLoading) return false;
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage || lastMessage.role !== "assistant") return false;
+    if (!isLoading) return false
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage || lastMessage.role !== "assistant") return false
     // Show loader if assistant message has no content and no tool invocations
-    const hasContent = lastMessage.content.trim().length > 0;
-    const hasTools =
-      lastMessage.toolInvocations && lastMessage.toolInvocations.length > 0;
-    return !hasContent && !hasTools;
-  })();
+    const hasContent = lastMessage.content.trim().length > 0
+    const hasTools = lastMessage.toolInvocations && lastMessage.toolInvocations.length > 0
+    return !hasContent && !hasTools
+  })()
 
   // Check if conversation is selected but has no messages
-  const hasNoMessages = conversationId !== null && !hasMessages && !isLoading;
+  const hasNoMessages = conversationId !== null && !hasMessages && !isLoading
 
   const handleSubmit = () => {
-    const trimmed = inputValue.trim();
+    const trimmed = inputValue.trim()
     if (trimmed && !isLoading) {
-      sendMessage(trimmed);
-      setInputValue("");
+      sendMessage(trimmed)
+      setInputValue("")
     }
-  };
+  }
 
   const handleNewConversation = () => {
-    createNewConversation();
-  };
+    createNewConversation()
+  }
 
   const handleBackToList = () => {
     // Go back to conversation list without deleting
-    deselectConversation();
-  };
+    deselectConversation()
+  }
 
   // Empty state - show conversation list
   if (!showChatView) {
@@ -279,7 +269,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           onDeleteConversation={deleteConversation}
         />
       </div>
-    );
+    )
   }
 
   // Active chat - input at bottom
@@ -298,8 +288,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium text-foreground">
-            {conversations.find((c) => c.id === conversationId)?.title ||
-              "New conversation"}
+            {conversations.find((c) => c.id === conversationId)?.title || "New conversation"}
           </span>
         </div>
 
@@ -323,13 +312,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
           {onClose && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-7 w-7"
-              title="Close"
-            >
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7" title="Close">
               <X className="h-3.5 w-3.5" />
             </Button>
           )}
@@ -355,11 +338,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               <PulseDotLoader />
             </div>
           )}
-          {hasNoMessages && (
-            <div className="text-sm text-muted-foreground">
-              No messages
-            </div>
-          )}
+          {hasNoMessages && <div className="text-sm text-muted-foreground">No messages</div>}
           <ChatContainerScrollAnchor />
         </ChatContainerContent>
       </ChatContainerRoot>
@@ -373,10 +352,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           onSubmit={handleSubmit}
           className="rounded-xl bg-input"
         >
-          <PromptInputTextarea
-            placeholder="Ask anything..."
-            className="min-h-[40px] text-sm"
-          />
+          <PromptInputTextarea placeholder="Ask anything..." className="min-h-[40px] text-sm" />
           <PromptInputActions className="justify-end px-2 pb-2">
             {isLoading ? (
               <Button
@@ -403,5 +379,5 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         </PromptInput>
       </div>
     </div>
-  );
+  )
 }

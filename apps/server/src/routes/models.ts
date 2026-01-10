@@ -1,12 +1,12 @@
-import { Elysia } from "elysia"
 import type { Context } from "@ifc-viewer/core"
 import {
-  ModelController,
-  UpdateModelRequest,
-  ModelResponse,
   ErrorResponse,
+  ModelController,
+  ModelResponse,
   SuccessResponse,
+  UpdateModelRequest,
 } from "@ifc-viewer/interface"
+import { Elysia } from "elysia"
 import { z } from "zod"
 
 export function modelsRoutes(ctx: Context) {

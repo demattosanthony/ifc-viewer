@@ -36,10 +36,7 @@ export type UpdateModelInput = {
  * - Stores IFC file in models/ directory
  * - Creates model metadata in database
  */
-export async function uploadModel(
-  ctx: Context,
-  input: UploadModelInput
-): Promise<Model> {
+export async function uploadModel(ctx: Context, input: UploadModelInput): Promise<Model> {
   // Verify project exists
   const project = await ctx.db.projects.findById(input.projectId)
   if (!project) throw new NotFoundError("Project", input.projectId)
@@ -88,10 +85,7 @@ export async function getModelWithData(
 /**
  * List all models for a project.
  */
-export async function listProjectModels(
-  ctx: Context,
-  projectId: string
-): Promise<Model[]> {
+export async function listProjectModels(ctx: Context, projectId: string): Promise<Model[]> {
   return ctx.db.models.findByProjectId(projectId)
 }
 
@@ -115,10 +109,7 @@ export async function updateModel(
  * - Removes model metadata from database
  * - Deletes IFC file from storage
  */
-export async function deleteModel(
-  ctx: Context,
-  modelId: string
-): Promise<void> {
+export async function deleteModel(ctx: Context, modelId: string): Promise<void> {
   const model = await ctx.db.models.findById(modelId)
   if (!model) throw new NotFoundError("Model", modelId)
 
@@ -133,10 +124,7 @@ export async function deleteModel(
 /**
  * Delete all models for a project.
  */
-export async function deleteProjectModels(
-  ctx: Context,
-  projectId: string
-): Promise<void> {
+export async function deleteProjectModels(ctx: Context, projectId: string): Promise<void> {
   const models = await ctx.db.models.findByProjectId(projectId)
 
   // Delete all model files from storage

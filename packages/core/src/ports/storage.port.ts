@@ -10,12 +10,7 @@
 // ============================================================================
 
 /** Flexible input types for storage operations */
-export type StorageInput =
-  | string
-  | Uint8Array
-  | ArrayBuffer
-  | Blob
-  | ReadableStream<Uint8Array>
+export type StorageInput = string | Uint8Array | ArrayBuffer | Blob | ReadableStream<Uint8Array>
 
 /** Metadata associated with a stored object */
 export interface StorageMetadata {
@@ -102,7 +97,10 @@ export interface Storage {
     options?: StoragePutOptions
   ): Promise<StoragePutResult>
   getUrl(key: string, options?: StorageUrlOptions): Promise<string | null>
-  getUploadUrl(key: string, options?: StorageUploadUrlOptions): Promise<StorageUploadCredentials | null>
+  getUploadUrl(
+    key: string,
+    options?: StorageUploadUrlOptions
+  ): Promise<StorageUploadCredentials | null>
   list(prefix: string, options?: StorageListOptions): AsyncIterable<StorageEntry>
   dispose?(): Promise<void>
 }

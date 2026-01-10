@@ -5,10 +5,15 @@
  */
 
 // Re-export compute types from core
-export type { Computer, ComputeConfig, FileSystem, Shell, TerminalSession, TerminalOptions } from "@ifc-viewer/core"
-
-// Local provider
-export * from "./local"
-
+export type {
+  ComputeConfig,
+  Computer,
+  FileSystem,
+  Shell,
+  TerminalOptions,
+  TerminalSession,
+} from "@ifc-viewer/core"
 // Docker provider
 export * from "./docker"
+// Local provider
+export * from "./local"

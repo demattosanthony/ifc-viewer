@@ -1,5 +1,5 @@
-import type { Computer, ComputeConfig, FileSystem, Shell, TerminalSession } from "@ifc-viewer/core"
 import { mkdir, rm } from "node:fs/promises"
+import type { ComputeConfig, Computer, FileSystem, Shell, TerminalSession } from "@ifc-viewer/core"
 import { LocalFileSystem } from "./filesystem"
 import { LocalShell } from "./shell"
 
@@ -105,16 +105,12 @@ export class LocalComputer implements Computer {
     this.agentPythonSession = null
 
     if (this.cleanup) {
-      await rm(this.workingDirectory, { recursive: true, force: true }).catch(
-        () => {}
-      )
+      await rm(this.workingDirectory, { recursive: true, force: true }).catch(() => {})
     }
   }
 }
 
-export async function createLocalComputer(
-  config: ComputeConfig
-): Promise<Computer> {
+export async function createLocalComputer(config: ComputeConfig): Promise<Computer> {
   const computer = new LocalComputer(config)
   await computer.init()
   return computer

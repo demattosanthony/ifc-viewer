@@ -9,11 +9,11 @@
 
 import type { Context } from "@ifc-viewer/core"
 import type {
-  ConversationResponse,
   ConversationListResponse,
+  ConversationResponse,
   ConversationWithMessages,
 } from "../../dto"
-import { type HttpResult, ok, notFound } from "../types"
+import { type HttpResult, notFound, ok } from "../types"
 
 export class ConversationController {
   constructor(private ctx: Context) {}
@@ -21,10 +21,7 @@ export class ConversationController {
   /**
    * Create a new conversation for a project
    */
-  async create(
-    projectId: string,
-    title?: string
-  ): Promise<HttpResult<ConversationResponse>> {
+  async create(projectId: string, title?: string): Promise<HttpResult<ConversationResponse>> {
     // Verify project exists
     const project = await this.ctx.db.projects.findById(projectId)
     if (!project) {
@@ -41,17 +38,13 @@ export class ConversationController {
   /**
    * Get a conversation by ID with its messages
    */
-  async getById(
-    conversationId: string
-  ): Promise<HttpResult<ConversationWithMessages>> {
+  async getById(conversationId: string): Promise<HttpResult<ConversationWithMessages>> {
     const conversation = await this.ctx.db.conversations.findById(conversationId)
     if (!conversation) {
       return notFound("Conversation not found")
     }
 
-    const messages = await this.ctx.db.messages.findByConversationId(
-      conversation.id
-    )
+    const messages = await this.ctx.db.messages.findByConversationId(conversation.id)
 
     return ok({ ...conversation, messages })
   }
@@ -59,12 +52,8 @@ export class ConversationController {
   /**
    * List all conversations for a project
    */
-  async listByProject(
-    projectId: string
-  ): Promise<HttpResult<ConversationListResponse>> {
-    const conversations = await this.ctx.db.conversations.findByProjectId(
-      projectId
-    )
+  async listByProject(projectId: string): Promise<HttpResult<ConversationListResponse>> {
+    const conversations = await this.ctx.db.conversations.findByProjectId(projectId)
     return ok(conversations)
   }
 

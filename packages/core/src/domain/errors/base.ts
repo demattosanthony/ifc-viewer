@@ -21,5 +21,4 @@ export class DomainError extends Error {
   }
 }
 
-export const isDomainError = (error: unknown): error is DomainError =>
-  error instanceof DomainError
+export const isDomainError = (error: unknown): error is DomainError => error instanceof DomainError

@@ -4,26 +4,23 @@
  * AI provider implementations for the IFC Viewer platform.
  */
 
-// Factory
-export {
-  createAIProvider,
-  createAIProviderFromEnv,
-  type AIConfig,
-  type AIProviderType,
-} from "./factory"
-
 // Anthropic
 export {
-  createAnthropicProvider,
   type AnthropicProviderConfig,
+  createAnthropicProvider,
 } from "./anthropic"
-
+// Factory
+export {
+  type AIConfig,
+  type AIProviderType,
+  createAIProvider,
+  createAIProviderFromEnv,
+} from "./factory"
+// Prompts
+export { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
 // Tools
 export { createFileTools } from "./tools/file-tools"
 export { createShellTools } from "./tools/shell-tools"
 
-// Prompts
-export { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
-
 // Utilities
-export { getErrorMessage, formatUsageStats } from "./utils"
+export { formatUsageStats, getErrorMessage } from "./utils"

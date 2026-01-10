@@ -1,37 +1,28 @@
-"use client";
+"use client"
 
-import { useState, useMemo } from "react";
-import { ChevronDown, Copy, Check } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@ifc-viewer/ui/components";
-import { cn } from "@ifc-viewer/ui/lib";
-import { getFileName } from "./types";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@ifc-viewer/ui/components"
+import { cn } from "@ifc-viewer/ui/lib"
+import { Check, ChevronDown, Copy } from "lucide-react"
+import { useMemo, useState } from "react"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
+import { getFileName } from "./types"
 
 interface ReadFilePreviewProps {
-  path: string;
-  result?: { success?: boolean; content?: string; error?: string };
-  isStreaming: boolean;
-  isComplete: boolean;
+  path: string
+  result?: { success?: boolean; content?: string; error?: string }
+  isStreaming: boolean
+  isComplete: boolean
 }
 
-export function ReadFilePreview({
-  path,
-  result,
-  isStreaming,
-  isComplete,
-}: ReadFilePreviewProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { copied, copy } = useCopyToClipboard();
+export function ReadFilePreview({ path, result, isComplete }: ReadFilePreviewProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const { copied, copy } = useCopyToClipboard()
 
-  const fileName = useMemo(() => getFileName(path), [path]);
+  const fileName = useMemo(() => getFileName(path), [path])
 
-  const content = result?.content || "";
-  const hasContent = content.length > 0;
-  const isError = isComplete && result?.success === false;
+  const content = result?.content || ""
+  const hasContent = content.length > 0
+  const isError = isComplete && result?.success === false
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -50,9 +41,7 @@ export function ReadFilePreview({
               isOpen && "border-b border-border"
             )}
           >
-            <span className="text-sm text-foreground truncate">
-              Read {fileName}
-            </span>
+            <span className="text-sm text-foreground truncate">Read {fileName}</span>
 
             {/* Expand indicator */}
             {(hasContent || isError) && (
@@ -74,8 +63,8 @@ export function ReadFilePreview({
               {/* Copy button */}
               <button
                 onClick={(e) => {
-                  e.stopPropagation();
-                  copy(content);
+                  e.stopPropagation()
+                  copy(content)
                 }}
                 className="absolute right-2 top-2 z-10 rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 title="Copy content"
@@ -107,5 +96,5 @@ export function ReadFilePreview({
         </CollapsibleContent>
       </div>
     </Collapsible>
-  );
+  )
 }

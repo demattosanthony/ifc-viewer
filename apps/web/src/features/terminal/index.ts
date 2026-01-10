@@ -1,1 +1,1 @@
-export { Terminal } from "./components/terminal";
+export { Terminal } from "./components/terminal"

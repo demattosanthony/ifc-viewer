@@ -1,2 +1,2 @@
-export { PlanViewManager } from "./manager";
-export type { PlanViewState, PlanViewCallbacks } from "./manager";
+export type { PlanViewCallbacks, PlanViewState } from "./manager"
+export { PlanViewManager } from "./manager"

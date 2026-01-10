@@ -11,16 +11,16 @@
 
 import type {
   Storage,
+  StorageEntry,
   StorageInput,
-  StorageObject,
+  StorageListOptions,
   StorageMetadata,
+  StorageObject,
   StoragePutOptions,
   StoragePutResult,
-  StorageEntry,
-  StorageListOptions,
-  StorageUrlOptions,
-  StorageUploadUrlOptions,
   StorageUploadCredentials,
+  StorageUploadUrlOptions,
+  StorageUrlOptions,
 } from "@ifc-viewer/core"
 import { BaseStorageObject, inferContentType, streamToBytes, toBytes } from "./base"
 

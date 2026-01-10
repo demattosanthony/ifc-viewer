@@ -4,14 +4,14 @@
  * Tests for domain error classes and utilities.
  */
 
-import { describe, test, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import {
   DomainError,
+  DuplicateError,
+  InvalidProjectIdError,
   isDomainError,
   NotFoundError,
-  DuplicateError,
   ValidationError,
-  InvalidProjectIdError,
 } from "../../src/domain/errors"
 
 describe("DomainError", () => {

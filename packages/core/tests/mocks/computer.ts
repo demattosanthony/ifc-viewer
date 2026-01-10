@@ -6,10 +6,10 @@
 
 import type {
   Computer,
-  FileSystem,
-  FileEntry,
   FileContent,
+  FileEntry,
   FileStat,
+  FileSystem,
   Shell,
   TerminalSession,
 } from "../../src/ports"
@@ -28,8 +28,7 @@ export function createMockFileSystem(): FileSystem & {
 } {
   const files = new Map<string, MockFile>()
 
-  const normalize = (path: string): string =>
-    path.replace(/^\.\//, "").replace(/^\//, "")
+  const normalize = (path: string): string => path.replace(/^\.\//, "").replace(/^\//, "")
 
   return {
     _files: files,
@@ -44,10 +43,7 @@ export function createMockFileSystem(): FileSystem & {
     },
 
     async write(path: string, content: string | Uint8Array): Promise<void> {
-      const data =
-        typeof content === "string"
-          ? new TextEncoder().encode(content)
-          : content
+      const data = typeof content === "string" ? new TextEncoder().encode(content) : content
       files.set(normalize(path), { content: data, modifiedAt: Date.now() })
     },
 

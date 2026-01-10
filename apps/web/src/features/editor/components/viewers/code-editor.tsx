@@ -1,12 +1,12 @@
-import { useEffect, useCallback, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { writeProjectFileMutation } from "@ifc-viewer/sdk/hooks";
-import { useEditor } from "../../context";
-import Editor, { type OnMount } from "@monaco-editor/react";
-import { useEffectiveTheme } from "@/shared/hooks";
+import { writeProjectFileMutation } from "@ifc-viewer/sdk/hooks"
+import Editor, { type OnMount } from "@monaco-editor/react"
+import { useMutation } from "@tanstack/react-query"
+import { useCallback, useEffect, useRef } from "react"
+import { useEffectiveTheme } from "@/shared/hooks"
+import { useEditor } from "../../context"
 
 function getLanguage(filename: string): string {
-  const ext = filename.split(".").pop()?.toLowerCase();
+  const ext = filename.split(".").pop()?.toLowerCase()
   const languageMap: Record<string, string> = {
     js: "javascript",
     jsx: "javascript",
@@ -24,78 +24,72 @@ function getLanguage(filename: string): string {
     yml: "yaml",
     sh: "shell",
     bash: "shell",
-  };
-  return languageMap[ext || ""] || "plaintext";
+  }
+  return languageMap[ext || ""] || "plaintext"
 }
 
 export interface CodeEditorProps {
-  projectId: string;
-  path: string;
-  tabId: string;
-  content: string;
-  filename: string;
+  projectId: string
+  path: string
+  tabId: string
+  content: string
+  filename: string
 }
 
-export function CodeEditor({
-  projectId,
-  path,
-  tabId,
-  content,
-  filename,
-}: CodeEditorProps) {
-  const { setTabDirty, updateFileContent, getFileContent } = useEditor();
-  const originalContentRef = useRef(content);
-  const saveRef = useRef<() => Promise<void> | undefined>(undefined);
-  const effectiveTheme = useEffectiveTheme();
+export function CodeEditor({ projectId, path, tabId, content, filename }: CodeEditorProps) {
+  const { setTabDirty, updateFileContent, getFileContent } = useEditor()
+  const originalContentRef = useRef(content)
+  const saveRef = useRef<() => Promise<void> | undefined>(undefined)
+  const effectiveTheme = useEffectiveTheme()
 
   const saveMutation = useMutation({
     ...writeProjectFileMutation(),
     onSuccess: () => {
-      const currentContent = getFileContent(path);
+      const currentContent = getFileContent(path)
       if (currentContent) {
-        originalContentRef.current = currentContent.content;
+        originalContentRef.current = currentContent.content
       }
-      setTabDirty(tabId, false);
+      setTabDirty(tabId, false)
     },
     onError: (err) => {
-      console.error("Failed to save file:", err);
+      console.error("Failed to save file:", err)
     },
-  });
+  })
 
   // Update original content when file is loaded fresh
   useEffect(() => {
-    originalContentRef.current = content;
-  }, [path, content]);
+    originalContentRef.current = content
+  }, [content])
 
   // Keep save function in ref so keyboard shortcut always uses latest
   useEffect(() => {
     saveRef.current = async () => {
-      const currentContent = getFileContent(path);
-      if (!currentContent) return;
+      const currentContent = getFileContent(path)
+      if (!currentContent) return
 
       saveMutation.mutate({
         path: { id: projectId },
         body: { path, content: currentContent.content },
-      });
-    };
-  }, [projectId, path, getFileContent, saveMutation]);
+      })
+    }
+  }, [projectId, path, getFileContent, saveMutation])
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     // Add Ctrl+S / Cmd+S keybinding
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      saveRef.current?.();
-    });
-  }, []);
+      saveRef.current?.()
+    })
+  }, [])
 
   const handleChange = useCallback(
     (value: string | undefined) => {
-      if (value === undefined) return;
-      updateFileContent(path, value);
-      const isDirty = value !== originalContentRef.current;
-      setTabDirty(tabId, isDirty);
+      if (value === undefined) return
+      updateFileContent(path, value)
+      const isDirty = value !== originalContentRef.current
+      setTabDirty(tabId, isDirty)
     },
     [path, tabId, updateFileContent, setTabDirty]
-  );
+  )
 
   return (
     <div className="h-full relative">
@@ -121,5 +115,5 @@ export function CodeEditor({
         </div>
       )}
     </div>
-  );
+  )
 }

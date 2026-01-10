@@ -1,40 +1,40 @@
-import { useState, useCallback, useRef } from "react";
 import {
+  type ElementSelectedEvent,
   useViewer,
   useViewerEvents,
   Viewer,
   ViewerProvider,
-  type ElementSelectedEvent,
-} from "@ifc-viewer/viewer";
-import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar";
-import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel";
+} from "@ifc-viewer/viewer"
+import { useCallback, useRef, useState } from "react"
+import { ChatPanel } from "@/features/agent/components/chat-panel"
+import { AgentProvider } from "@/features/agent/context"
+import { useAgentPresence } from "@/features/agent/hooks/use-agent-presence"
+import { EditorPane } from "@/features/editor/components/editor-pane"
+import { TabBar } from "@/features/editor/components/tab-bar"
+import { EditorProvider, useEditor } from "@/features/editor/context"
+import { useResizable } from "@/features/editor/hooks/use-resizable"
 import {
   FileBrowser,
   type FileBrowserHandle,
-} from "@/features/file-browser/components/file-browser";
-import { TabBar } from "@/features/editor/components/tab-bar";
-import { EditorPane } from "@/features/editor/components/editor-pane";
-import { EditorProvider, useEditor } from "@/features/editor/context";
-import { AgentProvider } from "@/features/agent/context";
-import { useAgentPresence } from "@/features/agent/hooks/use-agent-presence";
-import { ChatPanel } from "@/features/agent/components/chat-panel";
-import { Terminal } from "@/features/terminal";
-import { useResizable } from "@/features/editor/hooks/use-resizable";
-import { ThemeProvider } from "./shared/components/theme-provider";
+} from "@/features/file-browser/components/file-browser"
+import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel"
+import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar"
+import { Terminal } from "@/features/terminal"
+import { ThemeProvider } from "./shared/components/theme-provider"
 
 interface SelectedElement {
-  data: Record<string, unknown>;
+  data: Record<string, unknown>
 }
 
 interface MainContentProps {
-  projectId: string;
-  showSidebar: boolean;
-  showTerminal: boolean;
-  showChat: boolean;
-  fileBrowserRef: React.RefObject<FileBrowserHandle | null>;
-  onToggleSidebar: () => void;
-  onToggleTerminal: () => void;
-  onToggleChat: () => void;
+  projectId: string
+  showSidebar: boolean
+  showTerminal: boolean
+  showChat: boolean
+  fileBrowserRef: React.RefObject<FileBrowserHandle | null>
+  onToggleSidebar: () => void
+  onToggleTerminal: () => void
+  onToggleChat: () => void
 }
 
 function MainContent({
@@ -47,61 +47,58 @@ function MainContent({
   onToggleTerminal,
   onToggleChat,
 }: MainContentProps) {
-  const { getElement } = useViewer();
-  const { tabs, activeTabId } = useEditor();
-  const [selectedElement, setSelectedElement] =
-    useState<SelectedElement | null>(null);
+  const { getElement } = useViewer()
+  const { tabs, activeTabId } = useEditor()
+  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null)
 
-  useAgentPresence({ fileBrowserRef });
+  useAgentPresence({ fileBrowserRef })
 
-  const { size: chatWidth, handleResizeStart: handleChatResizeStart } =
-    useResizable({
-      initialSize: 400,
-      minSize: 280,
-      maxSize: 650,
-      direction: "horizontal",
-      side: "right",
-    });
+  const { size: chatWidth, handleResizeStart: handleChatResizeStart } = useResizable({
+    initialSize: 400,
+    minSize: 280,
+    maxSize: 650,
+    direction: "horizontal",
+    side: "right",
+  })
 
-  const { size: terminalHeight, handleResizeStart: handleTerminalResizeStart } =
-    useResizable({
-      initialSize: 250,
-      minSize: 120,
-      maxSize: 500,
-      direction: "vertical",
-      side: "bottom",
-    });
+  const { size: terminalHeight, handleResizeStart: handleTerminalResizeStart } = useResizable({
+    initialSize: 250,
+    minSize: 120,
+    maxSize: 500,
+    direction: "vertical",
+    side: "bottom",
+  })
 
-  const activeTab = tabs.find((t) => t.id === activeTabId);
-  const isIfcActive = activeTab?.type === "ifc";
+  const activeTab = tabs.find((t) => t.id === activeTabId)
+  const isIfcActive = activeTab?.type === "ifc"
 
   useViewerEvents({
     onElementSelected: useCallback(
       async (event: ElementSelectedEvent) => {
-        const entries = Object.entries(event.modelIdMap);
+        const entries = Object.entries(event.modelIdMap)
         if (entries.length === 0) {
-          setSelectedElement(null);
-          return;
+          setSelectedElement(null)
+          return
         }
         for (const [modelId, localIdSet] of entries) {
           for (const localId of localIdSet) {
-            const element = await getElement(modelId, localId);
+            const element = await getElement(modelId, localId)
             if (element) {
               setSelectedElement({
                 data: element as Record<string, unknown>,
-              });
-              return;
+              })
+              return
             }
           }
         }
       },
       [getElement]
     ),
-  });
+  })
 
   const handleClosePanel = useCallback(() => {
-    setSelectedElement(null);
-  }, []);
+    setSelectedElement(null)
+  }, [])
 
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -119,11 +116,7 @@ function MainContent({
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 relative overflow-hidden">
             {/* IFC Viewer - always mounted, visibility controlled */}
-            <div
-              className={`absolute inset-0 ${
-                isIfcActive ? "visible" : "invisible"
-              }`}
-            >
+            <div className={`absolute inset-0 ${isIfcActive ? "visible" : "invisible"}`}>
               <Viewer />
               <ViewerToolBar />
             </div>
@@ -140,9 +133,7 @@ function MainContent({
               <div className="absolute inset-0 flex items-center justify-center bg-background text-muted-foreground">
                 <div className="text-center">
                   <p className="text-sm">No file open</p>
-                  <p className="text-xs mt-1">
-                    Select a file from the explorer
-                  </p>
+                  <p className="text-xs mt-1">Select a file from the explorer</p>
                 </div>
               </div>
             )}
@@ -153,10 +144,7 @@ function MainContent({
 
           {/* Terminal Panel */}
           {showTerminal && (
-            <div
-              className="relative shrink-0"
-              style={{ height: terminalHeight }}
-            >
+            <div className="relative shrink-0" style={{ height: terminalHeight }}>
               <div
                 onMouseDown={handleTerminalResizeStart}
                 className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize z-20 group"
@@ -188,28 +176,24 @@ function MainContent({
         )}
       </div>
     </div>
-  );
+  )
 }
 
-const PROJECT_ID = "sample-project";
+const PROJECT_ID = "sample-project"
 
 function Home() {
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [showTerminal, setShowTerminal] = useState(false);
-  const [showChat, setShowChat] = useState(true);
-  const fileBrowserRef = useRef<FileBrowserHandle | null>(null);
+  const [showSidebar, setShowSidebar] = useState(true)
+  const [showTerminal, setShowTerminal] = useState(false)
+  const [showChat, setShowChat] = useState(true)
+  const fileBrowserRef = useRef<FileBrowserHandle | null>(null)
 
-  const projectId = PROJECT_ID;
+  const projectId = PROJECT_ID
 
   return (
     <EditorProvider initialFile="models/sample.ifc">
       <AgentProvider projectId={projectId}>
         <div className="h-screen w-screen bg-background flex overflow-hidden">
-          <FileBrowser
-            ref={fileBrowserRef}
-            projectId={projectId}
-            visible={showSidebar}
-          />
+          <FileBrowser ref={fileBrowserRef} projectId={projectId} visible={showSidebar} />
           <MainContent
             projectId={projectId}
             showSidebar={showSidebar}
@@ -223,7 +207,7 @@ function Home() {
         </div>
       </AgentProvider>
     </EditorProvider>
-  );
+  )
 }
 
 export default function App() {
@@ -239,5 +223,5 @@ export default function App() {
         <Home />
       </ViewerProvider>
     </ThemeProvider>
-  );
+  )
 }

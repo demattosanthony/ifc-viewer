@@ -1,4 +1,4 @@
-import { FileCode, FileJson, FileText, FileBox, File, Globe, FileType } from "lucide-react";
+import { File, FileBox, FileCode, FileJson, FileText, FileType, Globe } from "lucide-react"
 
 export const FILE_EXTENSION_COLORS: Record<string, string> = {
   py: "#3572A5",
@@ -14,25 +14,25 @@ export const FILE_EXTENSION_COLORS: Record<string, string> = {
   css: "#563d7c",
   scss: "#563d7c",
   pdf: "#b30b00",
-};
+}
 
 export function getFileExtension(filename: string): string {
-  return filename.split(".").pop()?.toLowerCase() || "";
+  return filename.split(".").pop()?.toLowerCase() || ""
 }
 
 export function getFileColor(filename: string): string {
-  const ext = getFileExtension(filename);
-  return FILE_EXTENSION_COLORS[ext] || "#858585";
+  const ext = getFileExtension(filename)
+  return FILE_EXTENSION_COLORS[ext] || "#858585"
 }
 
 interface FileIconProps {
-  filename: string;
-  className?: string;
+  filename: string
+  className?: string
 }
 
 export function FileIcon({ filename, className = "w-4 h-4" }: FileIconProps) {
-  const ext = getFileExtension(filename);
-  const color = FILE_EXTENSION_COLORS[ext] || "#858585";
+  const ext = getFileExtension(filename)
+  const color = FILE_EXTENSION_COLORS[ext] || "#858585"
 
   switch (ext) {
     case "py":
@@ -42,19 +42,19 @@ export function FileIcon({ filename, className = "w-4 h-4" }: FileIconProps) {
     case "tsx":
     case "css":
     case "scss":
-      return <FileCode className={className} style={{ color }} />;
+      return <FileCode className={className} style={{ color }} />
     case "html":
     case "htm":
-      return <Globe className={className} style={{ color }} />;
+      return <Globe className={className} style={{ color }} />
     case "pdf":
-      return <FileType className={className} style={{ color }} />;
+      return <FileType className={className} style={{ color }} />
     case "json":
-      return <FileJson className={className} style={{ color }} />;
+      return <FileJson className={className} style={{ color }} />
     case "md":
-      return <FileText className={className} style={{ color }} />;
+      return <FileText className={className} style={{ color }} />
     case "ifc":
-      return <FileBox className={className} style={{ color }} />;
+      return <FileBox className={className} style={{ color }} />
     default:
-      return <File className={className} style={{ color }} />;
+      return <File className={className} style={{ color }} />
   }
 }

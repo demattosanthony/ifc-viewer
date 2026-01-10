@@ -1,53 +1,54 @@
-import { SQL } from "bun";
-import { drizzle, type BunSQLDatabase } from "drizzle-orm/bun-sql";
-import { migrate } from "drizzle-orm/bun-sql/migrator";
-import { resolve } from "node:path";
-import * as schema from "./schema";
+import { resolve } from "node:path"
+import { SQL } from "bun"
+import { type BunSQLDatabase, drizzle } from "drizzle-orm/bun-sql"
+import { migrate } from "drizzle-orm/bun-sql/migrator"
+import * as schema from "./schema"
 
 /** Drizzle database instance type */
-export type DrizzleDB = BunSQLDatabase<typeof schema>;
+export type DrizzleDB = BunSQLDatabase<typeof schema>
 
 /**
  * Drizzle transaction type - structurally compatible with DrizzleDB.
  * We use Pick to extract only the methods we need (insert, select, update, delete)
  * which are available on both the db and transaction objects.
  */
-export type DrizzleTransaction = Pick<DrizzleDB, "insert" | "select" | "update" | "delete">;
+export type DrizzleTransaction = Pick<DrizzleDB, "insert" | "select" | "update" | "delete">
 
 export interface PostgresConnectionConfig {
-  connectionString: string;
+  connectionString: string
   /** Maximum number of connections in the pool (default: 10) */
-  maxConnections?: number;
+  maxConnections?: number
   /** Idle timeout in seconds before releasing connections (default: 20) */
-  idleTimeout?: number;
+  idleTimeout?: number
 }
 
 /**
  * Create Postgres database connection with Drizzle ORM using Bun SQL
  */
-export function createPostgresConnection(
-  config: PostgresConnectionConfig
-): { db: DrizzleDB; close: () => void } {
+export function createPostgresConnection(config: PostgresConnectionConfig): {
+  db: DrizzleDB
+  close: () => void
+} {
   const client = new SQL(config.connectionString, {
     // Limit pool size to avoid "too many clients" errors
     max: config.maxConnections ?? 10,
     // Release idle connections after timeout (seconds)
     idleTimeout: config.idleTimeout ?? 20,
-  });
-  const db = drizzle({ client, schema });
+  })
+  const db = drizzle({ client, schema })
 
   return {
     db,
     close: () => {
-      client.close();
+      client.close()
     },
-  };
+  }
 }
 
 /**
  * Run Drizzle migrations from the Postgres migrations folder
  */
 export async function runMigrations(db: DrizzleDB): Promise<void> {
-  const migrationsFolder = resolve(import.meta.dir, "./migrations");
-  await migrate(db, { migrationsFolder });
+  const migrationsFolder = resolve(import.meta.dir, "./migrations")
+  await migrate(db, { migrationsFolder })
 }

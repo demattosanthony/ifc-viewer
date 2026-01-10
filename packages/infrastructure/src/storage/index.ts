@@ -5,16 +5,16 @@
  */
 
 // Re-export Storage types from core
-export type { Storage, StorageObject, StorageMetadata, StorageEntry } from "@ifc-viewer/core"
+export type { Storage, StorageEntry, StorageMetadata, StorageObject } from "@ifc-viewer/core"
 
 // Base utilities
-export { BaseStorageObject, toBytes, streamToBytes, inferContentType, isBinaryExtension } from "./base"
-
-// Implementations
-export { LocalStorage, type LocalStorageConfig } from "./local"
-export { MemoryStorage } from "./memory"
-export { S3Storage, type S3StorageConfig } from "./s3"
-
+export {
+  BaseStorageObject,
+  inferContentType,
+  isBinaryExtension,
+  streamToBytes,
+  toBytes,
+} from "./base"
 // Factory
 export {
   createStorage,
@@ -24,3 +24,7 @@ export {
   createStorageProviderFromEnv,
   type StorageConfig,
 } from "./factory"
+// Implementations
+export { LocalStorage, type LocalStorageConfig } from "./local"
+export { MemoryStorage } from "./memory"
+export { S3Storage, type S3StorageConfig } from "./s3"

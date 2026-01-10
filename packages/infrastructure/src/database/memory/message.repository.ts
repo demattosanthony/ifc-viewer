@@ -1,5 +1,5 @@
-import { generateId, MessageSchema } from "@ifc-viewer/core"
 import type { Message, MessageRepository } from "@ifc-viewer/core"
+import { generateId, MessageSchema } from "@ifc-viewer/core"
 
 export function createMessageRepository(): MessageRepository {
   const store = new Map<string, Message>()

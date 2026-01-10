@@ -5,27 +5,23 @@
  * Ideal for local development and single-server deployments.
  */
 
+import type { Dirent } from "node:fs"
 import { lstat, mkdir, readdir, rm, stat } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import type {
   Storage,
+  StorageEntry,
   StorageInput,
-  StorageObject,
+  StorageListOptions,
   StorageMetadata,
+  StorageObject,
   StoragePutOptions,
   StoragePutResult,
-  StorageEntry,
-  StorageListOptions,
-  StorageUrlOptions,
-  StorageUploadUrlOptions,
   StorageUploadCredentials,
+  StorageUploadUrlOptions,
+  StorageUrlOptions,
 } from "@ifc-viewer/core"
-import {
-  BaseStorageObject,
-  inferContentType,
-  streamToBytes,
-  toBytes,
-} from "./base"
+import { BaseStorageObject, inferContentType, streamToBytes, toBytes } from "./base"
 
 export interface LocalStorageConfig {
   /** Base directory for storage */
@@ -100,7 +96,7 @@ export class LocalStorage implements Storage {
   async put(
     key: string,
     data: StorageInput,
-    options?: StoragePutOptions
+    _options?: StoragePutOptions
   ): Promise<StoragePutResult> {
     const path = this.resolvePath(key)
     await this.ensureDir(path)
@@ -155,7 +151,7 @@ export class LocalStorage implements Storage {
     return this.put(key, bytes, options)
   }
 
-  async getUrl(key: string, options?: StorageUrlOptions): Promise<string | null> {
+  async getUrl(key: string, _options?: StorageUrlOptions): Promise<string | null> {
     if (this.urlMode === "none") {
       return null
     }
@@ -216,7 +212,7 @@ export class LocalStorage implements Storage {
     const provider = this
 
     async function* walkDir(dir: string): AsyncIterable<StorageEntry> {
-      let entries
+      let entries: Dirent[]
       try {
         entries = await readdir(dir, { withFileTypes: true })
       } catch {

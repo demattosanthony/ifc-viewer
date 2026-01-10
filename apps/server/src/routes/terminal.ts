@@ -5,9 +5,9 @@
  * Creates compute on-demand when terminal is opened, keeps it alive while in use.
  */
 
-import { Elysia, t } from "elysia"
-import type { Context, TerminalServerEvent, TerminalClientMessage } from "@ifc-viewer/core"
+import type { Context, TerminalClientMessage, TerminalServerEvent } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
+import { Elysia, t } from "elysia"
 
 const log = createLogger("terminal")
 
@@ -59,7 +59,10 @@ export function terminalRoutes(ctx: Context) {
         send(ws, { type: "ready", terminalId })
       } catch (error) {
         log.error("Failed to create terminal", { projectId, error })
-        send(ws, { type: "error", message: error instanceof Error ? error.message : "Failed to create terminal" })
+        send(ws, {
+          type: "error",
+          message: error instanceof Error ? error.message : "Failed to create terminal",
+        })
         ws.close()
       }
     },
@@ -77,7 +80,9 @@ export function terminalRoutes(ctx: Context) {
       if (!terminal) return send(ws, { type: "error", message: "Terminal not found" })
 
       try {
-        const message = (typeof rawMessage === "string" ? JSON.parse(rawMessage) : rawMessage) as TerminalClientMessage
+        const message = (
+          typeof rawMessage === "string" ? JSON.parse(rawMessage) : rawMessage
+        ) as TerminalClientMessage
 
         if (message.type === "input" && message.data) {
           ctx.touchCompute(projectId)

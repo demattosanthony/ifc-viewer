@@ -1,5 +1,5 @@
-import { appendFile, mkdir } from "node:fs/promises"
 import { existsSync } from "node:fs"
+import { appendFile, mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import type { LogEntry, Transport } from "../types.ts"
 
@@ -44,7 +44,7 @@ function getDateString(): string {
 
 /**
  * File transport with daily rotation and async buffered writes.
- * 
+ *
  * Logs are buffered in memory and flushed periodically or when the buffer
  * reaches a threshold. Files are named app.YYYY-MM-DD.log and rotate daily.
  */

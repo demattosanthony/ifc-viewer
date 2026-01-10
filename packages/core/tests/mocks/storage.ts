@@ -6,16 +6,16 @@
 
 import type {
   Storage,
-  StorageObject,
   StorageEntry,
   StorageInput,
+  StorageListOptions,
+  StorageMetadata,
+  StorageObject,
   StoragePutOptions,
   StoragePutResult,
-  StorageMetadata,
-  StorageListOptions,
-  StorageUrlOptions,
-  StorageUploadUrlOptions,
   StorageUploadCredentials,
+  StorageUploadUrlOptions,
+  StorageUrlOptions,
 } from "../../src/ports"
 
 /**
@@ -127,10 +127,7 @@ export function createMockStorage(): Storage & {
       return { key, size: bytes.length }
     },
 
-    async getUrl(
-      _key: string,
-      _options?: StorageUrlOptions
-    ): Promise<string | null> {
+    async getUrl(_key: string, _options?: StorageUrlOptions): Promise<string | null> {
       return null
     },
 
@@ -141,13 +138,8 @@ export function createMockStorage(): Storage & {
       return null
     },
 
-    async *list(
-      prefix: string,
-      options?: StorageListOptions
-    ): AsyncIterable<StorageEntry> {
-      const keys = [...data.keys()]
-        .filter((key) => key.startsWith(prefix))
-        .sort()
+    async *list(prefix: string, options?: StorageListOptions): AsyncIterable<StorageEntry> {
+      const keys = [...data.keys()].filter((key) => key.startsWith(prefix)).sort()
 
       let count = 0
       const maxKeys = options?.maxKeys ?? Infinity

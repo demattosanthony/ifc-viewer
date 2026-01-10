@@ -5,9 +5,9 @@
  * Changes are tracked via ChangeTracker for deferred persistence.
  */
 
+import type { AIEvent, ChangeTracker, Computer } from "@ifc-viewer/core"
 import { tool } from "ai"
 import { z } from "zod"
-import type { Computer, AIEvent, ChangeTracker } from "@ifc-viewer/core"
 import { getErrorMessage } from "../utils"
 
 export interface FileToolsOptions {
@@ -94,6 +94,5 @@ export function createFileTools(options: FileToolsOptions) {
         }
       },
     }),
-
   }
 }

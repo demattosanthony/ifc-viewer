@@ -1,8 +1,8 @@
 import type {
-  Shell,
-  TerminalSession,
-  TerminalOptions,
   PythonTerminalOptions,
+  Shell,
+  TerminalOptions,
+  TerminalSession,
 } from "@ifc-viewer/core"
 
 const isWindows = process.platform === "win32"
@@ -11,9 +11,7 @@ const DEFAULT_ARGS = isWindows ? [] : ["--norc", "--noprofile"]
 
 // Filter undefined values from process.env
 const baseEnv = Object.fromEntries(
-  Object.entries(process.env).filter(
-    (entry): entry is [string, string] => entry[1] !== undefined
-  )
+  Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)
 )
 
 export class LocalShell implements Shell {
@@ -95,9 +93,7 @@ export class LocalShell implements Shell {
     }
   }
 
-  async startPythonTerminal(
-    options?: PythonTerminalOptions
-  ): Promise<TerminalSession> {
+  async startPythonTerminal(options?: PythonTerminalOptions): Promise<TerminalSession> {
     const cwd = options?.cwd || this.workDir
 
     const env: Record<string, string> = {
@@ -171,7 +167,7 @@ export class LocalShell implements Shell {
     // Execute pre-imports if provided
     if (options?.preImports?.length) {
       for (const stmt of options.preImports) {
-        await terminalSession.write(stmt + "\n")
+        await terminalSession.write(`${stmt}\n`)
         await this.waitForPythonPrompt(terminalSession)
       }
     }

@@ -27,17 +27,14 @@
  * ```
  */
 
-// Export client configuration (this also configures the base URL)
-export { client, configureClient } from "./client";
-
 // Export body serializers from @hey-api/client-fetch for custom requests
-export { formDataBodySerializer } from "@hey-api/client-fetch";
-
-// Export generated types
-export * from "./generated/types.gen";
-
+export { formDataBodySerializer } from "@hey-api/client-fetch"
+// Export client configuration (this also configures the base URL)
+export { client, configureClient } from "./client"
 // Export generated SDK functions
-export * from "./generated/sdk.gen";
+export * from "./generated/sdk.gen"
+// Export generated types
+export * from "./generated/types.gen"
 
 // SSE client utilities
-export { fetchSSE, type FetchSSEOptions } from "./sse";
+export { type FetchSSEOptions, fetchSSE } from "./sse"

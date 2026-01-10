@@ -5,8 +5,8 @@
  * the specifics of each provider (Anthropic, OpenAI, etc).
  */
 
-import type { Computer, TerminalSession } from "./compute.port"
 import type { ChangeTracker } from "../services/change-tracker"
+import type { Computer, TerminalSession } from "./compute.port"
 
 /** Configuration for AI provider */
 export interface AIProviderConfig {

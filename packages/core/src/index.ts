@@ -31,194 +31,187 @@
  * ```
  */
 
+// Context - Dependency Injection
+export {
+  type ComputeFactory,
+  type Context,
+  type ContextConfig,
+  createContext,
+  withContext,
+} from "./context"
+// Domain Layer - Agent Types
+export type {
+  AgentMessage,
+  AgentMessageRole,
+  MessagePart,
+  Position,
+  Range,
+  TextPart,
+  ToolInvocation,
+  ToolInvocationState,
+  ToolPart,
+  UsageStats,
+} from "./domain"
 // Domain Layer - Entities
 export {
-  // Project
-  type Project,
-  ProjectSchema,
-  createProject,
-  isValidProjectId,
   // Conversation
   type Conversation,
-  type ConversationStatus,
   ConversationSchema,
+  type ConversationStatus,
   ConversationStatusSchema,
+  createProject,
+  getModelStorageKey,
+  inferDiscipline,
+  isAssistantMessage,
   isConversationActive,
+  isSystemMessage,
+  isUserMessage,
+  isValidProjectId,
   // Message
   type Message,
   type MessageRole,
-  MessageSchema,
   MessageRoleSchema,
-  isUserMessage,
-  isAssistantMessage,
-  isSystemMessage,
+  MessageSchema,
   // Model
   type Model,
   type ModelDiscipline,
-  ModelSchema,
   ModelDisciplineSchema,
-  getModelStorageKey,
-  inferDiscipline,
+  ModelSchema,
+  // Project
+  type Project,
+  ProjectSchema,
 } from "./domain"
-
-// Domain Layer - Value Objects
-export { Slug } from "./domain/value-objects"
-
-// Utilities
-export {
-  generateId,
-  normalizeStoragePath,
-  buildStorageKey,
-  deleteStoragePrefix,
-  isBinaryExtension,
-} from "./utils"
-
-// Domain Layer - Agent Types
-export type {
-  Position,
-  Range,
-  UsageStats,
-  TextPart,
-  ToolInvocationState,
-  ToolInvocation,
-  ToolPart,
-  MessagePart,
-  AgentMessageRole,
-  AgentMessage,
-} from "./domain"
-
 // Domain Layer - Errors
 export {
   DomainError,
+  DuplicateError,
+  InvalidProjectIdError,
   isDomainError,
   NotFoundError,
-  DuplicateError,
   ValidationError,
-  InvalidProjectIdError,
 } from "./domain/errors"
-
-// Application Services
-export {
-  // Project
-  createProjectWithStorage,
-  type CreateProjectInput,
-  // Agent
-  runAgentChat,
-  type AgentChatInput,
-  type AgentChatResult,
-  // Model
-  uploadModel,
-  getModelWithData,
-  listProjectModels,
-  updateModel,
-  deleteModel,
-  deleteProjectModels,
-  type UploadModelInput,
-  type UpdateModelInput,
-  // Change tracking
-  createChangeTracker,
-  type ChangeTracker,
-  type FileChange,
-  type FileSnapshot,
-  type ChangeType,
-  type ChangeSource,
-  type CreateChangeTrackerOptions,
-} from "./services"
-
+// Domain Layer - Value Objects
+export { Slug } from "./domain/value-objects"
 // Ports - Infrastructure Interfaces
 export type {
-  // Stream Store
-  StreamStore,
-  StreamEvent,
-  Stream,
-  StreamStatus,
-  // Database
-  Database,
-  UnitOfWork,
-  ProjectRepository,
-  ConversationRepository,
-  MessageRepository,
-  ModelRepository,
-  // Storage
-  Storage,
-  StorageInput,
-  StorageMetadata,
-  StorageObject,
-  StorageEntry,
-  StoragePutOptions,
-  StorageListOptions,
-  StorageUrlOptions,
-  StorageUploadUrlOptions,
-  StorageUploadCredentials,
-  StoragePutResult,
-  // Compute
-  Computer,
-  ComputeConfig,
-  TerminalSession,
-  TerminalOptions,
-  PythonTerminalOptions,
-  FileSystem,
-  FileEntry,
-  FileStat,
-  FileReadOptions,
-  FileContent,
-  Shell,
+  AIApproveToolMessage,
+  AIChatMessage,
+  AIChatOptions,
+  AIClientMessage,
+  AIEditorCursorEvent,
+  AIEditorDeleteEvent,
+  AIEditorInsertEvent,
+  AIEditorOpenEvent,
+  AIEditorReplaceEvent,
+  AIEditorSaveEvent,
+  AIErrorEvent,
+  AIEvent,
+  AIFileCreatedEvent,
+  AIFileDeletedEvent,
+  AIFinishEvent,
+  AIMessage,
   // AI
   AIProvider,
   AIProviderConfig,
-  AIChatOptions,
-  AIMessage,
-  AIUsageStats,
-  AIEvent,
   AIReadyEvent,
-  AIStreamStartEvent,
-  AIReplayStartEvent,
+  AIRejectToolMessage,
   AIReplayEndEvent,
-  AITextDeltaEvent,
-  AIStepStartEvent,
+  AIReplayStartEvent,
   AIStepEndEvent,
-  AIFinishEvent,
-  AIErrorEvent,
-  AIToolInputStartEvent,
+  AIStepStartEvent,
+  AIStopMessage,
+  AIStreamStartEvent,
+  AITerminalAppendEvent,
+  AITerminalExecuteEvent,
+  AITerminalFocusEvent,
+  AITerminalOutputEvent,
+  AITerminalTypeEvent,
+  AITextDeltaEvent,
+  AIToolCallEvent,
   AIToolInputDeltaEvent,
   AIToolInputEndEvent,
-  AIToolCallEvent,
-  AIToolResultEvent,
+  AIToolInputStartEvent,
   AIToolNeedsApprovalEvent,
-  AIEditorOpenEvent,
-  AIEditorCursorEvent,
-  AIEditorInsertEvent,
-  AIEditorDeleteEvent,
-  AIEditorSaveEvent,
-  AIEditorReplaceEvent,
-  AITerminalFocusEvent,
-  AITerminalTypeEvent,
-  AITerminalExecuteEvent,
-  AITerminalOutputEvent,
-  AITerminalAppendEvent,
-  AIFileCreatedEvent,
-  AIFileDeletedEvent,
-  AIClientMessage,
-  AIChatMessage,
-  AIStopMessage,
-  AIApproveToolMessage,
-  AIRejectToolMessage,
+  AIToolResultEvent,
+  AIUsageStats,
+  ComputeConfig,
+  // Compute
+  Computer,
+  ConversationRepository,
+  // Database
+  Database,
+  FileContent,
+  FileEntry,
+  FileReadOptions,
+  FileStat,
+  FileSystem,
+  MessageRepository,
+  ModelRepository,
+  ProjectRepository,
+  PythonTerminalOptions,
+  Shell,
+  // Storage
+  Storage,
+  StorageEntry,
+  StorageInput,
+  StorageListOptions,
+  StorageMetadata,
+  StorageObject,
+  StoragePutOptions,
+  StoragePutResult,
+  StorageUploadCredentials,
+  StorageUploadUrlOptions,
+  StorageUrlOptions,
+  Stream,
+  StreamEvent,
+  StreamStatus,
+  // Stream Store
+  StreamStore,
+  TerminalClientMessage,
+  TerminalDataEvent,
+  TerminalErrorEvent,
+  TerminalExitEvent,
+  TerminalInputMessage,
+  TerminalOptions,
+  TerminalReadyEvent,
+  TerminalResizeMessage,
   // Terminal WebSocket events (internal - used by compute system)
   TerminalServerEvent,
-  TerminalReadyEvent,
-  TerminalDataEvent,
-  TerminalExitEvent,
-  TerminalErrorEvent,
-  TerminalClientMessage,
-  TerminalInputMessage,
-  TerminalResizeMessage,
+  TerminalSession,
+  UnitOfWork,
 } from "./ports"
-
-// Context - Dependency Injection
+// Application Services
 export {
-  createContext,
-  withContext,
-  type Context,
-  type ContextConfig,
-  type ComputeFactory,
-} from "./context"
+  type AgentChatInput,
+  type AgentChatResult,
+  type ChangeSource,
+  type ChangeTracker,
+  type ChangeType,
+  type CreateChangeTrackerOptions,
+  type CreateProjectInput,
+  // Change tracking
+  createChangeTracker,
+  // Project
+  createProjectWithStorage,
+  deleteModel,
+  deleteProjectModels,
+  type FileChange,
+  type FileSnapshot,
+  getModelWithData,
+  listProjectModels,
+  // Agent
+  runAgentChat,
+  type UpdateModelInput,
+  type UploadModelInput,
+  updateModel,
+  // Model
+  uploadModel,
+} from "./services"
+// Utilities
+export {
+  buildStorageKey,
+  deleteStoragePrefix,
+  generateId,
+  isBinaryExtension,
+  normalizeStoragePath,
+} from "./utils"

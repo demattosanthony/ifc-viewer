@@ -1,28 +1,28 @@
-import { useState, useMemo } from "react";
-import { X, ChevronRight, ChevronDown, Layers, Box, Info } from "lucide-react";
-import { Button } from "@ifc-viewer/ui/components";
-import { cn } from "@ifc-viewer/ui/lib";
+import { Button } from "@ifc-viewer/ui/components"
+import { cn } from "@ifc-viewer/ui/lib"
+import { Box, ChevronDown, ChevronRight, Info, Layers, X } from "lucide-react"
+import { useMemo, useState } from "react"
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface ElementPropertiesPanelProps {
-  element: Record<string, unknown> | null;
-  onClose: () => void;
+  element: Record<string, unknown> | null
+  onClose: () => void
 }
 
 interface PropertySectionProps {
-  title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
+  title: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+  defaultOpen?: boolean
 }
 
 interface PropertyRowProps {
-  label: string;
-  value: unknown;
-  indent?: number;
+  label: string
+  value: unknown
+  indent?: number
 }
 
 // ============================================================================
@@ -30,38 +30,36 @@ interface PropertyRowProps {
 // ============================================================================
 
 function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === null || value === undefined) return "—"
+  if (typeof value === "boolean") return value ? "Yes" : "No"
   if (typeof value === "number") {
     // Format numbers nicely
-    if (Number.isInteger(value)) return value.toString();
-    return value.toFixed(4).replace(/\.?0+$/, "");
+    if (Number.isInteger(value)) return value.toString()
+    return value.toFixed(4).replace(/\.?0+$/, "")
   }
-  if (typeof value === "string") return value || "—";
+  if (typeof value === "string") return value || "—"
   if (Array.isArray(value)) {
-    if (value.length === 0) return "—";
+    if (value.length === 0) return "—"
     // For coordinate arrays like RefLatitude
     if (value.every((v) => typeof v === "number")) {
-      return value.join(", ");
+      return value.join(", ")
     }
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value)
 }
 
-function extractMaterials(
-  hasAssociations: unknown[]
-): { name: string; thickness?: number }[] {
-  const materials: { name: string; thickness?: number }[] = [];
+function extractMaterials(hasAssociations: unknown[]): { name: string; thickness?: number }[] {
+  const materials: { name: string; thickness?: number }[] = []
 
   for (const assoc of hasAssociations) {
-    if (typeof assoc !== "object" || assoc === null) continue;
-    const a = assoc as Record<string, unknown>;
+    if (typeof assoc !== "object" || assoc === null) continue
+    const a = assoc as Record<string, unknown>
 
     // Direct materials list
     if (Array.isArray(a.Materials)) {
       for (const mat of a.Materials) {
         if (typeof mat === "object" && mat !== null && "Name" in mat) {
-          materials.push({ name: (mat as { Name: string }).Name });
+          materials.push({ name: (mat as { Name: string }).Name })
         }
       }
     }
@@ -74,19 +72,18 @@ function extractMaterials(
           layerSet !== null &&
           Array.isArray((layerSet as Record<string, unknown>).MaterialLayers)
         ) {
-          const layers = (layerSet as Record<string, unknown>)
-            .MaterialLayers as unknown[];
+          const layers = (layerSet as Record<string, unknown>).MaterialLayers as unknown[]
           for (const layer of layers) {
             if (typeof layer === "object" && layer !== null) {
-              const l = layer as Record<string, unknown>;
-              const thickness = l.LayerThickness as number | undefined;
+              const l = layer as Record<string, unknown>
+              const thickness = l.LayerThickness as number | undefined
               if (Array.isArray(l.Material) && l.Material.length > 0) {
-                const mat = l.Material[0] as Record<string, unknown>;
+                const mat = l.Material[0] as Record<string, unknown>
                 if (mat.Name) {
                   materials.push({
                     name: mat.Name as string,
                     thickness: thickness ? thickness * 100 : undefined, // Convert to cm
-                  });
+                  })
                 }
               }
             }
@@ -96,31 +93,31 @@ function extractMaterials(
     }
   }
 
-  return materials;
+  return materials
 }
 
 function extractPropertySets(
   isDefinedBy: unknown[]
 ): { name: string; properties: { name: string; value: unknown }[] }[] {
   const psets: {
-    name: string;
-    properties: { name: string; value: unknown }[];
-  }[] = [];
+    name: string
+    properties: { name: string; value: unknown }[]
+  }[] = []
 
   for (const def of isDefinedBy) {
-    if (typeof def !== "object" || def === null) continue;
-    const d = def as Record<string, unknown>;
+    if (typeof def !== "object" || def === null) continue
+    const d = def as Record<string, unknown>
 
     if (d.Name && Array.isArray(d.HasProperties)) {
-      const props: { name: string; value: unknown }[] = [];
+      const props: { name: string; value: unknown }[] = []
       for (const prop of d.HasProperties) {
         if (typeof prop === "object" && prop !== null) {
-          const p = prop as Record<string, unknown>;
+          const p = prop as Record<string, unknown>
           if (p.Name && p.NominalValue !== undefined) {
             props.push({
               name: p.Name as string,
               value: p.NominalValue,
-            });
+            })
           }
         }
       }
@@ -128,49 +125,43 @@ function extractPropertySets(
         psets.push({
           name: d.Name as string,
           properties: props,
-        });
+        })
       }
     }
   }
 
-  return psets;
+  return psets
 }
 
 function extractLocation(
   containedInStructure: unknown[]
 ): { level: string; building: string } | null {
-  if (!Array.isArray(containedInStructure) || containedInStructure.length === 0)
-    return null;
+  if (!Array.isArray(containedInStructure) || containedInStructure.length === 0) return null
 
-  const structure = containedInStructure[0] as Record<string, unknown>;
-  if (!structure) return null;
+  const structure = containedInStructure[0] as Record<string, unknown>
+  if (!structure) return null
 
-  const level = (structure.Name as string) || (structure.LongName as string);
-  let building = "";
+  const level = (structure.Name as string) || (structure.LongName as string)
+  let building = ""
 
   // Try to get building info from Decomposes hierarchy
-  const decomposes = structure.Decomposes;
+  const decomposes = structure.Decomposes
   if (Array.isArray(decomposes) && decomposes.length > 0) {
-    const parent = decomposes[0] as Record<string, unknown> | undefined;
+    const parent = decomposes[0] as Record<string, unknown> | undefined
     if (parent?.Name) {
-      building = parent.Name as string;
+      building = parent.Name as string
     }
   }
 
-  return { level: level || "Unknown", building };
+  return { level: level || "Unknown", building }
 }
 
 // ============================================================================
 // Components
 // ============================================================================
 
-function PropertySection({
-  title,
-  icon,
-  children,
-  defaultOpen = true,
-}: PropertySectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+function PropertySection({ title, icon, children, defaultOpen = true }: PropertySectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
     <div className="border-b border-[#3c3c3c] last:border-b-0">
@@ -188,84 +179,70 @@ function PropertySection({
       </button>
       {isOpen && <div className="px-3 pb-2">{children}</div>}
     </div>
-  );
+  )
 }
 
 function PropertyRow({ label, value, indent = 0 }: PropertyRowProps) {
-  const formattedValue = formatValue(value);
-  if (formattedValue === "—") return null;
+  const formattedValue = formatValue(value)
+  if (formattedValue === "—") return null
 
   return (
     <div
-      className={cn(
-        "flex justify-between items-start gap-3 py-1 text-xs",
-        indent > 0 && "ml-3"
-      )}
+      className={cn("flex justify-between items-start gap-3 py-1 text-xs", indent > 0 && "ml-3")}
     >
       <span className="text-[#858585] shrink-0">{label}</span>
-      <span className="text-right font-mono text-[#9cdcfe] break-all">
-        {formattedValue}
-      </span>
+      <span className="text-right font-mono text-[#9cdcfe] break-all">{formattedValue}</span>
     </div>
-  );
+  )
 }
 
-function MaterialsList({
-  materials,
-}: {
-  materials: { name: string; thickness?: number }[];
-}) {
-  if (materials.length === 0) return null;
+function MaterialsList({ materials }: { materials: { name: string; thickness?: number }[] }) {
+  if (materials.length === 0) return null
 
   return (
     <div className="space-y-0.5">
-      {materials.map((mat, i) => (
-        <div key={i} className="flex justify-between items-center py-1 text-xs">
+      {materials.map((mat) => (
+        <div key={mat.name} className="flex justify-between items-center py-1 text-xs">
           <span className="text-[#858585]">{mat.name}</span>
           {mat.thickness && (
-            <span className="font-mono text-[#9cdcfe]">
-              {mat.thickness.toFixed(1)} cm
-            </span>
+            <span className="font-mono text-[#9cdcfe]">{mat.thickness.toFixed(1)} cm</span>
           )}
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 function PropertySetsList({
   psets,
 }: {
-  psets: { name: string; properties: { name: string; value: unknown }[] }[];
+  psets: { name: string; properties: { name: string; value: unknown }[] }[]
 }) {
-  if (psets.length === 0) return null;
+  if (psets.length === 0) return null
 
   return (
     <div className="space-y-2">
-      {psets.map((pset, i) => (
-        <div key={i}>
+      {psets.map((pset) => (
+        <div key={pset.name}>
           <div className="text-[10px] font-medium text-[#4ec9b0] mb-1">
             {pset.name.replace("Pset_", "")}
           </div>
           <div className="space-y-0">
-            {pset.properties.map((prop, j) => (
-              <PropertyRow key={j} label={prop.name} value={prop.value} />
+            {pset.properties.map((prop) => (
+              <PropertyRow key={prop.name} label={prop.name} value={prop.value} />
             ))}
           </div>
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
-export function ElementPropertiesPanel({
-  element,
-  onClose,
-}: ElementPropertiesPanelProps) {
+export function ElementPropertiesPanel({ element, onClose }: ElementPropertiesPanelProps) {
   // Extract data from element
   const { materials, propertySets, location, basicInfo } = useMemo(() => {
     if (!element) {
@@ -274,31 +251,27 @@ export function ElementPropertiesPanel({
         propertySets: [],
         location: null,
         basicInfo: null,
-      };
+      }
     }
 
-    const hasAssociations = element.HasAssociations as unknown[] | undefined;
-    const isDefinedBy = element.IsDefinedBy as unknown[] | undefined;
-    const containedInStructure = element.ContainedInStructure as
-      | unknown[]
-      | undefined;
+    const hasAssociations = element.HasAssociations as unknown[] | undefined
+    const isDefinedBy = element.IsDefinedBy as unknown[] | undefined
+    const containedInStructure = element.ContainedInStructure as unknown[] | undefined
 
     return {
       materials: hasAssociations ? extractMaterials(hasAssociations) : [],
       propertySets: isDefinedBy ? extractPropertySets(isDefinedBy) : [],
-      location: containedInStructure
-        ? extractLocation(containedInStructure)
-        : null,
+      location: containedInStructure ? extractLocation(containedInStructure) : null,
       basicInfo: {
         name: element.Name as string,
         type: element.ObjectType as string,
         tag: element.Tag as string,
         predefinedType: element.PredefinedType as string | undefined,
       },
-    };
-  }, [element]);
+    }
+  }, [element])
 
-  if (!element) return null;
+  if (!element) return null
 
   return (
     <div
@@ -315,9 +288,7 @@ export function ElementPropertiesPanel({
             {basicInfo?.name?.split(":")[0] || "Element"}
           </h2>
           {basicInfo?.type && (
-            <p className="text-xs text-[#858585] truncate mt-0.5">
-              {basicInfo.type.split(":")[0]}
-            </p>
+            <p className="text-xs text-[#858585] truncate mt-0.5">{basicInfo.type.split(":")[0]}</p>
           )}
         </div>
         <Button
@@ -333,27 +304,19 @@ export function ElementPropertiesPanel({
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {/* Basic Info */}
-        <PropertySection
-          title="Information"
-          icon={<Info className="size-4 text-[#858585]" />}
-        >
+        <PropertySection title="Information" icon={<Info className="size-4 text-[#858585]" />}>
           <div className="space-y-0.5">
             {basicInfo?.tag && <PropertyRow label="ID" value={basicInfo.tag} />}
             {basicInfo?.predefinedType && (
               <PropertyRow label="Type" value={basicInfo.predefinedType} />
             )}
-            {location?.level && (
-              <PropertyRow label="Level" value={location.level} />
-            )}
+            {location?.level && <PropertyRow label="Level" value={location.level} />}
           </div>
         </PropertySection>
 
         {/* Materials */}
         {materials.length > 0 && (
-          <PropertySection
-            title="Materials"
-            icon={<Layers className="size-4 text-[#858585]" />}
-          >
+          <PropertySection title="Materials" icon={<Layers className="size-4 text-[#858585]" />}>
             <MaterialsList materials={materials} />
           </PropertySection>
         )}
@@ -372,10 +335,8 @@ export function ElementPropertiesPanel({
 
       {/* Footer */}
       <div className="px-3 py-2 border-t border-border">
-        <p className="text-[10px] text-[#858585] text-center">
-          Click elsewhere to deselect
-        </p>
+        <p className="text-[10px] text-[#858585] text-center">Click elsewhere to deselect</p>
       </div>
     </div>
-  );
+  )
 }

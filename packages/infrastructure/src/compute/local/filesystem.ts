@@ -1,25 +1,18 @@
+import { copyFile, lstat, mkdir, readdir, rename, rm, rmdir, stat, unlink } from "node:fs/promises"
 import { dirname, join, relative, resolve } from "node:path"
-import {
-  copyFile,
-  mkdir,
-  readdir,
-  rename,
-  rm,
-  rmdir,
-  stat,
-  lstat,
-  unlink,
-} from "node:fs/promises"
-import type { FileSystem, FileEntry, FileStat, FileContent, FileReadOptions } from "@ifc-viewer/core"
+import type {
+  FileContent,
+  FileEntry,
+  FileReadOptions,
+  FileStat,
+  FileSystem,
+} from "@ifc-viewer/core"
 
 export class LocalFileSystem implements FileSystem {
   constructor(private baseDir: string) {}
 
   private resolvePath(path: string): string {
-    const resolved = resolve(
-      this.baseDir,
-      path.startsWith("/") ? path.slice(1) : path
-    )
+    const resolved = resolve(this.baseDir, path.startsWith("/") ? path.slice(1) : path)
 
     if (!resolved.startsWith(this.baseDir)) {
       throw new Error(`Path escapes sandbox: ${path}`)
@@ -66,12 +59,8 @@ export class LocalFileSystem implements FileSystem {
       if (stats) {
         results.push({
           name: entry.name,
-          path: "/" + relative(this.baseDir, entryPath),
-          type: entry.isDirectory()
-            ? "directory"
-            : entry.isSymbolicLink()
-            ? "symlink"
-            : "file",
+          path: `/${relative(this.baseDir, entryPath)}`,
+          type: entry.isDirectory() ? "directory" : entry.isSymbolicLink() ? "symlink" : "file",
           size: stats.size,
           modifiedAt: stats.mtimeMs,
         })
@@ -86,10 +75,7 @@ export class LocalFileSystem implements FileSystem {
     await mkdir(fullPath, { recursive: options?.recursive ?? false })
   }
 
-  async delete(
-    path: string,
-    options?: { recursive?: boolean }
-  ): Promise<void> {
+  async delete(path: string, options?: { recursive?: boolean }): Promise<void> {
     const fullPath = this.resolvePath(path)
 
     try {

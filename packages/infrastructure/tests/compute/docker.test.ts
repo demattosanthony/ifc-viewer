@@ -11,9 +11,9 @@
  * tests are separate and create their own containers.
  */
 
-import { describe, test, expect, beforeAll, afterAll } from "bun:test"
-import { DockerComputer, createDockerComputer } from "../../src/compute/docker"
+import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import type { Computer } from "@ifc-viewer/core"
+import { createDockerComputer, type DockerComputer } from "../../src/compute/docker"
 
 const TEST_IMAGE = "bim-ide:latest"
 const TEST_TIMEOUT = 30000
@@ -87,34 +87,39 @@ describe("DockerComputer", () => {
   // ============================================================================
 
   describe("container lifecycle", () => {
-    test("creates container with resource limits, verifies properties, and removes on dispose", async () => {
-      if (skipIfUnavailable()) return
+    test(
+      "creates container with resource limits, verifies properties, and removes on dispose",
+      async () => {
+        if (skipIfUnavailable()) return
 
-      // Test creation with resource limits (ephemeral - no host mounts)
-      const computer = await createDockerComputer({
-        image: TEST_IMAGE,
-        memory: "256m",
-        cpus: 0.5,
-      })
+        // Test creation with resource limits (ephemeral - no host mounts)
+        const computer = await createDockerComputer({
+          image: TEST_IMAGE,
+          memory: "256m",
+          cpus: 0.5,
+        })
 
-      // Verify properties
-      expect(computer.id).toMatch(/^docker-computer-/)
-      expect(computer.workingDirectory).toBe("/workspace") // Container internal path
+        // Verify properties
+        expect(computer.id).toMatch(/^docker-computer-/)
+        expect(computer.workingDirectory).toBe("/workspace") // Container internal path
 
-      // Get container ID before dispose
-      const containerId = (computer as DockerComputer)["containerId"]
-      expect(containerId).toBeTruthy()
+        // Get container ID before dispose
+        const container = (computer as DockerComputer)["container"]
+        expect(container).toBeTruthy()
+        const containerId = container!.id
 
-      // Test dispose
-      await computer.dispose()
+        // Test dispose
+        await computer.dispose()
 
-      // Verify container is removed
-      const proc = Bun.spawn(["docker", "container", "inspect", containerId!], {
-        stdout: "ignore",
-        stderr: "ignore",
-      })
-      expect(await proc.exited).not.toBe(0)
-    }, TEST_TIMEOUT)
+        // Verify container is removed
+        const proc = Bun.spawn(["docker", "container", "inspect", containerId], {
+          stdout: "ignore",
+          stderr: "ignore",
+        })
+        expect(await proc.exited).not.toBe(0)
+      },
+      TEST_TIMEOUT
+    )
   })
 
   // ============================================================================
@@ -235,7 +240,9 @@ describe("DockerComputer", () => {
       if (skipIfUnavailable() || !sharedComputer) return
 
       await expect(sharedComputer.files.read("../etc/passwd")).rejects.toThrow("escapes sandbox")
-      await expect(sharedComputer.files.write("../../evil.txt", "bad")).rejects.toThrow("escapes sandbox")
+      await expect(sharedComputer.files.write("../../evil.txt", "bad")).rejects.toThrow(
+        "escapes sandbox"
+      )
     })
 
     test("writes and reads large file (>100KB)", async () => {
@@ -318,7 +325,9 @@ describe("DockerComputer", () => {
         output.push(data)
       })
 
-      await terminal.write("python3 -c \"import ifcopenshell; print('IFC VERSION:', ifcopenshell.version)\"\n")
+      await terminal.write(
+        "python3 -c \"import ifcopenshell; print('IFC VERSION:', ifcopenshell.version)\"\n"
+      )
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       await sharedComputer.disposeTerminal(terminal.id)
@@ -429,15 +438,15 @@ describe("DockerComputer", () => {
       await new Promise((resolve) => setTimeout(resolve, 500))
 
       const finalOutput = output.join("")
-      
+
       // The key test is that the COMMAND executed was "echo hi", not "echox hi"
       // We verify this by checking the command output contains "hi" on its own line
       expect(finalOutput).toContain("hi\r\n")
-      
+
       // Verify backspace was processed - the terminal will show the backspace
       // character (\b or \x08) followed by some erase sequence
       expect(finalOutput).toContain("\b")
-      
+
       // Should NOT contain an error like "command not found" which would happen
       // if "echox" was executed instead of "echo"
       expect(finalOutput).not.toContain("not found")
@@ -461,7 +470,7 @@ describe("DockerComputer", () => {
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       const initialOutput = output.join("")
-      
+
       // Should have received the initial prompt with /workspace path
       expect(initialOutput).toContain("/workspace")
       expect(initialOutput).toContain("$")
@@ -489,17 +498,17 @@ describe("DockerComputer", () => {
       // (tabs should only appear if user explicitly typed them)
       // The prompt "workspace $ " should be clean
       expect(finalOutput).toContain("test")
-      
+
       // Check that prompt doesn't have weird escape artifacts
       // The prompt should just be cyan "/workspace" followed by " $ "
       // Should not contain \[ or \] which are bash PS1 escape markers
       expect(finalOutput).not.toContain("\\[")
       expect(finalOutput).not.toContain("\\]")
-      
+
       // Should not contain literal tab characters in the prompt line
       // Split by newlines and check prompt lines
       const lines = finalOutput.split(/\r?\n/)
-      const promptLines = lines.filter(line => line.includes("/workspace") && line.includes("$"))
+      const promptLines = lines.filter((line) => line.includes("/workspace") && line.includes("$"))
       for (const promptLine of promptLines) {
         expect(promptLine).not.toContain("\t")
       }
@@ -588,7 +597,7 @@ describe("DockerComputer", () => {
       // Type "cat tabmu" and press Tab - should complete to common prefix "tabmulti_"
       await terminal.write("cat tabmu")
       await terminal.write("\t")
-      
+
       await new Promise((resolve) => setTimeout(resolve, 300))
 
       const finalOutput = output.join("")
@@ -598,7 +607,7 @@ describe("DockerComputer", () => {
       // Remove control characters to check the actual text
       const textOnly = finalOutput.replace(/[\x00-\x1f]/g, "")
       expect(textOnly).toContain("tabmulti_")
-      
+
       // Bash rings bell (\x07) when there are multiple completions
       // This indicates ambiguity
       expect(finalOutput).toContain("\x07")
@@ -852,7 +861,7 @@ except Exception as __e__:
     print("<<PY_ERROR_7x9k>>")`
 
       // Need TWO newlines: one to end the last line, one blank line to execute the block
-      await pythonSession.write(wrappedCode + "\n\n")
+      await pythonSession.write(`${wrappedCode}\n\n`)
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       await pythonSession.kill()
@@ -863,7 +872,9 @@ except Exception as __e__:
       expect(fullOutput).toContain("<<PY_SUCCESS_7x9k>>")
 
       // Extract output between markers (same regex as the tool uses)
-      const outputMatch = fullOutput.match(/<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)<<PY_OUTPUT_END_7x9k>>/)
+      const outputMatch = fullOutput.match(
+        /<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)<<PY_OUTPUT_END_7x9k>>/
+      )
       expect(outputMatch).toBeTruthy()
 
       const cleanOutput = outputMatch![1]!.replace(/\r\n/g, "\n").trim()
@@ -908,7 +919,7 @@ except Exception as __e__:
     print("<<PY_ERROR_7x9k>>")`
 
       // Need TWO newlines: one to end the last line, one blank line to execute the block
-      await pythonSession.write(wrappedCode + "\n\n")
+      await pythonSession.write(`${wrappedCode}\n\n`)
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       await pythonSession.kill()
@@ -919,7 +930,9 @@ except Exception as __e__:
       expect(fullOutput).toContain("<<PY_ERROR_7x9k>>")
 
       // Extract output
-      const outputMatch = fullOutput.match(/<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)<<PY_OUTPUT_END_7x9k>>/)
+      const outputMatch = fullOutput.match(
+        /<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)<<PY_OUTPUT_END_7x9k>>/
+      )
       expect(outputMatch).toBeTruthy()
 
       const cleanOutput = outputMatch![1]!.replace(/\r\n/g, "\n").trim()
