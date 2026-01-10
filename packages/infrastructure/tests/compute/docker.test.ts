@@ -608,6 +608,333 @@ describe("DockerComputer", () => {
   })
 
   // ============================================================================
+  // Python Shell Tests (use shared container)
+  // ============================================================================
+
+  describe("DockerPythonShell", () => {
+    test("creates Python terminal session", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+
+      expect(pythonSession.id).toMatch(/^python-/)
+      expect(typeof pythonSession.write).toBe("function")
+      expect(typeof pythonSession.resize).toBe("function")
+      expect(typeof pythonSession.kill).toBe("function")
+      expect(typeof pythonSession.onData).toBe("function")
+      expect(typeof pythonSession.onExit).toBe("function")
+
+      await pythonSession.kill()
+    })
+
+    test("Python session has ifcopenshell pre-imported", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal({
+        preImports: ["import ifcopenshell"],
+      })
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // ifcopenshell should already be imported, so this should work
+      await pythonSession.write("print(ifcopenshell.version)\n")
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+      // Should print version without ImportError
+      expect(fullOutput).not.toContain("ImportError")
+      expect(fullOutput).not.toContain("NameError")
+      // Version string is typically like "0.7.0" or similar
+      expect(fullOutput).toMatch(/\d+\.\d+/)
+    })
+
+    test("Python session maintains state across writes", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // Define a variable
+      await pythonSession.write("my_var = 42\n")
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      // Clear output buffer
+      output.length = 0
+
+      // Use the variable in a new command - should still exist
+      await pythonSession.write("print(f'Value is {my_var}')\n")
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+      expect(fullOutput).toContain("Value is 42")
+    })
+
+    test("manages agent Python session singleton", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      expect(sharedComputer.hasAgentPythonSession()).toBe(false)
+
+      const session1 = await sharedComputer.getOrCreateAgentPythonSession()
+      expect(sharedComputer.hasAgentPythonSession()).toBe(true)
+
+      const session2 = await sharedComputer.getOrCreateAgentPythonSession()
+      expect(session1.id).toBe(session2.id)
+
+      await sharedComputer.disposeTerminal(session1.id)
+      expect(sharedComputer.hasAgentPythonSession()).toBe(false)
+    })
+
+    test("agent Python session has ifcopenshell pre-imported", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.getOrCreateAgentPythonSession()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // ifcopenshell should be pre-imported in agent session
+      await pythonSession.write("print('ifc imported:', 'ifcopenshell' in dir())\n")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      await sharedComputer.disposeTerminal(pythonSession.id)
+
+      const fullOutput = output.join("")
+      expect(fullOutput).toContain("ifc imported: True")
+    })
+
+    test("Python session handles errors gracefully", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // Cause an error
+      await pythonSession.write("undefined_variable\n")
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      // Session should still be alive - can run another command
+      output.length = 0
+      await pythonSession.write("print('still alive')\n")
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+      expect(fullOutput).toContain("still alive")
+    })
+
+    test("Python session can import additional modules", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // Import and use json module
+      await pythonSession.write("import json\n")
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      await pythonSession.write("print(json.dumps({'key': 'value'}))\n")
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+      expect(fullOutput).toContain('{"key": "value"}')
+    })
+
+    test("Python session can read files from workspace", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      // Create a test file
+      await sharedComputer.files.write("py_test_read.txt", "hello from file")
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      await pythonSession.write("print(open('py_test_read.txt').read())\n")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+      expect(fullOutput).toContain("hello from file")
+    })
+
+    test("Python session can write files to workspace", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+
+      await pythonSession.write("open('py_test_write.txt', 'w').write('written by python')\n")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      await pythonSession.kill()
+
+      // Verify file was created
+      const result = await sharedComputer.files.read("py_test_write.txt")
+      expect(result.content).toBe("written by python")
+    })
+
+    test("Python session executes multi-line code", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // Multi-line code with a loop
+      await pythonSession.write("for i in range(3):\n")
+      await pythonSession.write("    print(f'count: {i}')\n")
+      await pythonSession.write("\n") // Empty line to execute the block
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+      expect(fullOutput).toContain("count: 0")
+      expect(fullOutput).toContain("count: 1")
+      expect(fullOutput).toContain("count: 2")
+    })
+
+    test("Python wrapped execution extracts clean output between markers", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      // This test simulates what the executePython tool does
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // Simulate the wrapper code that executePython uses
+      const userCode = `print("Hello World")
+print("Line 2")
+x = 42
+print(f"Value: {x}")`
+
+      const escapedCode = userCode.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')
+      const wrappedCode = `try:
+    print("<<PY_OUTPUT_START_7x9k>>")
+    exec("""${escapedCode}""")
+    print("<<PY_OUTPUT_END_7x9k>>")
+    print("<<PY_SUCCESS_7x9k>>")
+except Exception as __e__:
+    print(f"Error: {__e__}")
+    print("<<PY_OUTPUT_END_7x9k>>")
+    print("<<PY_ERROR_7x9k>>")`
+
+      // Need TWO newlines: one to end the last line, one blank line to execute the block
+      await pythonSession.write(wrappedCode + "\n\n")
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+
+      // Verify the execution completed with SUCCESS marker
+      expect(fullOutput).toContain("<<PY_SUCCESS_7x9k>>")
+
+      // Extract output between markers (same regex as the tool uses)
+      const outputMatch = fullOutput.match(/<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)<<PY_OUTPUT_END_7x9k>>/)
+      expect(outputMatch).toBeTruthy()
+
+      const cleanOutput = outputMatch![1]!.replace(/\r\n/g, "\n").trim()
+
+      // Verify the clean output contains ONLY the user's print statements
+      expect(cleanOutput).toContain("Hello World")
+      expect(cleanOutput).toContain("Line 2")
+      expect(cleanOutput).toContain("Value: 42")
+
+      // Verify it does NOT contain the wrapper code
+      expect(cleanOutput).not.toContain("exec(")
+      expect(cleanOutput).not.toContain("try:")
+      expect(cleanOutput).not.toContain("__sys__")
+      expect(cleanOutput).not.toContain(">>>")
+      expect(cleanOutput).not.toContain("...")
+    })
+
+    test("Python wrapped execution handles errors and extracts error message", async () => {
+      if (skipIfUnavailable() || !sharedComputer) return
+
+      const pythonSession = await sharedComputer.shell.startPythonTerminal()
+      const output: string[] = []
+
+      pythonSession.onData((data) => {
+        output.push(data)
+      })
+
+      // Code that will raise an error
+      const userCode = `print("Before error")
+undefined_variable
+print("After error")`
+
+      const escapedCode = userCode.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')
+      const wrappedCode = `try:
+    print("<<PY_OUTPUT_START_7x9k>>")
+    exec("""${escapedCode}""")
+    print("<<PY_OUTPUT_END_7x9k>>")
+    print("<<PY_SUCCESS_7x9k>>")
+except Exception as __e__:
+    print(f"Error: {__e__}")
+    print("<<PY_OUTPUT_END_7x9k>>")
+    print("<<PY_ERROR_7x9k>>")`
+
+      // Need TWO newlines: one to end the last line, one blank line to execute the block
+      await pythonSession.write(wrappedCode + "\n\n")
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      await pythonSession.kill()
+
+      const fullOutput = output.join("")
+
+      // Should have ERROR marker (execution hit an error)
+      expect(fullOutput).toContain("<<PY_ERROR_7x9k>>")
+
+      // Extract output
+      const outputMatch = fullOutput.match(/<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)<<PY_OUTPUT_END_7x9k>>/)
+      expect(outputMatch).toBeTruthy()
+
+      const cleanOutput = outputMatch![1]!.replace(/\r\n/g, "\n").trim()
+
+      // Should contain the output before error and the error message
+      expect(cleanOutput).toContain("Before error")
+      expect(cleanOutput).toContain("Error:")
+      expect(cleanOutput).toContain("undefined_variable")
+
+      // Should NOT contain the line after the error (execution stopped)
+      expect(cleanOutput).not.toContain("After error")
+    })
+  })
+
+  // ============================================================================
   // Integration Tests (use shared container)
   // ============================================================================
 

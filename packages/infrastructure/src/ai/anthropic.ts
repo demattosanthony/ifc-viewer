@@ -9,6 +9,7 @@ import { createAnthropic } from "@ai-sdk/anthropic"
 import type { AIProvider, AIProviderConfig, AIChatOptions, AIEvent } from "@ifc-viewer/core"
 import { createFileTools } from "./tools/file-tools"
 import { createShellTools } from "./tools/shell-tools"
+import { createPythonTools } from "./tools/python-tools"
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
 import { formatUsageStats, getErrorMessage } from "./utils"
 
@@ -64,6 +65,11 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
           }),
           ...createShellTools({
             getTerminal: options.getTerminal,
+            changeTracker: options.changeTracker,
+            emit: emitToolEvent,
+          }),
+          ...createPythonTools({
+            getPythonSession: () => options.computer.getOrCreateAgentPythonSession(),
             changeTracker: options.changeTracker,
             emit: emitToolEvent,
           }),

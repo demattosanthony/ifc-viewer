@@ -5,6 +5,7 @@ import { Markdown } from "@ifc-viewer/ui/components";
 import { FilePreview } from "./tool-views/file-preview";
 import { ReadFilePreview } from "./tool-views/read-file-preview";
 import { CommandPreview } from "./tool-views/command-preview";
+import { PythonPreview } from "./tool-views/python-preview";
 
 interface ChatMessageProps {
   message: AgentMessage;
@@ -130,6 +131,25 @@ function ToolCard({ invocation }: { invocation: ToolInvocation }) {
         <CommandPreview
           title={title}
           command={command}
+          output={result}
+          isStreaming={isStreaming}
+          isComplete={isComplete}
+          error={error}
+        />
+      );
+    }
+  }
+
+  // Python execution tool
+  if (invocation.toolName === "executePython") {
+    const code = args?.code as string | undefined;
+    const title = args?.title as string | undefined;
+
+    if (code) {
+      return (
+        <PythonPreview
+          title={title}
+          code={code}
           output={result}
           isStreaming={isStreaming}
           isComplete={isComplete}

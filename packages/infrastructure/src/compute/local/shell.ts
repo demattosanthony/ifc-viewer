@@ -1,4 +1,9 @@
-import type { Shell, TerminalSession, TerminalOptions } from "@ifc-viewer/core"
+import type {
+  Shell,
+  TerminalSession,
+  TerminalOptions,
+  PythonTerminalOptions,
+} from "@ifc-viewer/core"
 
 const isWindows = process.platform === "win32"
 const DEFAULT_SHELL = isWindows ? "powershell.exe" : "/bin/bash"
@@ -88,5 +93,109 @@ export class LocalShell implements Shell {
         }
       },
     }
+  }
+
+  async startPythonTerminal(
+    options?: PythonTerminalOptions
+  ): Promise<TerminalSession> {
+    const cwd = options?.cwd || this.workDir
+
+    const env: Record<string, string> = {
+      ...baseEnv,
+      ...this.defaultEnv,
+      ...options?.env,
+      PYTHONUNBUFFERED: "1",
+      PYTHONDONTWRITEBYTECODE: "1",
+    }
+
+    const id = `python-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const dataCallbacks: Array<(data: string) => void> = []
+    const exitCallbacks: Array<(code: number) => void> = []
+    const decoder = new TextDecoder()
+    let killed = false
+
+    // Start Python in interactive quiet mode
+    const proc = Bun.spawn(["python3", "-i", "-q"], {
+      cwd,
+      env,
+      terminal: {
+        cols: options?.cols ?? 120,
+        rows: options?.rows ?? 24,
+        data: (_, data) => {
+          if (killed) return
+          const text = decoder.decode(data)
+          for (const cb of dataCallbacks) cb(text)
+        },
+      },
+    })
+
+    const terminal = proc.terminal
+    if (!terminal) throw new Error("Failed to create Python PTY terminal")
+
+    proc.exited
+      .then((code) => {
+        for (const cb of exitCallbacks) cb(code)
+        dataCallbacks.length = 0
+        exitCallbacks.length = 0
+      })
+      .catch(() => {})
+
+    const terminalSession: TerminalSession = {
+      id,
+      write: async (data: string) => void terminal.write(data),
+      resize: (cols: number, rows: number) => terminal.resize(cols, rows),
+      kill: async (signal?: number) => {
+        killed = true
+        terminal.close()
+        proc.kill(signal)
+      },
+      onData: (callback: (data: string) => void) => {
+        dataCallbacks.push(callback)
+        return () => {
+          const idx = dataCallbacks.indexOf(callback)
+          if (idx > -1) dataCallbacks.splice(idx, 1)
+        }
+      },
+      onExit: (callback: (code: number) => void) => {
+        exitCallbacks.push(callback)
+        return () => {
+          const idx = exitCallbacks.indexOf(callback)
+          if (idx > -1) exitCallbacks.splice(idx, 1)
+        }
+      },
+    }
+
+    // Wait for Python REPL to be ready (>>> prompt)
+    await this.waitForPythonPrompt(terminalSession)
+
+    // Execute pre-imports if provided
+    if (options?.preImports?.length) {
+      for (const stmt of options.preImports) {
+        await terminalSession.write(stmt + "\n")
+        await this.waitForPythonPrompt(terminalSession)
+      }
+    }
+
+    return terminalSession
+  }
+
+  private waitForPythonPrompt(session: TerminalSession): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        cleanup()
+        reject(new Error("Python startup timeout"))
+      }, 15000)
+
+      let buffer = ""
+      const cleanup = session.onData((data) => {
+        buffer += data
+        // Check for >>> prompt (Python ready)
+        if (buffer.includes(">>> ")) {
+          clearTimeout(timeout)
+          cleanup()
+          resolve()
+        }
+      })
+    })
   }
 }
