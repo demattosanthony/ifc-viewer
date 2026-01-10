@@ -58,7 +58,7 @@ function MainContent({
     useResizable({
       initialSize: 400,
       minSize: 280,
-      maxSize: 600,
+      maxSize: 650,
       direction: "horizontal",
       side: "right",
     });

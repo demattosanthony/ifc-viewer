@@ -44,8 +44,8 @@ function getToolDisplayName(type: string): string {
 
 /**
  * Generic Tool component - used as a fallback for tools without specialized UI.
- * Specialized tools (writeFile, executeCommand, listFiles) should use their
- * dedicated components directly (FilePreview, CommandPreview, FileTree).
+ * Specialized tools (writeFile, executeCommand) should use their
+ * dedicated components directly (FilePreview, CommandPreview).
  */
 const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);

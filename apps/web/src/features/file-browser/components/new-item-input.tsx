@@ -21,14 +21,14 @@ export function NewItemInput({
 
   return (
     <div
-      className="flex items-center h-[22px] bg-[#2a2d2e]"
+      className="flex items-center h-[22px] bg-accent/50"
       style={{ paddingLeft: indent + 4 }}
     >
       <span className="w-4 shrink-0" />
       {type === "folder" ? (
-        <Folder className="w-4 h-4 text-[#dcb67a] shrink-0 ml-0.5" />
+        <Folder className="w-4 h-4 text-amber-500 shrink-0 ml-0.5" />
       ) : (
-        <File className="w-4 h-4 text-[#858585] shrink-0 ml-0.5" />
+        <File className="w-4 h-4 text-muted-foreground shrink-0 ml-0.5" />
       )}
       <input
         type="text"
@@ -46,7 +46,7 @@ export function NewItemInput({
           }
         }}
         autoFocus
-        className="flex-1 ml-1.5 text-[13px] bg-[#3c3c3c] border border-[#007acc] outline-none px-1 text-[#cccccc] min-w-0"
+        className="flex-1 ml-1.5 text-[13px] bg-input border border-primary outline-none px-1 text-foreground min-w-0"
         placeholder={type === "folder" ? "folder name" : "file name"}
       />
     </div>

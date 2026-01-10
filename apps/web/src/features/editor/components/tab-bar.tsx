@@ -110,7 +110,7 @@ export function TabBar({
   return (
     <div className="h-[35px] bg-secondary border-b border-border flex items-center">
       {/* Tabs */}
-      <div className="flex-1 flex items-end h-full overflow-x-auto scrollbar-thin">
+      <div className="flex-1 flex items-center h-full overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
 
@@ -118,7 +118,7 @@ export function TabBar({
             <div
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`group flex items-center gap-2 h-[35px] px-3 cursor-pointer border-r border-border ${
+              className={`group flex items-center gap-2 h-full px-3 cursor-pointer border-r border-border shrink-0 ${
                 isActive
                   ? "bg-background text-foreground"
                   : "bg-muted text-muted-foreground hover:bg-accent/50"

@@ -8,7 +8,7 @@
 import { tool } from "ai"
 import { z } from "zod"
 import type { TerminalSession, AIEvent, ChangeTracker } from "@ifc-viewer/core"
-import { getErrorMessage } from "../utils"
+import { getErrorMessage, stripAnsi } from "../utils"
 
 const MARKER_PREFIX = "<<CMD_DONE:"
 const MARKER_SUFFIX = ">>"
@@ -31,13 +31,26 @@ The command runs in a persistent bash shell in the workspace directory.
 IMPORTANT: Avoid interactive commands that require user input - they will hang.
 Commands run sequentially and share environment/state between calls.`,
       inputSchema: z.object({
+        title: z
+          .string()
+          .describe(
+            "A short 2-4 word description of what this command does for non-technical users (e.g. 'List project files', 'Run analysis script', 'Install dependencies')"
+          ),
         command: z.string().describe("The command to execute"),
         timeout: z
           .number()
           .default(30000)
           .describe("Timeout in milliseconds (default: 30000)"),
       }),
-      execute: async ({ command, timeout }: { command: string; timeout: number }) => {
+      execute: async ({
+        title: _title,
+        command,
+        timeout,
+      }: {
+        title: string
+        command: string
+        timeout: number
+      }) => {
         try {
           emit({ type: "terminal-focus" })
           emit({ type: "terminal-execute" })
@@ -51,8 +64,6 @@ Commands run sequentially and share environment/state between calls.`,
           let output = ""
           let exitCode: number | null = null
           let skippedEcho = false
-
-          const stripAnsi = (str: string) => str.replace(/\x1b\[[0-9;]*m/g, "")
 
           const isEchoLine = (line: string) => {
             const clean = stripAnsi(line)
@@ -136,7 +147,7 @@ Commands run sequentially and share environment/state between calls.`,
 
           return {
             success: result.exitCode === 0,
-            output: result.output,
+            output: stripAnsi(result.output),
             exitCode: result.exitCode,
             command,
             filesChanged: changes.length,

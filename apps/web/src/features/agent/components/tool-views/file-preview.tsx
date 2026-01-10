@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { File, Copy, Check } from "lucide-react";
-import { codeToHtml } from "shiki";
+import { CodeBlockCode } from "@ifc-viewer/ui/components";
 import { getLanguageFromPath, getFileName } from "./types";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
@@ -12,74 +12,13 @@ interface FilePreviewProps {
   isStreaming: boolean;
 }
 
-// Syntax highlighted code block
-function CodeBlock({
-  code,
-  language,
-  isStreaming,
-}: {
-  code: string;
-  language: string;
-  isStreaming: boolean;
-}) {
-  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function highlight() {
-      if (!code) {
-        setHighlightedHtml("");
-        return;
-      }
-
-      try {
-        const html = await codeToHtml(code, {
-          lang: language,
-          theme: "github-dark",
-        });
-        if (!cancelled) {
-          setHighlightedHtml(html);
-        }
-      } catch {
-        if (!cancelled) {
-          setHighlightedHtml(null);
-        }
-      }
-    }
-
-    highlight();
-    return () => {
-      cancelled = true;
-    };
-  }, [code, language]);
-
-  return (
-    <div className="max-h-80 overflow-auto text-[13px] leading-relaxed">
-      {highlightedHtml ? (
-        <div
-          className="[&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:p-3 [&_code]:bg-transparent"
-          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-        />
-      ) : (
-        <pre className="m-0 bg-transparent p-3">
-          <code className="text-foreground/80">{code}</code>
-        </pre>
-      )}
-      {isStreaming && (
-        <span className="inline-block h-4 w-0.5 animate-pulse bg-blue-500" />
-      )}
-    </div>
-  );
-}
-
 export function FilePreview({ path, content, isStreaming }: FilePreviewProps) {
   const { copied, copy } = useCopyToClipboard();
   const language = useMemo(() => getLanguageFromPath(path), [path]);
   const fileName = useMemo(() => getFileName(path), [path]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="overflow-hidden rounded-lg border border-border bg-muted/40 dark:bg-muted/30">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-3 py-1.5">
         <div className="flex items-center gap-2">
@@ -102,7 +41,12 @@ export function FilePreview({ path, content, isStreaming }: FilePreviewProps) {
         </button>
       </div>
       {/* Code */}
-      <CodeBlock code={content} language={language} isStreaming={isStreaming} />
+      <div className="max-h-80 overflow-auto">
+        <CodeBlockCode code={content} language={language} className="text-[13px]" />
+        {isStreaming && (
+          <span className="inline-block h-4 w-0.5 animate-pulse bg-blue-500 ml-3 mb-3" />
+        )}
+      </div>
     </div>
   );
 }
