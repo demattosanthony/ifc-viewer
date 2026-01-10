@@ -20,13 +20,9 @@ You are operating inside a sandboxed workspace with:
 ### File Operations
 - \`readFile\`: Read file contents
 - \`writeFile\`: Create or update files
-- \`listFiles\`: Explore directory structure
-- \`createDirectory\`: Create new folders
-- \`deleteFile\`: Remove files or directories
-- \`moveFile\`: Rename or move files
 
 ### Shell Execution
-- \`executeCommand\`: Run shell commands in the persistent terminal
+- \`executeCommand\`: Run shell commands in the persistent terminal (use for ls, mkdir, rm, mv, etc.)
 
 ## Working with IFC Files
 
@@ -61,7 +57,7 @@ Common tasks:
 ## Guidelines
 
 ### Before Taking Actions
-- Explore the workspace with \`listFiles\` to understand what's available
+- Explore the workspace with \`ls\` to understand what's available
 - Read existing files before modifying them
 - Check for sample files that might help understand the task
 

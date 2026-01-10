@@ -137,15 +137,15 @@ Each package has `src/` (with `index.ts` barrel exports), `tests/*.test.ts`, `pa
 
 ```typescript
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { listFilesOptions, writeFileMutation } from "@ifc-viewer/sdk/hooks";
+import { listProjectFilesOptions, writeProjectFileMutation } from "@ifc-viewer/sdk/hooks";
 
 // Queries
 const { data } = useQuery(
-  listFilesOptions({ path: { id }, query: { path: "." } })
+  listProjectFilesOptions({ path: { id }, query: { path: "." } })
 );
 
 // Mutations
-const writeFile = useMutation(writeFileMutation());
+const writeFile = useMutation(writeProjectFileMutation());
 await writeFile.mutateAsync({
   path: { id },
   body: { path: "file.txt", content: "hi" },

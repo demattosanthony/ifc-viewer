@@ -3,8 +3,8 @@ import type { AgentMessage, MessagePart } from "@ifc-viewer/core";
 import { Tool, type ToolPart } from "./tool";
 import { Markdown } from "@ifc-viewer/ui/components";
 import { FilePreview } from "./tool-views/file-preview";
+import { ReadFilePreview } from "./tool-views/read-file-preview";
 import { CommandPreview } from "./tool-views/command-preview";
-import { FileTree } from "./tool-views/file-tree";
 
 interface ChatMessageProps {
   message: AgentMessage;
@@ -92,12 +92,8 @@ function ToolCard({ invocation }: { invocation: ToolInvocation }) {
   const args = invocation.args as Record<string, unknown>;
   const result = invocation.result as Record<string, unknown> | undefined;
 
-  // File tools (write/read)
-  if (
-    ["write_file", "writeFile", "read_file", "readFile"].includes(
-      invocation.toolName
-    )
-  ) {
+  // Write file tool - content is in args
+  if (["write_file", "writeFile"].includes(invocation.toolName)) {
     const path = args?.path as string | undefined;
     const content = args?.content as string | undefined;
 
@@ -108,13 +104,31 @@ function ToolCard({ invocation }: { invocation: ToolInvocation }) {
     }
   }
 
+  // Read file tool - content is in result
+  if (["read_file", "readFile"].includes(invocation.toolName)) {
+    const path = args?.path as string | undefined;
+
+    if (path) {
+      return (
+        <ReadFilePreview
+          path={path}
+          result={result as { success?: boolean; content?: string; error?: string } | undefined}
+          isStreaming={isStreaming}
+          isComplete={isComplete}
+        />
+      );
+    }
+  }
+
   // Command tools
   if (["shell_execute", "executeCommand"].includes(invocation.toolName)) {
     const command = args?.command as string | undefined;
+    const title = args?.title as string | undefined;
 
     if (command) {
       return (
         <CommandPreview
+          title={title}
           command={command}
           output={result}
           isStreaming={isStreaming}
@@ -123,13 +137,6 @@ function ToolCard({ invocation }: { invocation: ToolInvocation }) {
         />
       );
     }
-  }
-
-  // List directory tools
-  if (["list_directory", "listFiles"].includes(invocation.toolName)) {
-    const path = (args?.path as string) || ".";
-
-    return <FileTree path={path} output={result} isComplete={isComplete} />;
   }
 
   // Fallback to generic Tool component
