@@ -3,6 +3,7 @@
  */
 
 import type { StorageInput, StorageMetadata, StorageObject } from "@ifc-viewer/core"
+export { isBinaryExtension } from "@ifc-viewer/core"
 
 /**
  * Default implementation of StorageObject.

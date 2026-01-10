@@ -70,6 +70,7 @@ export {
   normalizeStoragePath,
   buildStorageKey,
   deleteStoragePrefix,
+  isBinaryExtension,
 } from "./utils"
 
 // Domain Layer - Agent Types

@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod"
+import { buildStorageKey } from "../../utils/storage.ts"
 
 // ============================================================================
 // Schema & Types
@@ -60,7 +61,7 @@ export namespace Model {
  * Models are stored at: projects/{projectId}/models/{filename}
  */
 export function getModelStorageKey(projectId: string, filePath: string): string {
-  return `projects/${projectId}/${filePath}`
+  return buildStorageKey(projectId, filePath)
 }
 
 /**

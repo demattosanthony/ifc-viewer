@@ -72,6 +72,7 @@ export {
   toBytes,
   streamToBytes,
   inferContentType,
+  isBinaryExtension,
 } from "./storage"
 
 // Compute

@@ -15,6 +15,22 @@ export function normalizeStoragePath(path: string): string {
 }
 
 /**
+ * Extensions that represent binary (non-text) files.
+ */
+const binaryExtensions = new Set([
+  "ifc", "png", "jpg", "jpeg", "gif", "webp", "pdf", "zip", "tar", "gz",
+  "bin", "exe", "dll", "so", "dylib", "wasm", "glb", "gltf", "obj",
+])
+
+/**
+ * Check if a filename has a binary extension.
+ */
+export function isBinaryExtension(filename: string): boolean {
+  const ext = filename.split(".").pop()?.toLowerCase() ?? ""
+  return binaryExtensions.has(ext)
+}
+
+/**
  * Build a storage key for a project file.
  * Format: `projects/{projectId}/{path}`
  */

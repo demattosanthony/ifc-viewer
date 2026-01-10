@@ -8,7 +8,7 @@
 export type { Storage, StorageObject, StorageMetadata, StorageEntry } from "@ifc-viewer/core"
 
 // Base utilities
-export { BaseStorageObject, toBytes, streamToBytes, inferContentType } from "./base"
+export { BaseStorageObject, toBytes, streamToBytes, inferContentType, isBinaryExtension } from "./base"
 
 // Implementations
 export { LocalStorage, type LocalStorageConfig } from "./local"

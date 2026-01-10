@@ -3,4 +3,5 @@ export {
   normalizeStoragePath,
   buildStorageKey,
   deleteStoragePrefix,
+  isBinaryExtension,
 } from "./storage"

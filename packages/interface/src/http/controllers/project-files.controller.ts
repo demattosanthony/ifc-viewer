@@ -8,7 +8,7 @@
 
 import type { Context } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-import { buildStorageKey, deleteStoragePrefix, normalizeStoragePath } from "@ifc-viewer/core"
+import { buildStorageKey, deleteStoragePrefix, normalizeStoragePath, isBinaryExtension } from "@ifc-viewer/core"
 import type {
   ListFilesResponse,
   ReadFileResponse,
@@ -26,28 +26,7 @@ const log = createLogger("project-files")
  */
 function isBinaryContent(data: Uint8Array, path: string): boolean {
   // Check extension first
-  const binaryExtensions = [
-    ".ifc",
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".webp",
-    ".pdf",
-    ".zip",
-    ".tar",
-    ".gz",
-    ".bin",
-    ".exe",
-    ".dll",
-    ".so",
-    ".dylib",
-    ".wasm",
-    ".glb",
-    ".gltf",
-  ]
-  const ext = path.slice(path.lastIndexOf(".")).toLowerCase()
-  if (binaryExtensions.includes(ext)) {
+  if (isBinaryExtension(path)) {
     return true
   }
 
