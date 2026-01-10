@@ -5,9 +5,9 @@
  * Designed for easy migration to Redis.
  */
 
-import { EventEmitter } from "events"
+import { EventEmitter } from "node:events"
+import type { Stream, StreamEvent, StreamStore } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-import type { StreamStore, StreamEvent, Stream } from "@ifc-viewer/core"
 
 const log = createLogger("streams:memory")
 
@@ -150,7 +150,10 @@ export function createMemoryStreamStore(config?: MemoryStreamStoreConfig): Strea
       if (state.stream.status !== "active") {
         // Stream was finalized (aborted/completed/error) - silently ignore
         // This handles race conditions during abort
-        log.debug("Append to finalized stream ignored", { streamId: id, status: state.stream.status })
+        log.debug("Append to finalized stream ignored", {
+          streamId: id,
+          status: state.stream.status,
+        })
         return -1
       }
 
@@ -207,7 +210,9 @@ export function createMemoryStreamStore(config?: MemoryStreamStoreConfig): Strea
             if (event.sequence > after) yield event
           }
           if (!closed && queue.length === 0) {
-            await new Promise<void>((r) => (resolve = r))
+            await new Promise<void>((r) => {
+              resolve = r
+            })
           }
         }
       } finally {

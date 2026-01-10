@@ -7,29 +7,22 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@ifc-viewer/ui/components";
+} from "@ifc-viewer/ui/components"
 
 interface DeleteTarget {
-  path: string;
-  isDirectory: boolean;
+  path: string
+  isDirectory: boolean
 }
 
 interface DeleteDialogProps {
-  target: DeleteTarget | null;
-  onConfirm: () => void;
-  onCancel: () => void;
+  target: DeleteTarget | null
+  onConfirm: () => void
+  onCancel: () => void
 }
 
-export function DeleteDialog({
-  target,
-  onConfirm,
-  onCancel,
-}: DeleteDialogProps) {
+export function DeleteDialog({ target, onConfirm, onCancel }: DeleteDialogProps) {
   return (
-    <AlertDialog
-      open={target !== null}
-      onOpenChange={(open) => !open && onCancel()}
-    >
+    <AlertDialog open={target !== null} onOpenChange={(open) => !open && onCancel()}>
       <AlertDialogContent className="bg-[#252526] border-[#3c3c3c]">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-[#cccccc]">
@@ -54,5 +47,5 @@ export function DeleteDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }

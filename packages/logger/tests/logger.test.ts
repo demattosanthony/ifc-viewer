@@ -1,10 +1,5 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test"
-import {
-  createLogger,
-  flushLogs,
-  LOG_LEVELS,
-  LOG_LEVEL_PRIORITY,
-} from "../src/index.ts"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { createLogger, flushLogs, LOG_LEVEL_PRIORITY, LOG_LEVELS } from "../src/index.ts"
 
 describe("Logger", () => {
   let originalEnv: NodeJS.ProcessEnv

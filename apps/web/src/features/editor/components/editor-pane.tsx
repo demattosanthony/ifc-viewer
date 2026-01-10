@@ -1,16 +1,16 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { readProjectFile } from "@ifc-viewer/sdk";
-import { readProjectFileQueryKey } from "@ifc-viewer/sdk/hooks";
-import { useEditor } from "../context";
-import { CodeEditor } from "./viewers/code-editor";
-import { IFCViewer } from "./viewers/ifc-viewer";
-import { HtmlViewer } from "./viewers/html-viewer";
-import { PdfViewer } from "./viewers/pdf-viewer";
+import { readProjectFile } from "@ifc-viewer/sdk"
+import { readProjectFileQueryKey } from "@ifc-viewer/sdk/hooks"
+import { useQuery } from "@tanstack/react-query"
+import { useEffect } from "react"
+import { useEditor } from "../context"
+import { CodeEditor } from "./viewers/code-editor"
+import { HtmlViewer } from "./viewers/html-viewer"
+import { IFCViewer } from "./viewers/ifc-viewer"
+import { PdfViewer } from "./viewers/pdf-viewer"
 
 interface EditorPaneProps {
-  projectId: string;
-  onShowTerminal?: () => void;
+  projectId: string
+  onShowTerminal?: () => void
 }
 
 function EmptyState() {
@@ -21,7 +21,7 @@ function EmptyState() {
         <p className="text-xs mt-1">Select a file from the explorer</p>
       </div>
     </div>
-  );
+  )
 }
 
 function LoadingState() {
@@ -29,15 +29,15 @@ function LoadingState() {
     <div className="flex-1 flex items-center justify-center bg-background text-muted-foreground">
       <p className="text-sm">Loading...</p>
     </div>
-  );
+  )
 }
 
 export function EditorPane({ projectId }: EditorPaneProps) {
-  const { tabs, activeTabId, getFileContent, setFileContent } = useEditor();
+  const { tabs, activeTabId, getFileContent, setFileContent } = useEditor()
 
-  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const activeTab = tabs.find((t) => t.id === activeTabId)
   const shouldFetchContent =
-    activeTab && activeTab.type !== "ifc" && !getFileContent(activeTab.path);
+    activeTab && activeTab.type !== "ifc" && !getFileContent(activeTab.path)
 
   // Query for file content (non-IFC files only)
   const contentQuery = useQuery({
@@ -49,12 +49,12 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       const { data } = await readProjectFile({
         path: { id: projectId },
         query: { path: activeTab!.path },
-      });
-      return data;
+      })
+      return data
     },
     enabled: !!shouldFetchContent,
     staleTime: 30000,
-  });
+  })
 
   // Update editor context when content is fetched (only if not already cached)
   useEffect(() => {
@@ -63,24 +63,24 @@ export function EditorPane({ projectId }: EditorPaneProps) {
         // SDK generates `type: string` but API always returns "text" | "binary"
         type: contentQuery.data.type as "text" | "binary",
         content: contentQuery.data.content,
-      });
+      })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contentQuery.data]);
+  }, [contentQuery.data, activeTab, getFileContent, setFileContent])
 
   if (!activeTab) {
-    return <EmptyState />;
+    return <EmptyState />
   }
 
   // IFC has its own loading mechanism
   if (activeTab.type === "ifc") {
-    return <IFCViewer projectId={projectId} filePath={activeTab.path} />;
+    return <IFCViewer projectId={projectId} filePath={activeTab.path} />
   }
 
-  const content = getFileContent(activeTab.path);
+  const content = getFileContent(activeTab.path)
 
   if (contentQuery.isLoading || !content) {
-    return <LoadingState />;
+    return <LoadingState />
   }
 
   // Render appropriate viewer based on tab type
@@ -92,18 +92,12 @@ export function EditorPane({ projectId }: EditorPaneProps) {
           contentType={content.type}
           filename={activeTab.name}
         />
-      );
+      )
 
     case "pdf":
       return (
-        <PdfViewer
-          content={content.content}
-          contentType={content.type}
-          filename={activeTab.name}
-        />
-      );
-
-    case "code":
+        <PdfViewer content={content.content} contentType={content.type} filename={activeTab.name} />
+      )
     default:
       return (
         <CodeEditor
@@ -113,6 +107,6 @@ export function EditorPane({ projectId }: EditorPaneProps) {
           content={content.content}
           filename={activeTab.name}
         />
-      );
+      )
   }
 }

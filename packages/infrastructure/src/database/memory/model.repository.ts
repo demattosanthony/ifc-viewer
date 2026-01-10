@@ -1,5 +1,5 @@
-import { generateId, ModelSchema } from "@ifc-viewer/core"
 import type { Model, ModelRepository } from "@ifc-viewer/core"
+import { generateId, ModelSchema } from "@ifc-viewer/core"
 
 export function createModelRepository(): ModelRepository {
   const store = new Map<string, Model>()

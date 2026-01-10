@@ -5,8 +5,8 @@
  * and content type inference.
  */
 
-import { describe, test, expect } from "bun:test"
-import { BaseStorageObject, toBytes, streamToBytes, inferContentType } from "../../src/storage/base"
+import { describe, expect, test } from "bun:test"
+import { BaseStorageObject, inferContentType, streamToBytes, toBytes } from "../../src/storage/base"
 
 describe("toBytes", () => {
   test("converts string to Uint8Array", async () => {
@@ -51,10 +51,7 @@ describe("toBytes", () => {
   })
 
   test("converts ReadableStream to Uint8Array", async () => {
-    const chunks = [
-      new Uint8Array([1, 2, 3]),
-      new Uint8Array([4, 5, 6]),
-    ]
+    const chunks = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])]
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         for (const chunk of chunks) {

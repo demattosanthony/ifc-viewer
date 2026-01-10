@@ -4,37 +4,37 @@
  * File operations at /api/projects/:id/files
  */
 
-import { Elysia, t } from "elysia";
-import type { Context } from "@ifc-viewer/core";
+import type { Context } from "@ifc-viewer/core"
 import {
-  ProjectFilesController,
-  WriteFileRequest,
+  ConfirmUploadRequest,
   CreateDirectoryRequest,
-  ListFilesQuery,
-  ReadFileQuery,
   DeleteFileQuery,
-  ListFilesResponse,
-  ReadFileResponse,
   ErrorResponse,
-  SuccessWithPathResponse,
   GetPresignedUrlRequest,
   GetPresignedUrlResponse,
-  ConfirmUploadRequest,
-} from "@ifc-viewer/interface";
-import { z } from "zod";
+  ListFilesQuery,
+  ListFilesResponse,
+  ProjectFilesController,
+  ReadFileQuery,
+  ReadFileResponse,
+  SuccessWithPathResponse,
+  WriteFileRequest,
+} from "@ifc-viewer/interface"
+import { Elysia, t } from "elysia"
+import { z } from "zod"
 
 export function projectFilesRoutes(ctx: Context) {
-  const controller = new ProjectFilesController(ctx);
+  const controller = new ProjectFilesController(ctx)
 
   return new Elysia({ prefix: "/api/projects/:id/files" })
     .get(
       "/",
       async ({ params, query }) => {
-        const result = await controller.list(params.id, query.path);
+        const result = await controller.list(params.id, query.path)
         if (!result.success) {
-          return { files: [], path: query.path ?? "." };
+          return { files: [], path: query.path ?? "." }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -54,12 +54,12 @@ export function projectFilesRoutes(ctx: Context) {
     .get(
       "/content",
       async ({ params, query, set }) => {
-        const result = await controller.read(params.id, query.path);
+        const result = await controller.read(params.id, query.path)
         if (!result.success) {
-          set.status = result.status;
-          return { error: result.error };
+          set.status = result.status
+          return { error: result.error }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -81,12 +81,12 @@ export function projectFilesRoutes(ctx: Context) {
     .post(
       "/content",
       async ({ params, body, set }) => {
-        const result = await controller.write(params.id, body);
+        const result = await controller.write(params.id, body)
         if (!result.success) {
-          set.status = result.status;
-          return { error: result.error };
+          set.status = result.status
+          return { error: result.error }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -108,12 +108,12 @@ export function projectFilesRoutes(ctx: Context) {
     .delete(
       "/",
       async ({ params, query, set }) => {
-        const result = await controller.delete(params.id, query.path);
+        const result = await controller.delete(params.id, query.path)
         if (!result.success) {
-          set.status = result.status;
-          return { error: result.error };
+          set.status = result.status
+          return { error: result.error }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -136,12 +136,12 @@ export function projectFilesRoutes(ctx: Context) {
     .post(
       "/directory",
       async ({ params, body, set }) => {
-        const result = await controller.mkdir(params.id, body.path);
+        const result = await controller.mkdir(params.id, body.path)
         if (!result.success) {
-          set.status = result.status;
-          return { error: result.error };
+          set.status = result.status
+          return { error: result.error }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -163,23 +163,18 @@ export function projectFilesRoutes(ctx: Context) {
     .post(
       "/upload",
       async ({ params, body, set }) => {
-        const { file, path } = body;
+        const { file, path } = body
 
         // Convert File to Uint8Array
-        const arrayBuffer = await file.arrayBuffer();
-        const data = new Uint8Array(arrayBuffer);
+        const arrayBuffer = await file.arrayBuffer()
+        const data = new Uint8Array(arrayBuffer)
 
-        const result = await controller.upload(
-          params.id,
-          path,
-          data,
-          file.type
-        );
+        const result = await controller.upload(params.id, path, data, file.type)
         if (!result.success) {
-          set.status = result.status;
-          return { error: result.error };
+          set.status = result.status
+          return { error: result.error }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -198,8 +193,7 @@ export function projectFilesRoutes(ctx: Context) {
         },
         detail: {
           summary: "Upload file to project",
-          description:
-            "Upload a file using multipart/form-data directly to project storage.",
+          description: "Upload a file using multipart/form-data directly to project storage.",
           tags: ["Project Files"],
           operationId: "uploadProjectFile",
         },
@@ -208,12 +202,12 @@ export function projectFilesRoutes(ctx: Context) {
     .post(
       "/presigned-url",
       async ({ params, body, set }) => {
-        const result = await controller.getPresignedUrl(params.id, body);
+        const result = await controller.getPresignedUrl(params.id, body)
         if (!result.success) {
-          set.status = result.status;
-          return { error: result.error };
+          set.status = result.status
+          return { error: result.error }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -238,12 +232,12 @@ export function projectFilesRoutes(ctx: Context) {
     .post(
       "/confirm-upload",
       async ({ params, body, set }) => {
-        const result = await controller.confirmUpload(params.id, body);
+        const result = await controller.confirmUpload(params.id, body)
         if (!result.success) {
-          set.status = result.status;
-          return { error: result.error };
+          set.status = result.status
+          return { error: result.error }
         }
-        return result.data;
+        return result.data
       },
       {
         params: z.object({
@@ -257,11 +251,10 @@ export function projectFilesRoutes(ctx: Context) {
         },
         detail: {
           summary: "Confirm S3 upload to project",
-          description:
-            "After uploading via presigned URL, call this to confirm the upload.",
+          description: "After uploading via presigned URL, call this to confirm the upload.",
           tags: ["Project Files"],
           operationId: "confirmProjectUpload",
         },
       }
-    );
+    )
 }

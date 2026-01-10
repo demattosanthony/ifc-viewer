@@ -10,20 +10,20 @@
  * - Any S3-compatible storage
  */
 
-import { S3Client } from "bun"
 import type {
   Storage,
+  StorageEntry,
   StorageInput,
-  StorageObject,
+  StorageListOptions,
   StorageMetadata,
+  StorageObject,
   StoragePutOptions,
   StoragePutResult,
-  StorageEntry,
-  StorageListOptions,
-  StorageUrlOptions,
-  StorageUploadUrlOptions,
   StorageUploadCredentials,
+  StorageUploadUrlOptions,
+  StorageUrlOptions,
 } from "@ifc-viewer/core"
+import { S3Client } from "bun"
 import { BaseStorageObject, inferContentType, toBytes } from "./base"
 
 export interface S3StorageConfig {
@@ -70,7 +70,7 @@ export class S3Storage implements Storage {
    * Strip prefix from a full S3 key.
    */
   private stripPrefix(fullKey: string): string {
-    if (this.prefix && fullKey.startsWith(this.prefix + "/")) {
+    if (this.prefix && fullKey.startsWith(`${this.prefix}/`)) {
       return fullKey.slice(this.prefix.length + 1)
     }
     return fullKey
@@ -219,14 +219,9 @@ export class S3Storage implements Storage {
     }
   }
 
-  async *list(
-    prefix: string,
-    options?: StorageListOptions
-  ): AsyncIterable<StorageEntry> {
+  async *list(prefix: string, options?: StorageListOptions): AsyncIterable<StorageEntry> {
     const s3Prefix = this.buildKey(prefix)
-    let startAfter = options?.startAfter
-      ? this.buildKey(options.startAfter)
-      : undefined
+    let startAfter = options?.startAfter ? this.buildKey(options.startAfter) : undefined
 
     // Keep fetching pages until we've yielded all results
     while (true) {
@@ -244,9 +239,7 @@ export class S3Storage implements Storage {
           yield {
             key: this.stripPrefix(object.key),
             size: object.size ?? 0,
-            lastModified: object.lastModified
-              ? new Date(object.lastModified)
-              : undefined,
+            lastModified: object.lastModified ? new Date(object.lastModified) : undefined,
           }
         }
       }

@@ -1,17 +1,17 @@
+import { mkdir, readFile } from "node:fs/promises"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
+import { type Computer, type Context, createContext, uploadModel } from "@ifc-viewer/core"
 import {
-  createDatabase,
-  createStorage,
-  createLocalComputer,
-  createDockerComputer,
   createAIProviderFromEnv,
+  createDatabase,
+  createDockerComputer,
+  createLocalComputer,
   createMemoryStreamStore,
+  createStorage,
   type DatabaseConfig,
 } from "@ifc-viewer/infrastructure"
-import { createContext, uploadModel, type Context, type Computer } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-import { mkdir, readFile } from "node:fs/promises"
-import { resolve, dirname } from "node:path"
-import { fileURLToPath } from "node:url"
 
 const log = createLogger("context")
 
@@ -41,13 +41,20 @@ function getDatabaseConfig(config: AppContextConfig): DatabaseConfig {
   if (databaseUrl) {
     return { type: "postgres", connectionString: databaseUrl }
   }
-  const dataDirectory = config.dataDirectory ?? process.env.DATA_DIR ?? resolve(MONOREPO_ROOT, ".data", "sqlite")
+  const dataDirectory =
+    config.dataDirectory ?? process.env.DATA_DIR ?? resolve(MONOREPO_ROOT, ".data", "sqlite")
   return { type: "sqlite", dataDirectory }
 }
 
 export async function createAppContext(config: AppContextConfig = {}): Promise<Context> {
-  const storageDirectory = config.storageDirectory ?? process.env.STORAGE_LOCAL_BASE_DIR ?? resolve(MONOREPO_ROOT, ".data", "storage")
-  const computeProvider: ComputeProvider = config.computeProvider ?? (process.env.COMPUTE_PROVIDER as ComputeProvider | undefined) ?? "docker"
+  const storageDirectory =
+    config.storageDirectory ??
+    process.env.STORAGE_LOCAL_BASE_DIR ??
+    resolve(MONOREPO_ROOT, ".data", "storage")
+  const computeProvider: ComputeProvider =
+    config.computeProvider ??
+    (process.env.COMPUTE_PROVIDER as ComputeProvider | undefined) ??
+    "docker"
   const dockerImage = config.dockerImage ?? process.env.DOCKER_IMAGE
 
   await mkdir(storageDirectory, { recursive: true })
@@ -65,7 +72,10 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
   const streams = createMemoryStreamStore({ ttlMs: 30 * 60 * 1000 }) // 30 minutes
 
   // Local compute needs a host directory for workspaces
-  const localWorkspacesDir = config.localWorkspacesDir ?? process.env.WORKSPACES_DIR ?? resolve(MONOREPO_ROOT, ".data", "workspaces")
+  const localWorkspacesDir =
+    config.localWorkspacesDir ??
+    process.env.WORKSPACES_DIR ??
+    resolve(MONOREPO_ROOT, ".data", "workspaces")
   if (computeProvider === "local") {
     await mkdir(localWorkspacesDir, { recursive: true })
   }
@@ -119,7 +129,9 @@ async function bootstrapSampleProject(ctx: Context): Promise<void> {
   // Upload sample Python script (regular file, not a model)
   try {
     const pyData = new Uint8Array(await readFile(SAMPLE_PY_SCRIPT_PATH))
-    await ctx.storage.put(`${prefix}/scripts/print_info.py`, pyData, { contentType: "text/x-python" })
+    await ctx.storage.put(`${prefix}/scripts/print_info.py`, pyData, {
+      contentType: "text/x-python",
+    })
   } catch {}
 
   // Upload README

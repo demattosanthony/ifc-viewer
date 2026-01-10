@@ -165,6 +165,20 @@ Function components with hooks, context providers for shared state, Tailwind CSS
 - Bun auto-loads `.env` files (no dotenv needed)
 - Copy `.env.example` to `.env` for local development
 
-## Linting
+## Linting & Formatting
 
-No ESLint/Prettier configured. Follow TypeScript strict mode and match existing patterns.
+Uses [Biome](https://biomejs.dev/) for linting and formatting.
+
+```bash
+bun run check              # Check lint + format (CI mode)
+bun run check:fix          # Apply all fixes
+bun run lint               # Lint only
+bun run format             # Check formatting only
+```
+
+**VS Code**: Install the Biome extension (`biomejs.biome`). Format-on-save is enabled via `.vscode/settings.json`.
+
+**Configuration**: See `biome.json` for rules. Key settings:
+- 2-space indentation, double quotes, no semicolons
+- `useImportType`/`useExportType` enforced (matches `verbatimModuleSyntax`)
+- Recommended rules enabled with warnings for unused vars/imports

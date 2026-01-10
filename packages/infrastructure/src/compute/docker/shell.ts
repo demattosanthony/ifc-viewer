@@ -1,15 +1,15 @@
+import { type ChildProcess, spawn } from "node:child_process"
+import { dirname, join } from "node:path"
+import { createInterface, type Interface } from "node:readline"
+import { fileURLToPath } from "node:url"
 import type {
-  Shell,
-  TerminalSession,
-  TerminalOptions,
   PythonTerminalOptions,
+  Shell,
+  TerminalOptions,
+  TerminalSession,
 } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
 import type { Container } from "dockerode"
-import { spawn, type ChildProcess } from "child_process"
-import { createInterface, type Interface } from "readline"
-import { fileURLToPath } from "url"
-import { dirname, join } from "path"
 
 const log = createLogger("docker:shell")
 
@@ -103,7 +103,7 @@ export class DockerShell implements Shell {
 
     const sendToWorker = (message: ParentMessage) => {
       if (!worker || killed) return
-      worker.stdin?.write(JSON.stringify(message) + "\n")
+      worker.stdin?.write(`${JSON.stringify(message)}\n`)
     }
 
     const workerPath = getWorkerPath()
@@ -267,9 +267,7 @@ export class DockerShell implements Shell {
     }
   }
 
-  async startPythonTerminal(
-    options?: PythonTerminalOptions
-  ): Promise<TerminalSession> {
+  async startPythonTerminal(options?: PythonTerminalOptions): Promise<TerminalSession> {
     const cwd = options?.cwd || this.workDir
     const id = `python-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
@@ -310,7 +308,7 @@ export class DockerShell implements Shell {
 
     const sendToWorker = (message: ParentMessage) => {
       if (!worker || killed) return
-      worker.stdin?.write(JSON.stringify(message) + "\n")
+      worker.stdin?.write(`${JSON.stringify(message)}\n`)
     }
 
     const workerPath = getWorkerPath()
@@ -482,7 +480,7 @@ export class DockerShell implements Shell {
     // Execute pre-imports if provided
     if (options?.preImports?.length) {
       for (const stmt of options.preImports) {
-        await terminalSession.write(stmt + "\n")
+        await terminalSession.write(`${stmt}\n`)
         await this.waitForPythonPrompt(terminalSession)
       }
     }

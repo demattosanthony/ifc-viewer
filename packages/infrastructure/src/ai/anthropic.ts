@@ -4,13 +4,13 @@
  * Implements AIProvider using Vercel AI SDK with Anthropic.
  */
 
-import { ToolLoopAgent } from "ai"
 import { createAnthropic } from "@ai-sdk/anthropic"
-import type { AIProvider, AIProviderConfig, AIChatOptions, AIEvent } from "@ifc-viewer/core"
-import { createFileTools } from "./tools/file-tools"
-import { createShellTools } from "./tools/shell-tools"
-import { createPythonTools } from "./tools/python-tools"
+import type { AIChatOptions, AIEvent, AIProvider, AIProviderConfig } from "@ifc-viewer/core"
+import { ToolLoopAgent } from "ai"
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
+import { createFileTools } from "./tools/file-tools"
+import { createPythonTools } from "./tools/python-tools"
+import { createShellTools } from "./tools/shell-tools"
 import { formatUsageStats, getErrorMessage } from "./utils"
 
 /** Anthropic-specific provider configuration */

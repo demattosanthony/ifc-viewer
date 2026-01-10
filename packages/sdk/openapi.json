@@ -1,1 +1,1759 @@
-{"openapi":"3.0.3","info":{"title":"IFC Viewer API","description":"API for IFC Viewer platform with project management, file operations, and AI agent","version":"2.0.0"},"tags":[{"name":"Projects","description":"Project management"},{"name":"Models","description":"IFC model management"},{"name":"Project Files","description":"Project file operations"},{"name":"Conversations","description":"AI conversations and chat"}],"paths":{"/":{"get":{"summary":"API info","tags":["General"],"operationId":"getApiInfo","responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"message":{"type":"string"},"version":{"type":"string"},"docs":{"type":"string"}},"required":["message","version","docs"],"additionalProperties":false}}}}}}},"/health":{"get":{"summary":"Health check","tags":["General"],"operationId":"healthCheck","responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","enum":["ok"]},"timestamp":{"type":"string"}},"required":["status","timestamp"],"additionalProperties":false}}}}}}},"/api/projects/":{"post":{"summary":"Create a new project","tags":["Projects"],"operationId":"createProject","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":100},"description":{"type":"string"}},"required":["id"],"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":100},"description":{"type":"string"}},"required":["id"],"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":100},"description":{"type":"string"}},"required":["id"],"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":100,"pattern":"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"},"description":{"type":"string","nullable":true},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","description","createdAt","updatedAt"],"additionalProperties":false}}}},"400":{"description":"Response for status 400","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"get":{"summary":"List all projects","tags":["Projects"],"operationId":"listProjects","responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":100,"pattern":"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"},"description":{"type":"string","nullable":true},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","description","createdAt","updatedAt"],"additionalProperties":false}}}}}}}},"/api/projects/{id}":{"get":{"summary":"Get a project by ID","tags":["Projects"],"operationId":"getProject","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":100,"pattern":"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"},"description":{"type":"string","nullable":true},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","description","createdAt","updatedAt"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"patch":{"summary":"Update a project","tags":["Projects"],"operationId":"updateProject","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"description":{"type":"string"}},"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"description":{"type":"string"}},"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"description":{"type":"string"}},"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":100,"pattern":"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"},"description":{"type":"string","nullable":true},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","description","createdAt","updatedAt"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"delete":{"summary":"Delete a project","tags":["Projects"],"operationId":"deleteProject","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/models/":{"get":{"summary":"List models for a project","tags":["Models"],"operationId":"listModels","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"projectId":{"type":"string"},"name":{"type":"string"},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]},"filePath":{"type":"string"},"fileSize":{"type":"number"},"visible":{"type":"boolean"},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","projectId","name","discipline","filePath","fileSize","visible","createdAt","updatedAt"],"additionalProperties":false}}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"post":{"summary":"Upload a new model","tags":["Models"],"operationId":"uploadModel","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"file":{},"name":{"type":"string"},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]}},"required":["file"],"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"file":{},"name":{"type":"string"},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]}},"required":["file"],"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"file":{},"name":{"type":"string"},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]}},"required":["file"],"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"projectId":{"type":"string"},"name":{"type":"string"},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]},"filePath":{"type":"string"},"fileSize":{"type":"number"},"visible":{"type":"boolean"},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","projectId","name","discipline","filePath","fileSize","visible","createdAt","updatedAt"],"additionalProperties":false}}}},"400":{"description":"Response for status 400","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/models/{modelId}":{"get":{"summary":"Get model metadata","tags":["Models"],"operationId":"getModel","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"modelId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"projectId":{"type":"string"},"name":{"type":"string"},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]},"filePath":{"type":"string"},"fileSize":{"type":"number"},"visible":{"type":"boolean"},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","projectId","name","discipline","filePath","fileSize","visible","createdAt","updatedAt"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"patch":{"summary":"Update model metadata","tags":["Models"],"operationId":"updateModel","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"modelId","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"name":{"type":"string","minLength":1,"maxLength":255},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]},"visible":{"type":"boolean"}},"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"name":{"type":"string","minLength":1,"maxLength":255},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]},"visible":{"type":"boolean"}},"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"name":{"type":"string","minLength":1,"maxLength":255},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]},"visible":{"type":"boolean"}},"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"projectId":{"type":"string"},"name":{"type":"string"},"discipline":{"type":"string","enum":["architecture","structure","mep","site","other"]},"filePath":{"type":"string"},"fileSize":{"type":"number"},"visible":{"type":"boolean"},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","projectId","name","discipline","filePath","fileSize","visible","createdAt","updatedAt"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"delete":{"summary":"Delete a model","tags":["Models"],"operationId":"deleteModel","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"modelId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/models/{modelId}/file":{"get":{"summary":"Download model IFC file","tags":["Models"],"operationId":"getModelFile","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"modelId","in":"path","required":true,"schema":{"type":"string"}}]}},"/api/projects/{id}/files/":{"get":{"summary":"List files in a project directory","tags":["Project Files"],"operationId":"listProjectFiles","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"path","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"array","items":{"type":"string"}}]}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"files":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"path":{"type":"string"},"type":{"type":"string","enum":["file","directory","symlink"]},"size":{"type":"number"},"modifiedAt":{"type":"number"}},"required":["name","path","type","size","modifiedAt"],"additionalProperties":false}},"path":{"type":"string"}},"required":["files","path"],"additionalProperties":false}}}}}},"delete":{"summary":"Delete a file or directory from project","tags":["Project Files"],"operationId":"deleteProjectFile","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"path","in":"query","required":true,"schema":{"anyOf":[{"type":"string"},{"type":"array","items":{"type":"string"}}]}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"],"additionalProperties":false}}}},"400":{"description":"Response for status 400","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"500":{"description":"Response for status 500","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/files/content":{"get":{"summary":"Read file content from project","tags":["Project Files"],"operationId":"readProjectFile","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"path","in":"query","required":true,"schema":{"anyOf":[{"type":"string"},{"type":"array","items":{"type":"string"}}]}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"path":{"type":"string"},"type":{"type":"string","enum":["text","binary"]},"content":{"type":"string"}},"required":["path","type","content"],"additionalProperties":false}}}},"400":{"description":"Response for status 400","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"post":{"summary":"Write file content to project","tags":["Project Files"],"operationId":"writeProjectFile","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"},"isBinary":{"type":"boolean"}},"required":["path","content"],"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"},"isBinary":{"type":"boolean"}},"required":["path","content"],"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"},"isBinary":{"type":"boolean"}},"required":["path","content"],"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"500":{"description":"Response for status 500","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/files/directory":{"post":{"summary":"Create a directory in project","tags":["Project Files"],"operationId":"createProjectDirectory","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"500":{"description":"Response for status 500","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/files/upload":{"post":{"summary":"Upload file to project","description":"Upload a file using multipart/form-data directly to project storage.","tags":["Project Files"],"operationId":"uploadProjectFile","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["file","path"],"properties":{"file":{"default":"File","type":"string","format":"binary"},"path":{"type":"string"}}}},"application/x-www-form-urlencoded":{"schema":{"type":"object","required":["file","path"],"properties":{"file":{"default":"File","type":"string","format":"binary"},"path":{"type":"string"}}}},"multipart/form-data":{"schema":{"type":"object","required":["file","path"],"properties":{"file":{"default":"File","type":"string","format":"binary"},"path":{"type":"string"}}}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"],"additionalProperties":false}}}},"400":{"description":"Response for status 400","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"500":{"description":"Response for status 500","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/files/presigned-url":{"post":{"summary":"Get presigned upload URL for project","description":"Get a presigned URL for direct S3 upload. Returns 501 if storage doesn't support presigned URLs.","tags":["Project Files"],"operationId":"getProjectPresignedUrl","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"path":{"type":"string"},"contentType":{"type":"string"}},"required":["path"],"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"path":{"type":"string"},"contentType":{"type":"string"}},"required":["path"],"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"path":{"type":"string"},"contentType":{"type":"string"}},"required":["path"],"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"url":{"type":"string"},"method":{"type":"string","enum":["PUT","POST"]},"headers":{"type":"object","additionalProperties":{"type":"string"}}},"required":["url","method"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"500":{"description":"Response for status 500","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"501":{"description":"Response for status 501","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/files/confirm-upload":{"post":{"summary":"Confirm S3 upload to project","description":"After uploading via presigned URL, call this to confirm the upload.","tags":["Project Files"],"operationId":"confirmProjectUpload","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}},"500":{"description":"Response for status 500","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}},"/api/projects/{id}/conversations/":{"post":{"summary":"Create a new conversation","tags":["Conversations"],"operationId":"createConversation","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"title":{"type":"string"}},"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"title":{"type":"string"}},"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"title":{"type":"string"}},"additionalProperties":false}}}},"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"projectId":{"type":"string"},"title":{"type":"string","nullable":true},"status":{"type":"string","enum":["active","streaming","completed","aborted"]},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","projectId","title","status","createdAt","updatedAt"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"get":{"summary":"List conversations for project","tags":["Conversations"],"operationId":"listConversations","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"projectId":{"type":"string"},"title":{"type":"string","nullable":true},"status":{"type":"string","enum":["active","streaming","completed","aborted"]},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"}},"required":["id","projectId","title","status","createdAt","updatedAt"],"additionalProperties":false}}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"delete":{"summary":"Clear all conversations for project","tags":["Conversations"],"operationId":"clearConversations","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}}}}}}},"/api/projects/{id}/conversations/{conversationId}":{"get":{"summary":"Get conversation with messages","tags":["Conversations"],"operationId":"getConversation","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"conversationId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"projectId":{"type":"string"},"title":{"type":"string","nullable":true},"status":{"type":"string","enum":["active","streaming","completed","aborted"]},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"},"messages":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"conversationId":{"type":"string","format":"uuid"},"role":{"type":"string","enum":["user","assistant","system"]},"content":{"type":"string"},"createdAt":{"type":"string","format":"date-time"}},"required":["id","conversationId","role","content","createdAt"],"additionalProperties":false}}},"required":["id","projectId","title","status","createdAt","updatedAt","messages"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}},"delete":{"summary":"Delete conversation","tags":["Conversations"],"operationId":"deleteConversation","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"conversationId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}}}}}}},"/api/projects/{id}/conversations/{conversationId}/chat":{"post":{"summary":"Chat within conversation (SSE streaming)","description":"Start or continue a chat. Compute environment is created on-demand for the project.","tags":["Conversations"],"operationId":"sendMessage","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"conversationId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"content":{"type":"string"},"history":{"type":"array","items":{"type":"object","properties":{"role":{"type":"string","enum":["user","assistant"]},"content":{"type":"string"}},"required":["role","content"],"additionalProperties":false}}},"required":["content"],"additionalProperties":false}},"application/x-www-form-urlencoded":{"schema":{"type":"object","properties":{"content":{"type":"string"},"history":{"type":"array","items":{"type":"object","properties":{"role":{"type":"string","enum":["user","assistant"]},"content":{"type":"string"}},"required":["role","content"],"additionalProperties":false}}},"required":["content"],"additionalProperties":false}},"multipart/form-data":{"schema":{"type":"object","properties":{"content":{"type":"string"},"history":{"type":"array","items":{"type":"object","properties":{"role":{"type":"string","enum":["user","assistant"]},"content":{"type":"string"}},"required":["role","content"],"additionalProperties":false}}},"required":["content"],"additionalProperties":false}}}}}},"/api/projects/{id}/conversations/{conversationId}/stop":{"post":{"summary":"Stop ongoing chat generation","tags":["Conversations"],"operationId":"stopGeneration","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"conversationId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"Response for status 200","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}}}},"404":{"description":"Response for status 404","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"}},"required":["error"],"additionalProperties":false}}}}}}}},"components":{"schemas":{}}}
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "IFC Viewer API",
+    "description": "API for IFC Viewer platform with project management, file operations, and AI agent",
+    "version": "2.0.0"
+  },
+  "tags": [
+    { "name": "Projects", "description": "Project management" },
+    { "name": "Models", "description": "IFC model management" },
+    { "name": "Project Files", "description": "Project file operations" },
+    { "name": "Conversations", "description": "AI conversations and chat" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "API info",
+        "tags": ["General"],
+        "operationId": "getApiInfo",
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "version": { "type": "string" },
+                    "docs": { "type": "string" }
+                  },
+                  "required": ["message", "version", "docs"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "tags": ["General"],
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["ok"] },
+                    "timestamp": { "type": "string" }
+                  },
+                  "required": ["status", "timestamp"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/": {
+      "post": {
+        "summary": "Create a new project",
+        "tags": ["Projects"],
+        "operationId": "createProject",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+                  "description": { "type": "string" }
+                },
+                "required": ["id"],
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+                  "description": { "type": "string" }
+                },
+                "required": ["id"],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+                  "description": { "type": "string" }
+                },
+                "required": ["id"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+                    },
+                    "description": { "type": "string", "nullable": true },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": ["id", "description", "createdAt", "updatedAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List all projects",
+        "tags": ["Projects"],
+        "operationId": "listProjects",
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100,
+                        "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+                      },
+                      "description": { "type": "string", "nullable": true },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" }
+                    },
+                    "required": ["id", "description", "createdAt", "updatedAt"],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}": {
+      "get": {
+        "summary": "Get a project by ID",
+        "tags": ["Projects"],
+        "operationId": "getProject",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+                    },
+                    "description": { "type": "string", "nullable": true },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": ["id", "description", "createdAt", "updatedAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a project",
+        "tags": ["Projects"],
+        "operationId": "updateProject",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "description": { "type": "string" } },
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": { "description": { "type": "string" } },
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "description": { "type": "string" } },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+                    },
+                    "description": { "type": "string", "nullable": true },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": ["id", "description", "createdAt", "updatedAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a project",
+        "tags": ["Projects"],
+        "operationId": "deleteProject",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" } },
+                  "required": ["success"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/models/": {
+      "get": {
+        "summary": "List models for a project",
+        "tags": ["Models"],
+        "operationId": "listModels",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "projectId": { "type": "string" },
+                      "name": { "type": "string" },
+                      "discipline": {
+                        "type": "string",
+                        "enum": ["architecture", "structure", "mep", "site", "other"]
+                      },
+                      "filePath": { "type": "string" },
+                      "fileSize": { "type": "number" },
+                      "visible": { "type": "boolean" },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" }
+                    },
+                    "required": [
+                      "id",
+                      "projectId",
+                      "name",
+                      "discipline",
+                      "filePath",
+                      "fileSize",
+                      "visible",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a new model",
+        "tags": ["Models"],
+        "operationId": "uploadModel",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {},
+                  "name": { "type": "string" },
+                  "discipline": {
+                    "type": "string",
+                    "enum": ["architecture", "structure", "mep", "site", "other"]
+                  }
+                },
+                "required": ["file"],
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {},
+                  "name": { "type": "string" },
+                  "discipline": {
+                    "type": "string",
+                    "enum": ["architecture", "structure", "mep", "site", "other"]
+                  }
+                },
+                "required": ["file"],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {},
+                  "name": { "type": "string" },
+                  "discipline": {
+                    "type": "string",
+                    "enum": ["architecture", "structure", "mep", "site", "other"]
+                  }
+                },
+                "required": ["file"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "projectId": { "type": "string" },
+                    "name": { "type": "string" },
+                    "discipline": {
+                      "type": "string",
+                      "enum": ["architecture", "structure", "mep", "site", "other"]
+                    },
+                    "filePath": { "type": "string" },
+                    "fileSize": { "type": "number" },
+                    "visible": { "type": "boolean" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "name",
+                    "discipline",
+                    "filePath",
+                    "fileSize",
+                    "visible",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/models/{modelId}": {
+      "get": {
+        "summary": "Get model metadata",
+        "tags": ["Models"],
+        "operationId": "getModel",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "projectId": { "type": "string" },
+                    "name": { "type": "string" },
+                    "discipline": {
+                      "type": "string",
+                      "enum": ["architecture", "structure", "mep", "site", "other"]
+                    },
+                    "filePath": { "type": "string" },
+                    "fileSize": { "type": "number" },
+                    "visible": { "type": "boolean" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "name",
+                    "discipline",
+                    "filePath",
+                    "fileSize",
+                    "visible",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update model metadata",
+        "tags": ["Models"],
+        "operationId": "updateModel",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+                  "discipline": {
+                    "type": "string",
+                    "enum": ["architecture", "structure", "mep", "site", "other"]
+                  },
+                  "visible": { "type": "boolean" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+                  "discipline": {
+                    "type": "string",
+                    "enum": ["architecture", "structure", "mep", "site", "other"]
+                  },
+                  "visible": { "type": "boolean" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+                  "discipline": {
+                    "type": "string",
+                    "enum": ["architecture", "structure", "mep", "site", "other"]
+                  },
+                  "visible": { "type": "boolean" }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "projectId": { "type": "string" },
+                    "name": { "type": "string" },
+                    "discipline": {
+                      "type": "string",
+                      "enum": ["architecture", "structure", "mep", "site", "other"]
+                    },
+                    "filePath": { "type": "string" },
+                    "fileSize": { "type": "number" },
+                    "visible": { "type": "boolean" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "name",
+                    "discipline",
+                    "filePath",
+                    "fileSize",
+                    "visible",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a model",
+        "tags": ["Models"],
+        "operationId": "deleteModel",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" } },
+                  "required": ["success"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/models/{modelId}/file": {
+      "get": {
+        "summary": "Download model IFC file",
+        "tags": ["Models"],
+        "operationId": "getModelFile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ]
+      }
+    },
+    "/api/projects/{id}/files/": {
+      "get": {
+        "summary": "List files in a project directory",
+        "tags": ["Project Files"],
+        "operationId": "listProjectFiles",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "path": { "type": "string" },
+                          "type": { "type": "string", "enum": ["file", "directory", "symlink"] },
+                          "size": { "type": "number" },
+                          "modifiedAt": { "type": "number" }
+                        },
+                        "required": ["name", "path", "type", "size", "modifiedAt"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "path": { "type": "string" }
+                  },
+                  "required": ["files", "path"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a file or directory from project",
+        "tags": ["Project Files"],
+        "operationId": "deleteProjectFile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response for status 500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/files/content": {
+      "get": {
+        "summary": "Read file content from project",
+        "tags": ["Project Files"],
+        "operationId": "readProjectFile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "type": { "type": "string", "enum": ["text", "binary"] },
+                    "content": { "type": "string" }
+                  },
+                  "required": ["path", "type", "content"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Write file content to project",
+        "tags": ["Project Files"],
+        "operationId": "writeProjectFile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "content": { "type": "string" },
+                  "isBinary": { "type": "boolean" }
+                },
+                "required": ["path", "content"],
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "content": { "type": "string" },
+                  "isBinary": { "type": "boolean" }
+                },
+                "required": ["path", "content"],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "content": { "type": "string" },
+                  "isBinary": { "type": "boolean" }
+                },
+                "required": ["path", "content"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response for status 500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/files/directory": {
+      "post": {
+        "summary": "Create a directory in project",
+        "tags": ["Project Files"],
+        "operationId": "createProjectDirectory",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response for status 500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/files/upload": {
+      "post": {
+        "summary": "Upload file to project",
+        "description": "Upload a file using multipart/form-data directly to project storage.",
+        "tags": ["Project Files"],
+        "operationId": "uploadProjectFile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "path"],
+                "properties": {
+                  "file": { "default": "File", "type": "string", "format": "binary" },
+                  "path": { "type": "string" }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "path"],
+                "properties": {
+                  "file": { "default": "File", "type": "string", "format": "binary" },
+                  "path": { "type": "string" }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "path"],
+                "properties": {
+                  "file": { "default": "File", "type": "string", "format": "binary" },
+                  "path": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response for status 500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/files/presigned-url": {
+      "post": {
+        "summary": "Get presigned upload URL for project",
+        "description": "Get a presigned URL for direct S3 upload. Returns 501 if storage doesn't support presigned URLs.",
+        "tags": ["Project Files"],
+        "operationId": "getProjectPresignedUrl",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" }, "contentType": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" }, "contentType": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" }, "contentType": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": { "type": "string" },
+                    "method": { "type": "string", "enum": ["PUT", "POST"] },
+                    "headers": { "type": "object", "additionalProperties": { "type": "string" } }
+                  },
+                  "required": ["url", "method"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response for status 500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Response for status 501",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/files/confirm-upload": {
+      "post": {
+        "summary": "Confirm S3 upload to project",
+        "description": "After uploading via presigned URL, call this to confirm the upload.",
+        "tags": ["Project Files"],
+        "operationId": "confirmProjectUpload",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "path": { "type": "string" } },
+                "required": ["path"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response for status 500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/conversations/": {
+      "post": {
+        "summary": "Create a new conversation",
+        "tags": ["Conversations"],
+        "operationId": "createConversation",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "title": { "type": "string" } },
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": { "title": { "type": "string" } },
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "title": { "type": "string" } },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "projectId": { "type": "string" },
+                    "title": { "type": "string", "nullable": true },
+                    "status": {
+                      "type": "string",
+                      "enum": ["active", "streaming", "completed", "aborted"]
+                    },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": ["id", "projectId", "title", "status", "createdAt", "updatedAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List conversations for project",
+        "tags": ["Conversations"],
+        "operationId": "listConversations",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "projectId": { "type": "string" },
+                      "title": { "type": "string", "nullable": true },
+                      "status": {
+                        "type": "string",
+                        "enum": ["active", "streaming", "completed", "aborted"]
+                      },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" }
+                    },
+                    "required": ["id", "projectId", "title", "status", "createdAt", "updatedAt"],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Clear all conversations for project",
+        "tags": ["Conversations"],
+        "operationId": "clearConversations",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" } },
+                  "required": ["success"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/conversations/{conversationId}": {
+      "get": {
+        "summary": "Get conversation with messages",
+        "tags": ["Conversations"],
+        "operationId": "getConversation",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "projectId": { "type": "string" },
+                    "title": { "type": "string", "nullable": true },
+                    "status": {
+                      "type": "string",
+                      "enum": ["active", "streaming", "completed", "aborted"]
+                    },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "conversationId": { "type": "string", "format": "uuid" },
+                          "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+                          "content": { "type": "string" },
+                          "createdAt": { "type": "string", "format": "date-time" }
+                        },
+                        "required": ["id", "conversationId", "role", "content", "createdAt"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "title",
+                    "status",
+                    "createdAt",
+                    "updatedAt",
+                    "messages"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete conversation",
+        "tags": ["Conversations"],
+        "operationId": "deleteConversation",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" } },
+                  "required": ["success"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/conversations/{conversationId}/chat": {
+      "post": {
+        "summary": "Chat within conversation (SSE streaming)",
+        "description": "Start or continue a chat. Compute environment is created on-demand for the project.",
+        "tags": ["Conversations"],
+        "operationId": "sendMessage",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string", "enum": ["user", "assistant"] },
+                        "content": { "type": "string" }
+                      },
+                      "required": ["role", "content"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["content"],
+                "additionalProperties": false
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string", "enum": ["user", "assistant"] },
+                        "content": { "type": "string" }
+                      },
+                      "required": ["role", "content"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["content"],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string", "enum": ["user", "assistant"] },
+                        "content": { "type": "string" }
+                      },
+                      "required": ["role", "content"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["content"],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/conversations/{conversationId}/stop": {
+      "post": {
+        "summary": "Stop ongoing chat generation",
+        "tags": ["Conversations"],
+        "operationId": "stopGeneration",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" } },
+                  "required": ["success"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" } },
+                  "required": ["error"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": { "schemas": {} }
+}

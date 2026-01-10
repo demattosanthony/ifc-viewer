@@ -46,82 +46,78 @@
  * ```
  */
 
+// Re-export port types for convenience
+export type {
+  AIProvider,
+  Computer,
+  ConversationRepository,
+  Database,
+  MessageRepository,
+  ProjectRepository,
+  Storage,
+  Stream,
+  StreamEvent,
+  StreamStatus,
+  StreamStore,
+} from "@ifc-viewer/core"
+// AI
+export {
+  type AIConfig,
+  type AIProviderType,
+  type AnthropicProviderConfig,
+  // Prompts
+  BIM_IDE_SYSTEM_PROMPT,
+  createAIProvider,
+  createAIProviderFromEnv,
+  createAnthropicProvider,
+  // Tools (for custom agent implementations)
+  createFileTools,
+  createShellTools,
+  formatUsageStats,
+  // Utilities
+  getErrorMessage,
+} from "./ai"
+
+// Compute
+export {
+  // Docker
+  createDockerComputer,
+  // Local
+  createLocalComputer,
+  type DockerComputeConfig,
+  DockerComputer,
+  DockerFileSystem,
+  DockerShell,
+  LocalComputer,
+  LocalFileSystem,
+  LocalShell,
+} from "./compute"
 // Database
 export {
   createDatabase,
   type DatabaseConfig,
-  type SQLiteDatabaseConfig,
   type MemoryDatabaseConfig,
   type PostgresDatabaseConfig,
+  type SQLiteDatabaseConfig,
 } from "./database"
-
 // Storage
 export {
+  // Utilities
+  BaseStorageObject,
   createStorage,
   createStorageFromEnv,
   createStorageProvider,
   createStorageProviderFromEnv,
-  type StorageConfig,
+  inferContentType,
+  isBinaryExtension,
   LocalStorage,
   type LocalStorageConfig,
   MemoryStorage,
   S3Storage,
   type S3StorageConfig,
-  // Utilities
-  BaseStorageObject,
-  toBytes,
+  type StorageConfig,
   streamToBytes,
-  inferContentType,
-  isBinaryExtension,
+  toBytes,
 } from "./storage"
-
-// Compute
-export {
-  // Local
-  createLocalComputer,
-  LocalComputer,
-  LocalFileSystem,
-  LocalShell,
-  // Docker
-  createDockerComputer,
-  DockerComputer,
-  DockerFileSystem,
-  DockerShell,
-  type DockerComputeConfig,
-} from "./compute"
-
-// AI
-export {
-  createAIProvider,
-  createAIProviderFromEnv,
-  createAnthropicProvider,
-  type AIConfig,
-  type AIProviderType,
-  type AnthropicProviderConfig,
-  // Tools (for custom agent implementations)
-  createFileTools,
-  createShellTools,
-  // Prompts
-  BIM_IDE_SYSTEM_PROMPT,
-  // Utilities
-  getErrorMessage,
-  formatUsageStats,
-} from "./ai"
-
 // Streams
 export { createMemoryStreamStore, type MemoryStreamStoreConfig } from "./streams"
-
-// Re-export port types for convenience
-export type {
-  Database,
-  Storage,
-  Computer,
-  AIProvider,
-  StreamStore,
-  StreamEvent,
-  Stream,
-  StreamStatus,
-  ProjectRepository,
-  ConversationRepository,
-  MessageRepository,
-} from "@ifc-viewer/core"

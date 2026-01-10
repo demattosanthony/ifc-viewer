@@ -1,11 +1,12 @@
-import { cn } from "../lib/utils";
-import React, { useEffect, useState } from "react";
-import { codeToHtml } from "shiki";
+import type React from "react"
+import { useEffect, useState } from "react"
+import { codeToHtml } from "shiki"
+import { cn } from "../lib/utils"
 
 export type CodeBlockProps = {
-  children?: React.ReactNode;
-  className?: string;
-} & React.HTMLProps<HTMLDivElement>;
+  children?: React.ReactNode
+  className?: string
+} & React.HTMLProps<HTMLDivElement>
 
 function CodeBlock({ children, className, ...props }: CodeBlockProps) {
   return (
@@ -19,30 +20,24 @@ function CodeBlock({ children, className, ...props }: CodeBlockProps) {
     >
       {children}
     </div>
-  );
+  )
 }
 
 export type CodeBlockCodeProps = {
-  code: string;
-  language?: string;
-  theme?: string;
-  className?: string;
-} & React.HTMLProps<HTMLDivElement>;
+  code: string
+  language?: string
+  theme?: string
+  className?: string
+} & React.HTMLProps<HTMLDivElement>
 
-function CodeBlockCode({
-  code,
-  language = "tsx",
-  theme,
-  className,
-  ...props
-}: CodeBlockCodeProps) {
-  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
+function CodeBlockCode({ code, language = "tsx", theme, className, ...props }: CodeBlockCodeProps) {
+  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
 
   useEffect(() => {
     async function highlight() {
       if (!code) {
-        setHighlightedHtml("<pre><code></code></pre>");
-        return;
+        setHighlightedHtml("<pre><code></code></pre>")
+        return
       }
 
       // Use dual themes for light/dark mode support via CSS
@@ -53,48 +48,38 @@ function CodeBlockCode({
           dark: "github-dark",
         },
         defaultColor: false,
-      });
-      setHighlightedHtml(html);
+      })
+      setHighlightedHtml(html)
     }
-    highlight();
-  }, [code, language]);
+    highlight()
+  }, [code, language])
 
   const classNames = cn(
     "w-full overflow-x-auto text-[13px] [&>pre]:px-4 [&>pre]:py-4 [&_*]:!bg-transparent",
     className
-  );
+  )
 
   // SSR fallback: render plain code if not hydrated yet
   return highlightedHtml ? (
-    <div
-      className={classNames}
-      dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-      {...props}
-    />
+    // biome-ignore lint/security/noDangerouslySetInnerHtml: Required for syntax highlighting from shiki
+    <div className={classNames} dangerouslySetInnerHTML={{ __html: highlightedHtml }} {...props} />
   ) : (
     <div className={classNames} {...props}>
       <pre>
         <code>{code}</code>
       </pre>
     </div>
-  );
+  )
 }
 
-export type CodeBlockGroupProps = React.HTMLAttributes<HTMLDivElement>;
+export type CodeBlockGroupProps = React.HTMLAttributes<HTMLDivElement>
 
-function CodeBlockGroup({
-  children,
-  className,
-  ...props
-}: CodeBlockGroupProps) {
+function CodeBlockGroup({ children, className, ...props }: CodeBlockGroupProps) {
   return (
-    <div
-      className={cn("flex items-center justify-between", className)}
-      {...props}
-    >
+    <div className={cn("flex items-center justify-between", className)} {...props}>
       {children}
     </div>
-  );
+  )
 }
 
-export { CodeBlockGroup, CodeBlockCode, CodeBlock };
+export { CodeBlockGroup, CodeBlockCode, CodeBlock }

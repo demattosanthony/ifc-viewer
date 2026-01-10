@@ -4,12 +4,12 @@
  * Tests for the in-memory repository implementations.
  */
 
-import { describe, test, expect, beforeEach } from "bun:test"
-import { createProjectRepository } from "../../src/database/memory/project.repository"
+import { beforeEach, describe, expect, test } from "bun:test"
+import type { ConversationRepository, MessageRepository, ProjectRepository } from "@ifc-viewer/core"
+import { generateId } from "@ifc-viewer/core"
 import { createConversationRepository } from "../../src/database/memory/conversation.repository"
 import { createMessageRepository } from "../../src/database/memory/message.repository"
-import { generateId } from "@ifc-viewer/core"
-import type { ProjectRepository, ConversationRepository, MessageRepository } from "@ifc-viewer/core"
+import { createProjectRepository } from "../../src/database/memory/project.repository"
 
 describe("ProjectRepository", () => {
   let repo: ProjectRepository

@@ -1,1 +1,1 @@
-export { useEffectiveTheme } from "./use-effective-theme";
+export { useEffectiveTheme } from "./use-effective-theme"

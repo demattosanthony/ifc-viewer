@@ -1,30 +1,23 @@
-"use client";
+"use client"
 
-import { useState } from "react";
 import {
-  CheckCircle2,
-  XCircle,
-  ChevronDown,
-  Loader2,
-  Copy,
-  Check,
-} from "lucide-react";
-import {
+  CodeBlockCode,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  CodeBlockCode,
-} from "@ifc-viewer/ui/components";
-import { cn } from "@ifc-viewer/ui/lib";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+} from "@ifc-viewer/ui/components"
+import { cn } from "@ifc-viewer/ui/lib"
+import { Check, CheckCircle2, ChevronDown, Copy, Loader2, XCircle } from "lucide-react"
+import { useState } from "react"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 
 interface PythonPreviewProps {
-  title?: string;
-  code: string;
-  output?: Record<string, unknown>;
-  isStreaming: boolean;
-  isComplete: boolean;
-  error?: string;
+  title?: string
+  code: string
+  output?: Record<string, unknown>
+  isStreaming: boolean
+  isComplete: boolean
+  error?: string
 }
 
 export function PythonPreview({
@@ -35,34 +28,32 @@ export function PythonPreview({
   isComplete,
   error,
 }: PythonPreviewProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { copied: codeCopied, copy: copyCode } = useCopyToClipboard();
-  const { copied: outputCopied, copy: copyOutput } = useCopyToClipboard();
+  const [isOpen, setIsOpen] = useState(false)
+  const { copied: codeCopied, copy: copyCode } = useCopyToClipboard()
+  const { copied: outputCopied, copy: copyOutput } = useCopyToClipboard()
 
   // Extract output details
   const result = output as
     | { success?: boolean; output?: string; error?: string; filesChanged?: number }
-    | undefined;
+    | undefined
 
-  const outputText = result?.output || "";
-  const hasOutput = outputText.length > 0;
+  const outputText = result?.output || ""
+  const hasOutput = outputText.length > 0
 
   // Status
-  const isSuccess = isComplete && result?.success !== false && !error;
-  const isError = isComplete && (result?.success === false || !!error);
-  const isRunning = !isComplete || isStreaming;
+  const isSuccess = isComplete && result?.success !== false && !error
+  const isError = isComplete && (result?.success === false || !!error)
+  const isRunning = !isComplete || isStreaming
 
   // Display title - use provided title or "Ran code"
-  const displayTitle = title || "Ran code";
+  const displayTitle = title || "Ran code"
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div
         className={cn(
           "overflow-hidden rounded-lg border transition-colors",
-          isError
-            ? "border-red-500/30 bg-red-500/5"
-            : "border-border bg-card"
+          isError ? "border-red-500/30 bg-red-500/5" : "border-border bg-card"
         )}
       >
         {/* Minimal header */}
@@ -85,9 +76,7 @@ export function PythonPreview({
               )}
 
               {/* Title only */}
-              <span className="text-sm text-foreground truncate">
-                {displayTitle}
-              </span>
+              <span className="text-sm text-foreground truncate">{displayTitle}</span>
             </div>
 
             {/* Expand indicator */}
@@ -108,8 +97,8 @@ export function PythonPreview({
               <div className="absolute right-2 top-2 z-10">
                 <button
                   onClick={(e) => {
-                    e.stopPropagation();
-                    copyCode(code);
+                    e.stopPropagation()
+                    copyCode(code)
                   }}
                   className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   title="Copy code"
@@ -138,8 +127,8 @@ export function PythonPreview({
                     <div className="absolute right-2 top-2">
                       <button
                         onClick={(e) => {
-                          e.stopPropagation();
-                          copyOutput(outputText);
+                          e.stopPropagation()
+                          copyOutput(outputText)
                         }}
                         className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         title="Copy output"
@@ -181,5 +170,5 @@ export function PythonPreview({
         </CollapsibleContent>
       </div>
     </Collapsible>
-  );
+  )
 }

@@ -1,22 +1,22 @@
-import { Database } from "bun:sqlite";
-import { drizzle, type BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { mkdir } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import * as schema from "./schema";
+import { Database } from "bun:sqlite"
+import { mkdir } from "node:fs/promises"
+import { dirname, resolve } from "node:path"
+import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite"
+import { migrate } from "drizzle-orm/bun-sqlite/migrator"
+import * as schema from "./schema"
 
 /** Drizzle database instance type */
-export type DrizzleDB = BunSQLiteDatabase<typeof schema>;
+export type DrizzleDB = BunSQLiteDatabase<typeof schema>
 
 /**
  * Drizzle transaction type - structurally compatible with DrizzleDB.
  * We use Pick to extract only the methods we need (insert, select, update, delete)
  * which are available on both the db and transaction objects.
  */
-export type DrizzleTransaction = Pick<DrizzleDB, "insert" | "select" | "update" | "delete">;
+export type DrizzleTransaction = Pick<DrizzleDB, "insert" | "select" | "update" | "delete">
 
 export interface SQLiteConnectionConfig {
-  filename: string;
+  filename: string
 }
 
 /**
@@ -27,26 +27,26 @@ export async function createSQLiteConnection(
 ): Promise<{ db: DrizzleDB; close: () => void }> {
   // Ensure directory exists for file-based databases
   if (config.filename !== ":memory:") {
-    await mkdir(dirname(config.filename), { recursive: true });
+    await mkdir(dirname(config.filename), { recursive: true })
   }
 
-  const sqlite = new Database(config.filename);
+  const sqlite = new Database(config.filename)
 
   // Enable WAL mode for better concurrent performance
-  sqlite.run("PRAGMA journal_mode = WAL;");
+  sqlite.run("PRAGMA journal_mode = WAL;")
 
-  const db = drizzle(sqlite, { schema });
+  const db = drizzle(sqlite, { schema })
 
   return {
     db,
     close: () => sqlite.close(),
-  };
+  }
 }
 
 /**
  * Run Drizzle migrations from the migrations folder
  */
 export function runMigrations(db: DrizzleDB): void {
-  const migrationsFolder = resolve(import.meta.dir, "./migrations");
-  migrate(db, { migrationsFolder });
+  const migrationsFolder = resolve(import.meta.dir, "./migrations")
+  migrate(db, { migrationsFolder })
 }

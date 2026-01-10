@@ -1,27 +1,27 @@
-import { cn } from "../lib/utils";
-import { marked } from "marked";
-import { memo, useId, useMemo } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkBreaks from "remark-breaks";
-import remarkGfm from "remark-gfm";
-import { CodeBlock, CodeBlockCode } from "./code-block";
+import { marked } from "marked"
+import { memo, useId, useMemo } from "react"
+import ReactMarkdown, { type Components } from "react-markdown"
+import remarkBreaks from "remark-breaks"
+import remarkGfm from "remark-gfm"
+import { cn } from "../lib/utils"
+import { CodeBlock, CodeBlockCode } from "./code-block"
 
 export type MarkdownProps = {
-  children: string;
-  id?: string;
-  className?: string;
-  components?: Partial<Components>;
-};
+  children: string
+  id?: string
+  className?: string
+  components?: Partial<Components>
+}
 
 function parseMarkdownIntoBlocks(markdown: string): string[] {
-  const tokens = marked.lexer(markdown);
-  return tokens.map((token) => token.raw);
+  const tokens = marked.lexer(markdown)
+  return tokens.map((token) => token.raw)
 }
 
 function extractLanguage(className?: string): string {
-  if (!className) return "plaintext";
-  const match = className.match(/language-(\w+)/);
-  return match?.[1] ?? "plaintext";
+  if (!className) return "plaintext"
+  const match = className.match(/language-(\w+)/)
+  return match?.[1] ?? "plaintext"
 }
 
 const INITIAL_COMPONENTS: Partial<Components> = {
@@ -36,18 +36,12 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="scroll-m-20 text-lg font-semibold tracking-tight">
-      {children}
-    </h3>
+    <h3 className="scroll-m-20 text-lg font-semibold tracking-tight">{children}</h3>
   ),
   h4: ({ children }) => (
-    <h4 className="scroll-m-20 text-base font-semibold tracking-tight">
-      {children}
-    </h4>
+    <h4 className="scroll-m-20 text-base font-semibold tracking-tight">{children}</h4>
   ),
-  p: ({ children }) => (
-    <p className="leading-7 text-sm [&:not(:first-child)]">{children}</p>
-  ),
+  p: ({ children }) => <p className="leading-7 text-sm [&:not(:first-child)]">{children}</p>,
   blockquote: ({ children, ...props }) => (
     <blockquote className="mt-6 border-l-2 pl-6 italic text-sm" {...props}>
       {children}
@@ -60,20 +54,13 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   ),
   thead: ({ children }) => <thead>{children}</thead>,
   tbody: ({ children }) => <tbody>{children}</tbody>,
-  tr: ({ children }) => (
-    <tr className="m-0 border-t p-0 even:bg-muted text-sm">{children}</tr>
-  ),
+  tr: ({ children }) => <tr className="m-0 border-t p-0 even:bg-muted text-sm">{children}</tr>,
   th: ({ children }) => (
     <th className="border px-4 py-2 text-left font-bold text-sm">{children}</th>
   ),
-  td: ({ children }) => (
-    <td className="border px-4 py-2 text-left text-sm">{children}</td>
-  ),
+  td: ({ children }) => <td className="border px-4 py-2 text-left text-sm">{children}</td>,
   ul: ({ children, ...props }) => (
-    <ul
-      className="mb-2 ml-6 list-disc [&>li]:mt-2 text-sm marker:text-foreground"
-      {...props}
-    >
+    <ul className="mb-2 ml-6 list-disc [&>li]:mt-2 text-sm marker:text-foreground" {...props}>
       {children}
     </ul>
   ),
@@ -90,32 +77,29 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   code: function CodeComponent({ className, children, ...props }) {
     const isInline =
       !props.node?.position?.start.line ||
-      props.node?.position?.start.line === props.node?.position?.end.line;
+      props.node?.position?.start.line === props.node?.position?.end.line
 
     if (isInline) {
       return (
         <span
-          className={cn(
-            "bg-primary-foreground rounded-sm px-1 font-mono text-xs",
-            className
-          )}
+          className={cn("bg-primary-foreground rounded-sm px-1 font-mono text-xs", className)}
           {...props}
         >
           {children}
         </span>
-      );
+      )
     }
 
-    const language = extractLanguage(className);
+    const language = extractLanguage(className)
 
     return (
       <CodeBlock className={className}>
         <CodeBlockCode code={children as string} language={language} />
       </CodeBlock>
-    );
+    )
   },
   pre: function PreComponent({ children }) {
-    return <>{children}</>;
+    return <>{children}</>
   },
   em: ({ children }) => <em>{children}</em>,
   strong: ({ children }) => <strong>{children}</strong>,
@@ -131,31 +115,28 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   ),
   img: ({ ...props }) => <img className="max-w-full h-auto" {...props} />,
   hr: ({ ...props }) => <hr className="my-4" {...props} />,
-};
+}
 
 const MemoizedMarkdownBlock = memo(
   function MarkdownBlock({
     content,
     components = INITIAL_COMPONENTS,
   }: {
-    content: string;
-    components?: Partial<Components>;
+    content: string
+    components?: Partial<Components>
   }) {
     return (
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
-        components={components}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={components}>
         {content}
       </ReactMarkdown>
-    );
+    )
   },
   function propsAreEqual(prevProps, nextProps) {
-    return prevProps.content === nextProps.content;
+    return prevProps.content === nextProps.content
   }
-);
+)
 
-MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
+MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock"
 
 function MarkdownComponent({
   children,
@@ -163,24 +144,24 @@ function MarkdownComponent({
   className,
   components = INITIAL_COMPONENTS,
 }: MarkdownProps) {
-  const generatedId = useId();
-  const blockId = id ?? generatedId;
-  const blocks = useMemo(() => parseMarkdownIntoBlocks(children), [children]);
+  const generatedId = useId()
+  const blockId = id ?? generatedId
+  const blocks = useMemo(() => parseMarkdownIntoBlocks(children), [children])
 
   return (
     <div className={className}>
       {blocks.map((block, index) => (
         <MemoizedMarkdownBlock
-          key={`${blockId}-block-${index}`}
+          key={`${blockId}-${index}-${block.slice(0, 20)}`}
           content={block}
           components={components}
         />
       ))}
     </div>
-  );
+  )
 }
 
-const Markdown = memo(MarkdownComponent);
-Markdown.displayName = "Markdown";
+const Markdown = memo(MarkdownComponent)
+Markdown.displayName = "Markdown"
 
-export { Markdown };
+export { Markdown }

@@ -5,14 +5,13 @@
  */
 
 import type { AIProvider } from "@ifc-viewer/core"
-import { createAnthropicProvider, type AnthropicProviderConfig } from "./anthropic"
+import { type AnthropicProviderConfig, createAnthropicProvider } from "./anthropic"
 
 /** Supported AI provider types */
 export type AIProviderType = "anthropic" // Future: | "openai" | "google"
 
 /** Configuration for creating an AI provider */
-export type AIConfig =
-  | ({ type: "anthropic" } & AnthropicProviderConfig)
+export type AIConfig = { type: "anthropic" } & AnthropicProviderConfig
 // Future:
 // | ({ type: "openai" } & OpenAIProviderConfig)
 // | ({ type: "google" } & GoogleProviderConfig)

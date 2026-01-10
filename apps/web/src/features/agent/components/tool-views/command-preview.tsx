@@ -1,29 +1,18 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import {
-  CheckCircle2,
-  XCircle,
-  ChevronDown,
-  Loader2,
-  Copy,
-  Check,
-} from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@ifc-viewer/ui/components";
-import { cn } from "@ifc-viewer/ui/lib";
-import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@ifc-viewer/ui/components"
+import { cn } from "@ifc-viewer/ui/lib"
+import { Check, CheckCircle2, ChevronDown, Copy, Loader2, XCircle } from "lucide-react"
+import { useState } from "react"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 
 interface CommandPreviewProps {
-  title?: string;
-  command: string;
-  output?: Record<string, unknown>;
-  isStreaming: boolean;
-  isComplete: boolean;
-  error?: string;
+  title?: string
+  command: string
+  output?: Record<string, unknown>
+  isStreaming: boolean
+  isComplete: boolean
+  error?: string
 }
 
 /**
@@ -35,16 +24,16 @@ function cleanOutput(output: string): string {
     .filter((line) => {
       // Remove prompt lines
       if (line.includes("/workspace $") || line.includes("/workspace$")) {
-        return false;
+        return false
       }
       // Remove command echo with marker
       if (line.includes("<<CMD_DONE:")) {
-        return false;
+        return false
       }
-      return true;
+      return true
     })
     .join("\n")
-    .trim();
+    .trim()
 }
 
 export function CommandPreview({
@@ -55,32 +44,28 @@ export function CommandPreview({
   isComplete,
   error,
 }: CommandPreviewProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { copied, copy } = useCopyToClipboard();
+  const [isOpen, setIsOpen] = useState(false)
+  const { copied, copy } = useCopyToClipboard()
 
   // Extract output details
-  const result = output as
-    | { success?: boolean; output?: string; exitCode?: number }
-    | undefined;
+  const result = output as { success?: boolean; output?: string; exitCode?: number } | undefined
 
-  const rawOutput = result?.output || "";
-  const cleanedOutput = cleanOutput(rawOutput);
-  const hasOutput = cleanedOutput.length > 0;
+  const rawOutput = result?.output || ""
+  const cleanedOutput = cleanOutput(rawOutput)
+  const hasOutput = cleanedOutput.length > 0
 
   // Use provided title or fallback to command
-  const displayTitle = title || command;
-  const isSuccess = isComplete && result?.success !== false;
-  const isError = isComplete && (result?.success === false || error);
-  const isRunning = !isComplete || isStreaming;
+  const displayTitle = title || command
+  const isSuccess = isComplete && result?.success !== false
+  const isError = isComplete && (result?.success === false || error)
+  const isRunning = !isComplete || isStreaming
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div
         className={cn(
           "overflow-hidden rounded-lg border transition-colors",
-          isError
-            ? "border-red-500/30 bg-red-500/5"
-            : "border-border bg-card"
+          isError ? "border-red-500/30 bg-red-500/5" : "border-border bg-card"
         )}
       >
         {/* Compact Header - Always visible */}
@@ -103,9 +88,7 @@ export function CommandPreview({
               )}
 
               {/* Title */}
-              <span className="text-sm text-foreground truncate">
-                {displayTitle}
-              </span>
+              <span className="text-sm text-foreground truncate">{displayTitle}</span>
             </div>
 
             {/* Expand indicator */}
@@ -130,8 +113,8 @@ export function CommandPreview({
               </code>
               <button
                 onClick={(e) => {
-                  e.stopPropagation();
-                  copy(command);
+                  e.stopPropagation()
+                  copy(command)
                 }}
                 className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 title="Copy command"
@@ -156,14 +139,12 @@ export function CommandPreview({
             {/* Error */}
             {error && (
               <div className="bg-red-500/5 p-3">
-                <pre className="whitespace-pre-wrap font-mono text-xs text-red-400">
-                  {error}
-                </pre>
+                <pre className="whitespace-pre-wrap font-mono text-xs text-red-400">{error}</pre>
               </div>
             )}
           </div>
         </CollapsibleContent>
       </div>
     </Collapsible>
-  );
+  )
 }

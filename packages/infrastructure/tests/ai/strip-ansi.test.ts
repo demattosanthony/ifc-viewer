@@ -5,7 +5,7 @@
  * These patterns come from real terminal output that was rendering incorrectly.
  */
 
-import { describe, test, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { stripAnsi } from "../../src/ai/utils"
 
 describe("stripAnsi", () => {

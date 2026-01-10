@@ -12,13 +12,7 @@ import { buildStorageKey } from "../../utils/storage.ts"
 // Schema & Types
 // ============================================================================
 
-export const ModelDisciplineSchema = z.enum([
-  "architecture",
-  "structure",
-  "mep",
-  "site",
-  "other",
-])
+export const ModelDisciplineSchema = z.enum(["architecture", "structure", "mep", "site", "other"])
 
 export const ModelSchema = z.object({
   id: z.string().uuid(),
@@ -71,7 +65,13 @@ export function inferDiscipline(filename: string): ModelDiscipline {
   const lower = filename.toLowerCase()
   if (lower.includes("arch") || lower.includes("architecture")) return "architecture"
   if (lower.includes("struct") || lower.includes("structural")) return "structure"
-  if (lower.includes("mep") || lower.includes("mechanical") || lower.includes("electrical") || lower.includes("plumbing")) return "mep"
+  if (
+    lower.includes("mep") ||
+    lower.includes("mechanical") ||
+    lower.includes("electrical") ||
+    lower.includes("plumbing")
+  )
+    return "mep"
   if (lower.includes("site") || lower.includes("civil")) return "site"
   return "other"
 }

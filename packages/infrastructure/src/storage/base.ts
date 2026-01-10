@@ -3,6 +3,7 @@
  */
 
 import type { StorageInput, StorageMetadata, StorageObject } from "@ifc-viewer/core"
+
 export { isBinaryExtension } from "@ifc-viewer/core"
 
 /**
@@ -77,9 +78,7 @@ function isReadableStream(value: unknown): value is ReadableStream<Uint8Array> {
 /**
  * Collect a stream into a Uint8Array.
  */
-export async function streamToBytes(
-  stream: ReadableStream<Uint8Array>
-): Promise<Uint8Array> {
+export async function streamToBytes(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {
   const reader = stream.getReader()
   const chunks: Uint8Array[] = []
   let totalLength = 0

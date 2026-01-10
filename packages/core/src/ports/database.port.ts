@@ -5,7 +5,7 @@
  * Implementations: SQLite, Postgres, memory
  */
 
-import type { Project, Conversation, Message, Model } from "../domain"
+import type { Conversation, Message, Model, Project } from "../domain"
 
 // ============================================================================
 // Repository Interfaces

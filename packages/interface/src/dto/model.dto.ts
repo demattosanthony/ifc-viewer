@@ -4,8 +4,8 @@
  * Request/response schemas for model operations.
  */
 
+import { ModelDisciplineSchema, ModelSchema } from "@ifc-viewer/core"
 import { z } from "zod"
-import { ModelSchema, ModelDisciplineSchema } from "@ifc-viewer/core"
 
 // ============================================================================
 // Request DTOs

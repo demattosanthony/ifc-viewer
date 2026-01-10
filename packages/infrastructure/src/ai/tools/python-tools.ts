@@ -5,9 +5,9 @@
  * Automatically detects file changes after execution via snapshot diff.
  */
 
+import type { AIEvent, ChangeTracker, TerminalSession } from "@ifc-viewer/core"
 import { tool } from "ai"
 import { z } from "zod"
-import type { TerminalSession, AIEvent, ChangeTracker } from "@ifc-viewer/core"
 import { getErrorMessage, stripAnsi } from "../utils.ts"
 
 // Unique markers to delimit output - using random-ish strings to avoid collision with user output
@@ -19,7 +19,8 @@ const ERROR_MARKER = "<<PY_ERROR_7x9k>>"
 // Regex to extract output between markers
 // The markers must be at the START of a line (after \n or \r\n) to avoid matching
 // the echoed print("<<marker>>") statements in the Python REPL
-const OUTPUT_EXTRACT_REGEX = /(?:^|\r?\n)<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)(?:^|\r?\n)<<PY_OUTPUT_END_7x9k>>/
+const OUTPUT_EXTRACT_REGEX =
+  /(?:^|\r?\n)<<PY_OUTPUT_START_7x9k>>\r?\n([\s\S]*?)(?:^|\r?\n)<<PY_OUTPUT_END_7x9k>>/
 const RESULT_MARKER_REGEX = /(?:^|\r?\n)<<PY_(SUCCESS|ERROR)_7x9k>>/
 
 export interface PythonToolsOptions {
@@ -54,10 +55,7 @@ Notes:
             "A short 2-4 word description of what this code does for non-technical users (e.g. 'Query IFC walls', 'Calculate areas', 'List elements')"
           ),
         code: z.string().describe("Python code to execute. Can be single or multi-line."),
-        timeout: z
-          .number()
-          .default(30000)
-          .describe("Timeout in milliseconds (default: 30000)"),
+        timeout: z.number().default(30000).describe("Timeout in milliseconds (default: 30000)"),
       }),
       execute: async ({
         title: _title,
@@ -77,7 +75,7 @@ Notes:
 
           const session = await getPythonSession()
 
-          let output = ""
+          let _output = ""
           let success = true
           let cleanup: (() => void) | null = null
 
@@ -104,7 +102,7 @@ Notes:
                   // Extract output between START and END markers
                   const outputMatch = buffer.match(OUTPUT_EXTRACT_REGEX)
                   let cleanOutput = ""
-                  if (outputMatch && outputMatch[1]) {
+                  if (outputMatch?.[1]) {
                     cleanOutput = outputMatch[1]
                       .replace(/\r\n/g, "\n") // Normalize line endings
                       .replace(/\n+$/, "") // Remove trailing newlines
@@ -117,7 +115,7 @@ Notes:
                     cleanup = null
                   }
 
-                  output = cleanOutput
+                  _output = cleanOutput
                   if (cleanOutput) {
                     emit({ type: "terminal-output", data: cleanOutput })
                   }
@@ -130,7 +128,7 @@ Notes:
           // Wrap code in try/except with marker
           const wrappedCode = wrapPythonCode(code)
           // Need TWO newlines: one to end the last line, one blank line to execute the block
-          await session.write(wrappedCode + "\n\n")
+          await session.write(`${wrappedCode}\n\n`)
 
           const result = await outputPromise
 
@@ -177,9 +175,7 @@ function wrapPythonCode(code: string): string {
   const trimmedCode = code.trim()
 
   // Escape the code for embedding in a triple-quoted string
-  const escapedCode = trimmedCode
-    .replace(/\\/g, "\\\\")
-    .replace(/"""/g, '\\"\\"\\"')
+  const escapedCode = trimmedCode.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')
 
   // Wrapper structure:
   // 1. try block starts

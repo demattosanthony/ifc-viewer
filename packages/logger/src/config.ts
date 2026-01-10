@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path"
 import type { LoggerConfig, LogLevel } from "./types.ts"
 
 // Cache the monorepo root since it won't change during runtime
-let cachedMonorepoRoot: string | null | undefined = undefined
+let cachedMonorepoRoot: string | null | undefined
 
 /**
  * Find the monorepo root by walking up from cwd looking for package.json with workspaces.
@@ -65,7 +65,7 @@ function parseBoolean(value: string | undefined, defaultValue: boolean): boolean
 
 /**
  * Get logger configuration from environment variables.
- * 
+ *
  * Environment variables:
  * - LOG_LEVEL: debug | info | warn | error (default: info)
  * - LOG_DIR: Log directory path, resolved from monorepo root (default: .data/logs)
@@ -74,11 +74,9 @@ function parseBoolean(value: string | undefined, defaultValue: boolean): boolean
  */
 export function getConfig(): LoggerConfig {
   const logDirEnv = process.env.LOG_DIR ?? ".data/logs"
-  
+
   // Absolute paths used as-is, relative paths resolved from monorepo root
-  const logDir = logDirEnv.startsWith("/") 
-    ? logDirEnv 
-    : resolveFromRoot(logDirEnv)
+  const logDir = logDirEnv.startsWith("/") ? logDirEnv : resolveFromRoot(logDirEnv)
 
   return {
     level: parseLogLevel(process.env.LOG_LEVEL),

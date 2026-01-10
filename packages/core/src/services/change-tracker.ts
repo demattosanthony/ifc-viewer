@@ -157,9 +157,7 @@ export function createChangeTracker(options: CreateChangeTrackerOptions): Change
       case "update": {
         const result = await computer.files.read(path, { encoding: "binary" })
         const data =
-          result.type === "binary"
-            ? result.content
-            : new TextEncoder().encode(result.content)
+          result.type === "binary" ? result.content : new TextEncoder().encode(result.content)
         await storage.put(buildStorageKey(path), data)
         break
       }
@@ -174,9 +172,7 @@ export function createChangeTracker(options: CreateChangeTrackerOptions): Change
           const oldPathNormalized = normalizePath(change.oldPath)
           const result = await computer.files.read(path, { encoding: "binary" })
           const data =
-            result.type === "binary"
-              ? result.content
-              : new TextEncoder().encode(result.content)
+            result.type === "binary" ? result.content : new TextEncoder().encode(result.content)
           await storage.put(buildStorageKey(path), data)
           await deleteFromStorage(oldPathNormalized)
         }
@@ -265,9 +261,7 @@ export function createChangeTracker(options: CreateChangeTrackerOptions): Change
           case "update": {
             const result = await computer.files.read(path, { encoding: "binary" })
             const data =
-              result.type === "binary"
-                ? result.content
-                : new TextEncoder().encode(result.content)
+              result.type === "binary" ? result.content : new TextEncoder().encode(result.content)
             await storage.put(buildStorageKey(path), data)
             break
           }
@@ -282,9 +276,7 @@ export function createChangeTracker(options: CreateChangeTrackerOptions): Change
               // Read from new location, write to new key, delete old key
               const result = await computer.files.read(path, { encoding: "binary" })
               const data =
-                result.type === "binary"
-                  ? result.content
-                  : new TextEncoder().encode(result.content)
+                result.type === "binary" ? result.content : new TextEncoder().encode(result.content)
               await storage.put(buildStorageKey(path), data)
               await deleteFromStorage(change.oldPath)
             }

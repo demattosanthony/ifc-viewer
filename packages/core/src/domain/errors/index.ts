@@ -2,7 +2,7 @@
 export { DomainError, isDomainError } from "./base"
 
 // Common errors
-export { NotFoundError, DuplicateError, ValidationError } from "./common"
+export { DuplicateError, NotFoundError, ValidationError } from "./common"
 
 // Entity-specific errors
 export { InvalidProjectIdError } from "./project.errors"

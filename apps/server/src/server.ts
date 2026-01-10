@@ -1,22 +1,23 @@
-import { Elysia } from "elysia";
-import { openapi } from "@elysiajs/openapi";
-import { cors } from "@elysiajs/cors";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import { createLogger, closeLogs } from "@ifc-viewer/logger";
-import { createAppContext } from "./context";
-import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface";
+import { cors } from "@elysiajs/cors"
+import { openapi } from "@elysiajs/openapi"
+import { ApiInfoResponse, HealthResponse } from "@ifc-viewer/interface"
+import { closeLogs, createLogger } from "@ifc-viewer/logger"
+import { Elysia } from "elysia"
+import { zodToJsonSchema } from "zod-to-json-schema"
+import { createAppContext } from "./context"
 
-const log = createLogger("server");
+const log = createLogger("server")
+
 import {
-  projectsRoutes,
-  projectFilesRoutes,
   conversationRoutes,
   modelsRoutes,
+  projectFilesRoutes,
+  projectsRoutes,
   terminalRoutes,
-} from "./routes";
+} from "./routes"
 
 // Create app context
-const ctx = await createAppContext();
+const ctx = await createAppContext()
 
 // Create Elysia app
 const app = new Elysia()
@@ -103,32 +104,32 @@ const app = new Elysia()
     port: process.env.PORT ?? 3000,
     // Allow large file uploads (500MB max)
     maxRequestBodySize: 500 * 1024 * 1024,
-  });
+  })
 
 log.info("API server started", {
   host: app.server?.hostname,
   port: app.server?.port,
   swagger: `http://localhost:${app.server?.port}/swagger`,
-});
+})
 
 // Export app type for Eden treaty SDK generation
-export type App = typeof app;
+export type App = typeof app
 
 // Graceful shutdown
 async function shutdown(signal: string) {
-  log.info("Received shutdown signal, cleaning up...", { signal });
+  log.info("Received shutdown signal, cleaning up...", { signal })
 
   try {
     // dispose() will sync all compute instances to storage and stop containers
-    await ctx.dispose();
-    log.info("Shutdown complete");
+    await ctx.dispose()
+    log.info("Shutdown complete")
   } catch (err) {
-    log.error("Error during shutdown", { error: err });
+    log.error("Error during shutdown", { error: err })
   }
 
-  await closeLogs();
-  process.exit(0);
+  await closeLogs()
+  process.exit(0)
 }
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"))
+process.on("SIGINT", () => shutdown("SIGINT"))

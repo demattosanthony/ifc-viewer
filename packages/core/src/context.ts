@@ -7,8 +7,8 @@
  */
 
 import { createLogger } from "@ifc-viewer/logger"
-import type { Database, Storage, Computer, AIProvider, StreamStore } from "./ports"
-import { createChangeTracker, type ChangeTracker } from "./services/change-tracker"
+import type { AIProvider, Computer, Database, Storage, StreamStore } from "./ports"
+import { type ChangeTracker, createChangeTracker } from "./services/change-tracker"
 
 const log = createLogger("context")
 
@@ -54,7 +54,10 @@ export type ContextConfig = {
 
 export function createContext(config: ContextConfig): Context {
   const computes = new Map<string, ComputeState>()
-  const pendingCreations = new Map<string, Promise<{ computer: Computer; tracker: ChangeTracker }>>()
+  const pendingCreations = new Map<
+    string,
+    Promise<{ computer: Computer; tracker: ChangeTracker }>
+  >()
 
   const scheduleIdle = (projectId: string): Timer => {
     return setTimeout(async () => {
@@ -125,7 +128,9 @@ export function createContext(config: ContextConfig): Context {
       return computes.get(projectId)?.tracker
     },
 
-    async getOrCreateCompute(projectId: string): Promise<{ computer: Computer; tracker: ChangeTracker }> {
+    async getOrCreateCompute(
+      projectId: string
+    ): Promise<{ computer: Computer; tracker: ChangeTracker }> {
       const existing = computes.get(projectId)
       if (existing) {
         clearTimeout(existing.idleTimer)

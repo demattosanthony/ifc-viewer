@@ -1,1 +1,1 @@
-export { OrientationGizmo } from "./orientation-gizmo";
+export { OrientationGizmo } from "./orientation-gizmo"

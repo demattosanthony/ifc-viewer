@@ -51,9 +51,7 @@ export function createStorage(config: StorageConfig): Storage {
       return new S3Storage(config)
 
     default:
-      throw new Error(
-        `Unknown storage type: ${(config as { type: string }).type}`
-      )
+      throw new Error(`Unknown storage type: ${(config as { type: string }).type}`)
   }
 }
 
@@ -82,9 +80,7 @@ export function createStorageFromEnv(): Storage {
     case "local": {
       const baseDir = process.env.STORAGE_LOCAL_BASE_DIR
       if (!baseDir) {
-        throw new Error(
-          "STORAGE_LOCAL_BASE_DIR environment variable is required for local storage"
-        )
+        throw new Error("STORAGE_LOCAL_BASE_DIR environment variable is required for local storage")
       }
       const urlMode = process.env.STORAGE_LOCAL_URL_MODE as "none" | "data" | undefined
       return new LocalStorage({ baseDir, urlMode })
@@ -96,9 +92,7 @@ export function createStorageFromEnv(): Storage {
     case "s3": {
       const bucket = process.env.STORAGE_S3_BUCKET
       if (!bucket) {
-        throw new Error(
-          "STORAGE_S3_BUCKET environment variable is required for S3 storage"
-        )
+        throw new Error("STORAGE_S3_BUCKET environment variable is required for S3 storage")
       }
       return new S3Storage({
         bucket,

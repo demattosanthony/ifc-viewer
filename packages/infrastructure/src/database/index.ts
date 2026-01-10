@@ -7,12 +7,11 @@
 export {
   createDatabase,
   type DatabaseConfig,
-  type SQLiteDatabaseConfig,
   type MemoryDatabaseConfig,
   type PostgresDatabaseConfig,
+  type SQLiteDatabaseConfig,
 } from "./factory"
-
+export * as memory from "./memory"
+export * as postgres from "./postgres"
 // Re-export provider-specific types if needed
 export * as sqlite from "./sqlite"
-export * as postgres from "./postgres"
-export * as memory from "./memory"

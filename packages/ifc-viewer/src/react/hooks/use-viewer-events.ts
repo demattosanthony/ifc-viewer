@@ -1,41 +1,41 @@
-import { useEffect } from "react";
-import { useViewer } from "../context";
-import type { ElementSelectedEvent, ElementHoveredEvent } from "../../types";
+import { useEffect } from "react"
+import type { ElementHoveredEvent, ElementSelectedEvent } from "../../types"
+import { useViewer } from "../context"
 
 export interface UseViewerEventsOptions {
-  onElementSelected?: (event: ElementSelectedEvent) => void;
-  onElementHovered?: (event: ElementHoveredEvent | null) => void;
+  onElementSelected?: (event: ElementSelectedEvent) => void
+  onElementHovered?: (event: ElementHoveredEvent | null) => void
 }
 
 export function useViewerEvents(options: UseViewerEventsOptions) {
-  const { interactionManager, isInitialized } = useViewer();
+  const { interactionManager, isInitialized } = useViewer()
 
   useEffect(() => {
-    if (!interactionManager || !isInitialized) return;
+    if (!interactionManager || !isInitialized) return
 
     // Subscribe to selection events
     const selectHandler = options.onElementSelected
       ? (event: {
-          modelIdMap: Record<string, Set<number>>;
-          mousePosition?: { clientX: number; clientY: number };
-          point?: { x: number; y: number; z: number };
+          modelIdMap: Record<string, Set<number>>
+          mousePosition?: { clientX: number; clientY: number }
+          point?: { x: number; y: number; z: number }
         }) => {
           options.onElementSelected?.({
             modelIdMap: event.modelIdMap,
             position: event.mousePosition,
             point: event.point,
-          });
+          })
         }
-      : undefined;
+      : undefined
 
     // Subscribe to hover events
     const hoverHandler = options.onElementHovered
       ? (
           event: {
-            modelId: string;
-            localId: number;
-            mousePosition?: { clientX: number; clientY: number };
-            point: { x: number; y: number; z: number };
+            modelId: string
+            localId: number
+            mousePosition?: { clientX: number; clientY: number }
+            point: { x: number; y: number; z: number }
           } | null
         ) => {
           options.onElementHovered?.(
@@ -46,24 +46,24 @@ export function useViewerEvents(options: UseViewerEventsOptions) {
                   point: event.point,
                 }
               : null
-          );
+          )
         }
-      : undefined;
+      : undefined
 
     if (selectHandler) {
-      interactionManager.onSelect.add(selectHandler);
+      interactionManager.onSelect.add(selectHandler)
     }
     if (hoverHandler) {
-      interactionManager.onHover.add(hoverHandler);
+      interactionManager.onHover.add(hoverHandler)
     }
 
     return () => {
       if (selectHandler) {
-        interactionManager.onSelect.remove(selectHandler);
+        interactionManager.onSelect.remove(selectHandler)
       }
       if (hoverHandler) {
-        interactionManager.onHover.remove(hoverHandler);
+        interactionManager.onHover.remove(hoverHandler)
       }
-    };
-  }, [interactionManager, isInitialized, options.onElementSelected, options.onElementHovered]);
+    }
+  }, [interactionManager, isInitialized, options.onElementSelected, options.onElementHovered])
 }

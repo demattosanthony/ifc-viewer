@@ -4,16 +4,16 @@
  * Tests for entity factory functions and helper predicates.
  */
 
-import { describe, test, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
+import type { Conversation, Message } from "../../src/domain"
 import {
   createProject,
-  isValidProjectId,
-  isConversationActive,
-  isUserMessage,
   isAssistantMessage,
+  isConversationActive,
   isSystemMessage,
+  isUserMessage,
+  isValidProjectId,
 } from "../../src/domain"
-import type { Conversation, Message } from "../../src/domain"
 
 describe("Project Entity", () => {
   describe("createProject", () => {

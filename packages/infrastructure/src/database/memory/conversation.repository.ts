@@ -1,5 +1,5 @@
-import { generateId, ConversationSchema } from "@ifc-viewer/core"
 import type { Conversation, ConversationRepository } from "@ifc-viewer/core"
+import { ConversationSchema, generateId } from "@ifc-viewer/core"
 
 export function createConversationRepository(): ConversationRepository {
   const store = new Map<string, Conversation>()

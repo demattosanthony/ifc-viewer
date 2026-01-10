@@ -1,15 +1,14 @@
-export { Slug } from "./slug.vo"
-
 // Agent types
 export type {
+  AgentMessage,
+  AgentMessageRole,
+  MessagePart,
   Position,
   Range,
-  UsageStats,
   TextPart,
-  ToolInvocationState,
   ToolInvocation,
+  ToolInvocationState,
   ToolPart,
-  MessagePart,
-  AgentMessageRole,
-  AgentMessage,
+  UsageStats,
 } from "./agent-types"
+export { Slug } from "./slug.vo"

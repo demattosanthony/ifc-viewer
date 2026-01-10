@@ -18,8 +18,25 @@ export function normalizeStoragePath(path: string): string {
  * Extensions that represent binary (non-text) files.
  */
 const binaryExtensions = new Set([
-  "ifc", "png", "jpg", "jpeg", "gif", "webp", "pdf", "zip", "tar", "gz",
-  "bin", "exe", "dll", "so", "dylib", "wasm", "glb", "gltf", "obj",
+  "ifc",
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "pdf",
+  "zip",
+  "tar",
+  "gz",
+  "bin",
+  "exe",
+  "dll",
+  "so",
+  "dylib",
+  "wasm",
+  "glb",
+  "gltf",
+  "obj",
 ])
 
 /**
@@ -41,10 +58,7 @@ export function buildStorageKey(projectId: string, path: string): string {
 /**
  * Delete all storage entries under a prefix (for recursive directory delete).
  */
-export async function deleteStoragePrefix(
-  storage: Storage,
-  prefix: string
-): Promise<void> {
+export async function deleteStoragePrefix(storage: Storage, prefix: string): Promise<void> {
   const keysToDelete: string[] = []
   for await (const entry of storage.list(prefix)) {
     keysToDelete.push(entry.key)

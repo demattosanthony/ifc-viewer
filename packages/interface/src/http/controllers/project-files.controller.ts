@@ -7,17 +7,22 @@
  */
 
 import type { Context } from "@ifc-viewer/core"
+import {
+  buildStorageKey,
+  deleteStoragePrefix,
+  isBinaryExtension,
+  normalizeStoragePath,
+} from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-import { buildStorageKey, deleteStoragePrefix, normalizeStoragePath, isBinaryExtension } from "@ifc-viewer/core"
 import type {
+  ConfirmUploadRequest,
+  GetPresignedUrlRequest,
+  GetPresignedUrlResponse,
   ListFilesResponse,
   ReadFileResponse,
   WriteFileRequest,
-  GetPresignedUrlRequest,
-  GetPresignedUrlResponse,
-  ConfirmUploadRequest,
 } from "../../dto/index.ts"
-import { type HttpResult, ok, err, notFound, serverError } from "../types.ts"
+import { err, type HttpResult, notFound, ok, serverError } from "../types.ts"
 
 const log = createLogger("project-files")
 
@@ -43,11 +48,11 @@ function isBinaryContent(data: Uint8Array, path: string): boolean {
 /**
  * Parse a storage key to extract file info
  */
-function parseStorageEntry(
+function _parseStorageEntry(
   key: string,
   prefix: string,
-  size: number,
-  lastModified?: Date
+  _size: number,
+  _lastModified?: Date
 ): { name: string; path: string; isFile: boolean } {
   // Remove prefix to get relative path
   const relativePath = key.slice(prefix.length)
@@ -93,7 +98,7 @@ export class ProjectFilesController {
     if (normalizedPath === ".") {
       normalizedPath = ""
     }
-    
+
     const prefix = normalizedPath
       ? `projects/${projectId}/${normalizedPath}/`
       : `projects/${projectId}/`

@@ -5,17 +5,10 @@
  * compute environment changes to project storage.
  */
 
-import { describe, test, expect, beforeEach } from "bun:test"
-import {
-  createChangeTracker,
-  type ChangeTracker,
-} from "../../src/services/change-tracker"
+import { beforeEach, describe, expect, test } from "bun:test"
 import type { Computer } from "../../src/ports"
-import {
-  createMockFileSystem,
-  createMockComputer,
-  createMockStorage,
-} from "../mocks"
+import { type ChangeTracker, createChangeTracker } from "../../src/services/change-tracker"
+import { createMockComputer, createMockFileSystem, createMockStorage } from "../mocks"
 
 describe("ChangeTracker", () => {
   let fs: ReturnType<typeof createMockFileSystem>
@@ -290,10 +283,7 @@ describe("ChangeTracker", () => {
     })
 
     test("persists delete changes to storage", async () => {
-      storage._data.set(
-        "projects/test-project/src/foo.ts",
-        new TextEncoder().encode("content")
-      )
+      storage._data.set("projects/test-project/src/foo.ts", new TextEncoder().encode("content"))
       tracker.record({ type: "delete", path: "src/foo.ts", source: "tool" })
 
       await tracker.persist()
@@ -302,10 +292,7 @@ describe("ChangeTracker", () => {
     })
 
     test("persists move changes to storage", async () => {
-      storage._data.set(
-        "projects/test-project/src/old.ts",
-        new TextEncoder().encode("content")
-      )
+      storage._data.set("projects/test-project/src/old.ts", new TextEncoder().encode("content"))
       fs._files.set("src/new.ts", {
         content: new TextEncoder().encode("content"),
         modifiedAt: Date.now(),
@@ -472,10 +459,7 @@ describe("ChangeTracker", () => {
     })
 
     test("syncs delete change directly to storage", async () => {
-      storage._data.set(
-        "projects/test-project/src/foo.ts",
-        new TextEncoder().encode("content")
-      )
+      storage._data.set("projects/test-project/src/foo.ts", new TextEncoder().encode("content"))
 
       await tracker.sync({ type: "delete", path: "src/foo.ts", source: "tool" })
 
@@ -483,10 +467,7 @@ describe("ChangeTracker", () => {
     })
 
     test("syncs move change directly to storage", async () => {
-      storage._data.set(
-        "projects/test-project/src/old.ts",
-        new TextEncoder().encode("content")
-      )
+      storage._data.set("projects/test-project/src/old.ts", new TextEncoder().encode("content"))
       fs._files.set("src/new.ts", {
         content: new TextEncoder().encode("content"),
         modifiedAt: Date.now(),

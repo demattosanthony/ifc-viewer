@@ -6,12 +6,12 @@
 
 import {
   type Context,
-  type Project,
   createProjectWithStorage,
   isDomainError,
+  type Project,
 } from "@ifc-viewer/core"
 import type { CreateProjectRequest, UpdateProjectRequest } from "../../dto"
-import { type HttpResult, ok, notFound, err } from "../types"
+import { err, type HttpResult, notFound, ok } from "../types"
 
 export class ProjectController {
   constructor(private ctx: Context) {}

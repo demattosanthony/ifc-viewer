@@ -8,7 +8,7 @@
  * to use relative URLs (which will be proxied to the API server).
  */
 
-import { client } from "./generated/client.gen";
+import { client } from "./generated/client.gen"
 
 /**
  * Get the API base URL from environment variables.
@@ -18,25 +18,25 @@ import { client } from "./generated/client.gen";
 function getBaseUrl(): string {
   // Vite exposes env vars on import.meta.env
   if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    return import.meta.env.VITE_API_URL
   }
 
   // Default to localhost for development
-  return "http://localhost:3000";
+  return "http://localhost:3000"
 }
 
 // Configure the client with the base URL
 client.setConfig({
   baseUrl: getBaseUrl(),
-});
+})
 
 // Re-export the configured client
-export { client };
+export { client }
 
 /**
  * Configure the client with a custom base URL.
  * Useful for testing or when the URL needs to be set dynamically.
  */
 export function configureClient(baseUrl: string): void {
-  client.setConfig({ baseUrl });
+  client.setConfig({ baseUrl })
 }

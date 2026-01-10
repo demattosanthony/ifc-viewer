@@ -5,9 +5,9 @@
  * Automatically detects file changes after command execution via snapshot diff.
  */
 
+import type { AIEvent, ChangeTracker, TerminalSession } from "@ifc-viewer/core"
 import { tool } from "ai"
 import { z } from "zod"
-import type { TerminalSession, AIEvent, ChangeTracker } from "@ifc-viewer/core"
 import { getErrorMessage, stripAnsi } from "../utils"
 
 const MARKER_PREFIX = "<<CMD_DONE:"
@@ -37,10 +37,7 @@ Commands run sequentially and share environment/state between calls.`,
             "A short 2-4 word description of what this command does for non-technical users (e.g. 'List project files', 'Run analysis script', 'Install dependencies')"
           ),
         command: z.string().describe("The command to execute"),
-        timeout: z
-          .number()
-          .default(30000)
-          .describe("Timeout in milliseconds (default: 30000)"),
+        timeout: z.number().default(30000).describe("Timeout in milliseconds (default: 30000)"),
       }),
       execute: async ({
         title: _title,
@@ -68,8 +65,7 @@ Commands run sequentially and share environment/state between calls.`,
           const isEchoLine = (line: string) => {
             const clean = stripAnsi(line)
             return (
-              clean.includes('echo "<<CMD_DONE:$?>>"') ||
-              clean.includes("echo '<<CMD_DONE:$?>>'")
+              clean.includes('echo "<<CMD_DONE:$?>>"') || clean.includes("echo '<<CMD_DONE:$?>>'")
             )
           }
 
@@ -95,7 +91,7 @@ Commands run sequentially and share environment/state between calls.`,
                   skippedEcho = true
                   const filteredLines = lines.filter((line: string) => !isEchoLine(line))
                   const cleanData = filteredLines.join("\n")
-                  if (cleanData && cleanData.trim()) {
+                  if (cleanData?.trim()) {
                     output += cleanData
                     emit({ type: "terminal-output", data: cleanData })
                   }
@@ -104,12 +100,12 @@ Commands run sequentially and share environment/state between calls.`,
               }
 
               const match = data.match(MARKER_REGEX)
-              if (match && match[1]) {
+              if (match?.[1]) {
                 exitCode = parseInt(match[1], 10)
                 const lines = data.split("\n")
                 const cleanLines = lines.filter((line: string) => !MARKER_REGEX.test(line))
                 const cleanData = cleanLines.join("\n")
-                if (cleanData && cleanData.trim()) {
+                if (cleanData?.trim()) {
                   output += cleanData
                   emit({ type: "terminal-output", data: cleanData })
                 }

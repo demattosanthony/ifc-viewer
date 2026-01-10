@@ -1,8 +1,8 @@
-import { eq, desc } from "drizzle-orm"
-import { NotFoundError, generateId, ConversationSchema } from "@ifc-viewer/core"
 import type { Conversation, ConversationRepository } from "@ifc-viewer/core"
-import { conversations, type ConversationRow } from "./schema"
+import { ConversationSchema, generateId, NotFoundError } from "@ifc-viewer/core"
+import { desc, eq } from "drizzle-orm"
 import type { DrizzleDB, DrizzleTransaction } from "./db"
+import { type ConversationRow, conversations } from "./schema"
 
 const rowToEntity = (row: ConversationRow): Conversation =>
   ConversationSchema.parse({
@@ -14,7 +14,9 @@ const rowToEntity = (row: ConversationRow): Conversation =>
     updatedAt: row.updatedAt,
   })
 
-export function createConversationRepository(db: DrizzleDB | DrizzleTransaction): ConversationRepository {
+export function createConversationRepository(
+  db: DrizzleDB | DrizzleTransaction
+): ConversationRepository {
   return {
     async create(input: Conversation.CreateInput): Promise<Conversation> {
       const now = new Date()

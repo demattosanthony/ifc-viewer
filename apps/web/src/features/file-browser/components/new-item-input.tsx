@@ -1,12 +1,12 @@
-import { Folder, File } from "lucide-react";
+import { File, Folder } from "lucide-react"
 
 interface NewItemInputProps {
-  type: "file" | "folder";
-  depth: number;
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
-  onCancel: () => void;
+  type: "file" | "folder"
+  depth: number
+  value: string
+  onChange: (value: string) => void
+  onSubmit: () => void
+  onCancel: () => void
 }
 
 export function NewItemInput({
@@ -17,13 +17,10 @@ export function NewItemInput({
   onSubmit,
   onCancel,
 }: NewItemInputProps) {
-  const indent = depth * 12;
+  const indent = depth * 12
 
   return (
-    <div
-      className="flex items-center h-[22px] bg-accent/50"
-      style={{ paddingLeft: indent + 4 }}
-    >
+    <div className="flex items-center h-[22px] bg-accent/50" style={{ paddingLeft: indent + 4 }}>
       <span className="w-4 shrink-0" />
       {type === "folder" ? (
         <Folder className="w-4 h-4 text-amber-500 shrink-0 ml-0.5" />
@@ -35,14 +32,14 @@ export function NewItemInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") onSubmit();
-          if (e.key === "Escape") onCancel();
+          if (e.key === "Enter") onSubmit()
+          if (e.key === "Escape") onCancel()
         }}
         onBlur={() => {
           if (value.trim()) {
-            onSubmit();
+            onSubmit()
           } else {
-            onCancel();
+            onCancel()
           }
         }}
         autoFocus
@@ -50,5 +47,5 @@ export function NewItemInput({
         placeholder={type === "folder" ? "folder name" : "file name"}
       />
     </div>
-  );
+  )
 }
