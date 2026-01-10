@@ -139,8 +139,10 @@ export function createMockFileSystem(): FileSystem & {
  */
 export function createMockComputer(fs: FileSystem): Computer {
   const mockTerminal = {} as TerminalSession
+  const mockPythonSession = {} as TerminalSession
   const mockShell: Shell = {
     startTerminal: async () => mockTerminal,
+    startPythonTerminal: async () => mockPythonSession,
   }
 
   return {
@@ -154,6 +156,8 @@ export function createMockComputer(fs: FileSystem): Computer {
     disposeTerminal: async () => {},
     getOrCreateAgentTerminal: async () => mockTerminal,
     hasAgentTerminal: () => false,
+    getOrCreateAgentPythonSession: async () => mockPythonSession,
+    hasAgentPythonSession: () => false,
     dispose: async () => {},
   }
 }

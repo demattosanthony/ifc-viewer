@@ -36,6 +36,7 @@ export type {
   ComputeConfig,
   TerminalSession,
   TerminalOptions,
+  PythonTerminalOptions,
   FileSystem,
   FileEntry,
   FileStat,

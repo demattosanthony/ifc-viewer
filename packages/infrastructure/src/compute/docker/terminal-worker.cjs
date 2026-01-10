@@ -44,10 +44,13 @@ async function initTerminal(containerId, options = {}) {
       "PS1=\\[\\033[36m\\]\\w\\[\\033[0m\\] $ ",
       ...Object.entries(env).map(([k, v]) => `${k}=${v}`),
     ];
-    
+
+    // Support custom command (default to bash for backward compatibility)
+    const command = options.command || ["/bin/bash", "-l"];
+
     // Create exec with TTY
     exec = await container.exec({
-      Cmd: ["/bin/bash", "-l"],
+      Cmd: command,
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,

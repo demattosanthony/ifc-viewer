@@ -55,6 +55,7 @@ export class DockerComputer implements Computer {
 
   private terminals = new Map<string, TerminalSession>()
   private agentTerminal: TerminalSession | null = null
+  private agentPythonSession: TerminalSession | null = null
 
   constructor(config: DockerComputeConfig = {}) {
     this.id = `docker-computer-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -266,6 +267,9 @@ export class DockerComputer implements Computer {
     if (this.agentTerminal?.id === id) {
       this.agentTerminal = null
     }
+    if (this.agentPythonSession?.id === id) {
+      this.agentPythonSession = null
+    }
   }
 
   async getOrCreateAgentTerminal(): Promise<TerminalSession> {
@@ -283,6 +287,23 @@ export class DockerComputer implements Computer {
     return this.agentTerminal !== null
   }
 
+  async getOrCreateAgentPythonSession(): Promise<TerminalSession> {
+    if (this.agentPythonSession) {
+      return this.agentPythonSession
+    }
+
+    const session = await this.shell.startPythonTerminal({
+      preImports: ["import ifcopenshell"],
+    })
+    this.terminals.set(session.id, session)
+    this.agentPythonSession = session
+    return session
+  }
+
+  hasAgentPythonSession(): boolean {
+    return this.agentPythonSession !== null
+  }
+
   /**
    * Dispose the Docker computer
    *
@@ -295,6 +316,7 @@ export class DockerComputer implements Computer {
     await Promise.all(terminalsToKill.map((t) => t.kill().catch(() => {})))
     this.terminals.clear()
     this.agentTerminal = null
+    this.agentPythonSession = null
 
     // Stop and remove container
     if (this.container) {

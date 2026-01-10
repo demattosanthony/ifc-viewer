@@ -13,6 +13,7 @@ export class LocalComputer implements Computer {
 
   private terminals = new Map<string, TerminalSession>()
   private agentTerminal: TerminalSession | null = null
+  private agentPythonSession: TerminalSession | null = null
 
   constructor(config: ComputeConfig) {
     this.id = `computer-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -59,6 +60,9 @@ export class LocalComputer implements Computer {
     if (this.agentTerminal?.id === id) {
       this.agentTerminal = null
     }
+    if (this.agentPythonSession?.id === id) {
+      this.agentPythonSession = null
+    }
   }
 
   async getOrCreateAgentTerminal(): Promise<TerminalSession> {
@@ -76,11 +80,29 @@ export class LocalComputer implements Computer {
     return this.agentTerminal !== null
   }
 
+  async getOrCreateAgentPythonSession(): Promise<TerminalSession> {
+    if (this.agentPythonSession) {
+      return this.agentPythonSession
+    }
+
+    const session = await this._shell.startPythonTerminal({
+      preImports: ["import ifcopenshell"],
+    })
+    this.terminals.set(session.id, session)
+    this.agentPythonSession = session
+    return session
+  }
+
+  hasAgentPythonSession(): boolean {
+    return this.agentPythonSession !== null
+  }
+
   async dispose(): Promise<void> {
     const terminalsToKill = Array.from(this.terminals.values())
     await Promise.all(terminalsToKill.map((t) => t.kill()))
     this.terminals.clear()
     this.agentTerminal = null
+    this.agentPythonSession = null
 
     if (this.cleanup) {
       await rm(this.workingDirectory, { recursive: true, force: true }).catch(

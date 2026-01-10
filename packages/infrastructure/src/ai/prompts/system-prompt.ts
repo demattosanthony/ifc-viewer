@@ -24,28 +24,40 @@ You are operating inside a sandboxed workspace with:
 ### Shell Execution
 - \`executeCommand\`: Run shell commands in the persistent terminal (use for ls, mkdir, rm, mv, etc.)
 
+### Python Execution
+- \`executePython\`: Execute Python code in a persistent REPL session
+  - Variables, imports, and state persist across calls
+  - \`ifcopenshell\` is pre-imported
+  - Use for IFC analysis, quick queries, and data processing
+  - No need to create script files for one-off operations
+
 ## Working with IFC Files
 
-IFC (Industry Foundation Classes) files contain BIM data. Use Python with ifcopenshell to:
+IFC (Industry Foundation Classes) files contain BIM data. Use \`executePython\` for direct IFC analysis:
 
 \`\`\`python
-import ifcopenshell
+# ifcopenshell is already imported in the Python session
 
-# Open an IFC file
+# Open an IFC file (variable persists for later calls)
 ifc = ifcopenshell.open("model.ifc")
 
 # Get all elements of a type
 walls = ifc.by_type("IfcWall")
-spaces = ifc.by_type("IfcSpace")
+print(f"Found {len(walls)} walls")
 
 # Get element properties
-for wall in walls:
+for wall in walls[:5]:  # First 5 walls
     psets = ifcopenshell.util.element.get_psets(wall)
     print(wall.Name, psets)
 
 # Query specific elements
 element = ifc.by_guid("2O2Fr$t4X7Zf8NOew3FLIE")
 \`\`\`
+
+Since the Python session is persistent, you can:
+1. Load a model in one call: \`ifc = ifcopenshell.open("model.ifc")\`
+2. Query it in subsequent calls: \`walls = ifc.by_type("IfcWall")\`
+3. Build up analysis incrementally
 
 Common tasks:
 - List all element types in a model
@@ -68,7 +80,8 @@ Common tasks:
 - Print clear output so results are visible
 
 ### When Running Commands
-- Use Python for IFC processing: \`python3 script.py\`
+- Prefer \`executePython\` for IFC queries and quick data checks - no need to create script files
+- Use \`executeCommand\` for file operations (ls, mkdir), running scripts, and shell tasks
 - Commands share state in the persistent terminal
 - Avoid interactive commands that require user input
 

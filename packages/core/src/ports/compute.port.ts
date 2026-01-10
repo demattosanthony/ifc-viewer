@@ -27,6 +27,12 @@ export interface TerminalOptions {
   rows?: number
 }
 
+/** Python terminal options */
+export interface PythonTerminalOptions extends TerminalOptions {
+  /** Pre-import statements to execute on session start */
+  preImports?: string[]
+}
+
 // ============================================================================
 // File System Types
 // ============================================================================
@@ -74,6 +80,7 @@ export interface FileSystem {
 /** Shell interface */
 export interface Shell {
   startTerminal(options?: TerminalOptions): Promise<TerminalSession>
+  startPythonTerminal(options?: PythonTerminalOptions): Promise<TerminalSession>
 }
 
 // ============================================================================
@@ -99,5 +106,7 @@ export interface Computer {
   disposeTerminal(id: string): Promise<void>
   getOrCreateAgentTerminal(): Promise<TerminalSession>
   hasAgentTerminal(): boolean
+  getOrCreateAgentPythonSession(): Promise<TerminalSession>
+  hasAgentPythonSession(): boolean
   dispose(): Promise<void>
 }
