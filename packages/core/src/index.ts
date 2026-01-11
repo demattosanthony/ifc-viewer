@@ -39,20 +39,7 @@ export {
   createContext,
   withContext,
 } from "./context"
-// Domain Layer - Agent Types
-export type {
-  AgentMessage,
-  AgentMessageRole,
-  MessagePart,
-  Position,
-  Range,
-  TextPart,
-  ToolInvocation,
-  ToolInvocationState,
-  ToolPart,
-  UsageStats,
-} from "./domain"
-// Domain Layer - Entities
+// Domain Layer - Entities & Value Objects
 export {
   // Conversation
   type Conversation,
@@ -62,13 +49,16 @@ export {
   createProject,
   getModelStorageKey,
   inferDiscipline,
-  isAssistantMessage,
   isConversationActive,
-  isSystemMessage,
-  isUserMessage,
   isValidProjectId,
   // Message
   type Message,
+  type MessagePart,
+  MessagePartSchema,
+  type MessagePartText,
+  MessagePartTextSchema,
+  type MessagePartToolUse,
+  MessagePartToolUseSchema,
   type MessageRole,
   MessageRoleSchema,
   MessageSchema,
@@ -80,6 +70,8 @@ export {
   // Project
   type Project,
   ProjectSchema,
+  type ToolUseStatus,
+  ToolUseStatusSchema,
 } from "./domain"
 // Domain Layer - Errors
 export {
@@ -94,10 +86,7 @@ export {
 export { Slug } from "./domain/value-objects"
 // Ports - Infrastructure Interfaces
 export type {
-  AIApproveToolMessage,
-  AIChatMessage,
   AIChatOptions,
-  AIClientMessage,
   AIEditorCursorEvent,
   AIEditorDeleteEvent,
   AIEditorInsertEvent,
@@ -110,16 +99,19 @@ export type {
   AIFileDeletedEvent,
   AIFinishEvent,
   AIMessage,
-  // AI
+  AIMessageContent,
+  AIMessageTextPart,
+  AIMessageToolCallPart,
+  AIMessageToolResultPart,
+  AIPresenceEvent,
   AIProvider,
   AIProviderConfig,
   AIReadyEvent,
-  AIRejectToolMessage,
   AIReplayEndEvent,
   AIReplayStartEvent,
   AIStepEndEvent,
   AIStepStartEvent,
-  AIStopMessage,
+  AIStreamEvent,
   AIStreamStartEvent,
   AITerminalAppendEvent,
   AITerminalExecuteEvent,
@@ -145,6 +137,7 @@ export type {
   FileReadOptions,
   FileStat,
   FileSystem,
+  MessagePartRepository,
   MessageRepository,
   ModelRepository,
   ProjectRepository,
@@ -167,16 +160,7 @@ export type {
   StreamStatus,
   // Stream Store
   StreamStore,
-  TerminalClientMessage,
-  TerminalDataEvent,
-  TerminalErrorEvent,
-  TerminalExitEvent,
-  TerminalInputMessage,
   TerminalOptions,
-  TerminalReadyEvent,
-  TerminalResizeMessage,
-  // Terminal WebSocket events (internal - used by compute system)
-  TerminalServerEvent,
   TerminalSession,
   UnitOfWork,
 } from "./ports"

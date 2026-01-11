@@ -12,13 +12,18 @@ export {
 } from "./conversation"
 // Message
 export {
-  isAssistantMessage,
-  isSystemMessage,
-  isUserMessage,
   type Message,
+  type MessagePart,
+  MessagePartSchema,
+  type MessagePartText,
+  MessagePartTextSchema,
+  type MessagePartToolUse,
+  MessagePartToolUseSchema,
   type MessageRole,
   MessageRoleSchema,
   MessageSchema,
+  type ToolUseStatus,
+  ToolUseStatusSchema,
 } from "./message"
 // Model
 export {

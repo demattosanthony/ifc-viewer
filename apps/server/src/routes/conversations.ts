@@ -12,7 +12,13 @@
  *   POST   /api/projects/:id/conversations/:conversationId/stop         - Stop generation
  */
 
-import { type AIEvent, type Context, runAgentChat } from "@ifc-viewer/core"
+import {
+  type AIEvent,
+  type Context,
+  type MessagePart,
+  type MessagePartToolUse,
+  runAgentChat,
+} from "@ifc-viewer/core"
 import {
   ConversationController,
   ConversationListResponse,
@@ -166,7 +172,7 @@ export function conversationRoutes(ctx: Context) {
           const userMessage = await ctx.db.messages.create({
             conversationId,
             role: "user",
-            content,
+            parts: [{ type: "text", text: content }],
           })
 
           // Create stream for this generation (key=conversationId for lookup)
@@ -285,40 +291,72 @@ interface GenerationParams {
 async function runGeneration(ctx: Context, params: GenerationParams): Promise<void> {
   const { projectId, conversationId, streamId, content, abortController } = params
 
-  // Track assistant text for saving on abort
-  let assistantText = ""
+  // Track parts for saving assistant message
+  const parts: MessagePart[] = []
 
   try {
-    // Get conversation history from DB
-    const messages = await ctx.db.messages.findByConversationId(conversationId)
-    const history = messages.map((m: { role: string; content: string }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    }))
-
     for await (const event of runAgentChat(ctx, {
       projectId,
       conversationId,
       content,
-      history,
       signal: abortController.signal,
     })) {
-      // Track text for saving partial response on abort
+      // Track parts for persistence
       if (event.type === "text-delta") {
-        assistantText += event.content
+        const last = parts[parts.length - 1]
+        if (last?.type === "text") {
+          last.text += event.content
+        } else {
+          parts.push({ type: "text", text: event.content })
+        }
       }
+
+      if (event.type === "tool-call") {
+        parts.push({
+          type: "tool-use",
+          id: event.id,
+          name: event.name,
+          input: event.args,
+          status: "success",
+        })
+      }
+
+      if (event.type === "tool-result") {
+        const toolPart = parts.find(
+          (p): p is MessagePartToolUse => p.type === "tool-use" && p.id === event.id
+        )
+        if (toolPart) {
+          toolPart.output = event.result
+        }
+      }
+
       await ctx.streams.append(streamId, event)
+    }
+
+    // Save assistant message with all parts
+    if (parts.length > 0) {
+      await ctx.db.messages.create({
+        conversationId,
+        role: "assistant",
+        parts,
+      })
     }
 
     await ctx.streams.complete(streamId)
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      // Save partial assistant message if any text was generated
-      if (assistantText.trim()) {
+      // Mark any in-progress tool calls as aborted
+      for (const part of parts) {
+        if (part.type === "tool-use" && part.output === undefined) {
+          part.status = "aborted"
+        }
+      }
+      // Save partial assistant message if any parts were generated
+      if (parts.length > 0) {
         await ctx.db.messages.create({
           conversationId,
           role: "assistant",
-          content: assistantText,
+          parts,
         })
       }
       await ctx.db.conversations.update(conversationId, { status: "active" })

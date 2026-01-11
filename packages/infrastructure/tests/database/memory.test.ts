@@ -277,14 +277,15 @@ describe("MessageRepository", () => {
       const message = await repo.create({
         conversationId,
         role: "user",
-        content: "Hello",
+        parts: [{ type: "text", text: "Hello" }],
       })
 
       expect(message.id).toBeDefined()
       expect(message.id.length).toBe(36)
       expect(message.conversationId).toBe(conversationId)
       expect(message.role).toBe("user")
-      expect(message.content).toBe("Hello")
+      expect(message.parts).toHaveLength(1)
+      expect(message.parts[0]).toEqual({ type: "text", text: "Hello" })
       expect(message.createdAt).toBeInstanceOf(Date)
     })
 
@@ -292,7 +293,7 @@ describe("MessageRepository", () => {
       const message = await repo.create({
         conversationId: generateId(),
         role: "user",
-        content: "User message",
+        parts: [{ type: "text", text: "User message" }],
       })
 
       expect(message.role).toBe("user")
@@ -302,7 +303,7 @@ describe("MessageRepository", () => {
       const message = await repo.create({
         conversationId: generateId(),
         role: "assistant",
-        content: "Assistant message",
+        parts: [{ type: "text", text: "Assistant message" }],
       })
 
       expect(message.role).toBe("assistant")
@@ -315,19 +316,19 @@ describe("MessageRepository", () => {
       const m1 = await repo.create({
         conversationId,
         role: "user",
-        content: "First",
+        parts: [{ type: "text", text: "First" }],
       })
       await new Promise((r) => setTimeout(r, 10))
       const m2 = await repo.create({
         conversationId,
         role: "assistant",
-        content: "Second",
+        parts: [{ type: "text", text: "Second" }],
       })
       await new Promise((r) => setTimeout(r, 10))
       const m3 = await repo.create({
         conversationId,
         role: "user",
-        content: "Third",
+        parts: [{ type: "text", text: "Third" }],
       })
 
       const messages = await repo.findByConversationId(conversationId)
@@ -342,9 +343,21 @@ describe("MessageRepository", () => {
     test("only returns messages for specified conversation", async () => {
       const conv1 = generateId()
       const conv2 = generateId()
-      await repo.create({ conversationId: conv1, role: "user", content: "A" })
-      await repo.create({ conversationId: conv2, role: "user", content: "B" })
-      await repo.create({ conversationId: conv1, role: "user", content: "C" })
+      await repo.create({
+        conversationId: conv1,
+        role: "user",
+        parts: [{ type: "text", text: "A" }],
+      })
+      await repo.create({
+        conversationId: conv2,
+        role: "user",
+        parts: [{ type: "text", text: "B" }],
+      })
+      await repo.create({
+        conversationId: conv1,
+        role: "user",
+        parts: [{ type: "text", text: "C" }],
+      })
 
       const messages = await repo.findByConversationId(conv1)
 

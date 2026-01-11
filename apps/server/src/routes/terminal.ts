@@ -5,7 +5,8 @@
  * Creates compute on-demand when terminal is opened, keeps it alive while in use.
  */
 
-import type { Context, TerminalClientMessage, TerminalServerEvent } from "@ifc-viewer/core"
+import type { Context } from "@ifc-viewer/core"
+import type { TerminalClientMessage, TerminalServerEvent } from "@ifc-viewer/interface"
 import { createLogger } from "@ifc-viewer/logger"
 import { Elysia, t } from "elysia"
 

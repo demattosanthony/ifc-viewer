@@ -7,11 +7,7 @@
 
 // AI
 export type {
-  AIApproveToolMessage,
-  AIChatMessage,
   AIChatOptions,
-  // Client messages
-  AIClientMessage,
   AIEditorCursorEvent,
   AIEditorDeleteEvent,
   AIEditorInsertEvent,
@@ -19,21 +15,24 @@ export type {
   AIEditorReplaceEvent,
   AIEditorSaveEvent,
   AIErrorEvent,
-  // Events
   AIEvent,
   AIFileCreatedEvent,
   AIFileDeletedEvent,
   AIFinishEvent,
   AIMessage,
+  AIMessageContent,
+  AIMessageTextPart,
+  AIMessageToolCallPart,
+  AIMessageToolResultPart,
+  AIPresenceEvent,
   AIProvider,
   AIProviderConfig,
   AIReadyEvent,
-  AIRejectToolMessage,
   AIReplayEndEvent,
   AIReplayStartEvent,
   AIStepEndEvent,
   AIStepStartEvent,
-  AIStopMessage,
+  AIStreamEvent,
   AIStreamStartEvent,
   AITerminalAppendEvent,
   AITerminalExecuteEvent,
@@ -48,15 +47,6 @@ export type {
   AIToolNeedsApprovalEvent,
   AIToolResultEvent,
   AIUsageStats,
-  TerminalClientMessage,
-  TerminalDataEvent,
-  TerminalErrorEvent,
-  TerminalExitEvent,
-  TerminalInputMessage,
-  TerminalReadyEvent,
-  TerminalResizeMessage,
-  // Terminal WebSocket events
-  TerminalServerEvent,
 } from "./ai.port"
 // Compute
 export type {
@@ -76,6 +66,7 @@ export type {
 export type {
   ConversationRepository,
   Database,
+  MessagePartRepository,
   MessageRepository,
   ModelRepository,
   ProjectRepository,

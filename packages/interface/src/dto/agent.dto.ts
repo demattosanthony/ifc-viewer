@@ -56,3 +56,84 @@ export const SendMessageResponse = z.object({
   message: MessageResponse,
 })
 export type SendMessageResponse = z.infer<typeof SendMessageResponse>
+
+// ============================================================================
+// Agent Transport Types
+// ============================================================================
+
+export interface AgentChatMessage {
+  type: "chat"
+  content: string
+  history?: Array<{ role: "user" | "assistant"; content: string }>
+}
+
+export interface AgentStopMessage {
+  type: "stop"
+}
+
+export interface AgentApproveToolMessage {
+  type: "approve-tool"
+  toolCallId: string
+}
+
+export interface AgentRejectToolMessage {
+  type: "reject-tool"
+  toolCallId: string
+}
+
+export type AgentClientMessage =
+  | AgentChatMessage
+  | AgentStopMessage
+  | AgentApproveToolMessage
+  | AgentRejectToolMessage
+
+// ============================================================================
+// Terminal WebSocket Types
+// ============================================================================
+
+/** Terminal ready event - connection established */
+export interface TerminalReadyEvent {
+  type: "ready"
+  terminalId: string
+}
+
+/** Terminal output event - data from PTY */
+export interface TerminalDataEvent {
+  type: "output"
+  data: string
+}
+
+/** Terminal exit event - process terminated */
+export interface TerminalExitEvent {
+  type: "exit"
+  code: number
+}
+
+/** Terminal error event */
+export interface TerminalErrorEvent {
+  type: "error"
+  message: string
+}
+
+/** Server -> Client terminal events */
+export type TerminalServerEvent =
+  | TerminalReadyEvent
+  | TerminalDataEvent
+  | TerminalExitEvent
+  | TerminalErrorEvent
+
+/** Client -> Server terminal input */
+export interface TerminalInputMessage {
+  type: "input"
+  data: string
+}
+
+/** Client -> Server terminal resize */
+export interface TerminalResizeMessage {
+  type: "resize"
+  cols: number
+  rows: number
+}
+
+/** Client -> Server terminal messages */
+export type TerminalClientMessage = TerminalInputMessage | TerminalResizeMessage

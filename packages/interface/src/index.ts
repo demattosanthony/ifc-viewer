@@ -42,6 +42,21 @@
  * ```
  */
 
+export type {
+  AgentApproveToolMessage,
+  AgentChatMessage,
+  AgentClientMessage,
+  AgentRejectToolMessage,
+  AgentStopMessage,
+  TerminalClientMessage,
+  TerminalDataEvent,
+  TerminalErrorEvent,
+  TerminalExitEvent,
+  TerminalInputMessage,
+  TerminalReadyEvent,
+  TerminalResizeMessage,
+  TerminalServerEvent,
+} from "./dto"
 // DTOs
 export {
   ApiInfoResponse,

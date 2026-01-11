@@ -59,9 +59,12 @@ import type {
   ReadProjectFileError,
   ReadProjectFileResponse,
   SendMessageData,
+  SendMessageError,
+  SendMessageResponse,
   StopGenerationData,
   StopGenerationError,
   StopGenerationResponse,
+  StreamEventsData,
   UpdateModelData,
   UpdateModelError,
   UpdateModelResponse,
@@ -197,98 +200,6 @@ export const updateProject = <ThrowOnError extends boolean = false>(
       "Content-Type": "application/json",
       ...options?.headers,
     },
-  })
-}
-
-/**
- * List models for a project
- */
-export const listModels = <ThrowOnError extends boolean = false>(
-  options: Options<ListModelsData, ThrowOnError>
-) => {
-  return (options.client ?? _heyApiClient).get<ListModelsResponse, ListModelsError, ThrowOnError>({
-    url: "/api/projects/{id}/models/",
-    ...options,
-  })
-}
-
-/**
- * Upload a new model
- */
-export const uploadModel = <ThrowOnError extends boolean = false>(
-  options: Options<UploadModelData, ThrowOnError>
-) => {
-  return (options.client ?? _heyApiClient).post<
-    UploadModelResponse,
-    UploadModelError,
-    ThrowOnError
-  >({
-    url: "/api/projects/{id}/models/",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-  })
-}
-
-/**
- * Delete a model
- */
-export const deleteModel = <ThrowOnError extends boolean = false>(
-  options: Options<DeleteModelData, ThrowOnError>
-) => {
-  return (options.client ?? _heyApiClient).delete<
-    DeleteModelResponse,
-    DeleteModelError,
-    ThrowOnError
-  >({
-    url: "/api/projects/{id}/models/{modelId}",
-    ...options,
-  })
-}
-
-/**
- * Get model metadata
- */
-export const getModel = <ThrowOnError extends boolean = false>(
-  options: Options<GetModelData, ThrowOnError>
-) => {
-  return (options.client ?? _heyApiClient).get<GetModelResponse, GetModelError, ThrowOnError>({
-    url: "/api/projects/{id}/models/{modelId}",
-    ...options,
-  })
-}
-
-/**
- * Update model metadata
- */
-export const updateModel = <ThrowOnError extends boolean = false>(
-  options: Options<UpdateModelData, ThrowOnError>
-) => {
-  return (options.client ?? _heyApiClient).patch<
-    UpdateModelResponse,
-    UpdateModelError,
-    ThrowOnError
-  >({
-    url: "/api/projects/{id}/models/{modelId}",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-  })
-}
-
-/**
- * Download model IFC file
- */
-export const getModelFile = <ThrowOnError extends boolean = false>(
-  options: Options<GetModelFileData, ThrowOnError>
-) => {
-  return (options.client ?? _heyApiClient).get<unknown, unknown, ThrowOnError>({
-    url: "/api/projects/{id}/models/{modelId}/file",
-    ...options,
   })
 }
 
@@ -440,6 +351,98 @@ export const confirmProjectUpload = <ThrowOnError extends boolean = false>(
 }
 
 /**
+ * List models for a project
+ */
+export const listModels = <ThrowOnError extends boolean = false>(
+  options: Options<ListModelsData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<ListModelsResponse, ListModelsError, ThrowOnError>({
+    url: "/api/projects/{id}/models/",
+    ...options,
+  })
+}
+
+/**
+ * Upload a new model
+ */
+export const uploadModel = <ThrowOnError extends boolean = false>(
+  options: Options<UploadModelData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).post<
+    UploadModelResponse,
+    UploadModelError,
+    ThrowOnError
+  >({
+    url: "/api/projects/{id}/models/",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  })
+}
+
+/**
+ * Delete a model
+ */
+export const deleteModel = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteModelData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).delete<
+    DeleteModelResponse,
+    DeleteModelError,
+    ThrowOnError
+  >({
+    url: "/api/projects/{id}/models/{modelId}",
+    ...options,
+  })
+}
+
+/**
+ * Get model metadata
+ */
+export const getModel = <ThrowOnError extends boolean = false>(
+  options: Options<GetModelData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<GetModelResponse, GetModelError, ThrowOnError>({
+    url: "/api/projects/{id}/models/{modelId}",
+    ...options,
+  })
+}
+
+/**
+ * Update model metadata
+ */
+export const updateModel = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateModelData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).patch<
+    UpdateModelResponse,
+    UpdateModelError,
+    ThrowOnError
+  >({
+    url: "/api/projects/{id}/models/{modelId}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  })
+}
+
+/**
+ * Download model IFC file
+ */
+export const getModelFile = <ThrowOnError extends boolean = false>(
+  options: Options<GetModelFileData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<unknown, unknown, ThrowOnError>({
+    url: "/api/projects/{id}/models/{modelId}/file",
+    ...options,
+  })
+}
+
+/**
  * Clear all conversations for project
  */
 export const clearConversations = <ThrowOnError extends boolean = false>(
@@ -524,14 +527,17 @@ export const getConversation = <ThrowOnError extends boolean = false>(
 }
 
 /**
- * Chat within conversation (SSE streaming)
- * Start or continue a chat. Compute environment is created on-demand for the project.
+ * Send a message
  */
 export const sendMessage = <ThrowOnError extends boolean = false>(
   options: Options<SendMessageData, ThrowOnError>
 ) => {
-  return (options.client ?? _heyApiClient).post<unknown, unknown, ThrowOnError>({
-    url: "/api/projects/{id}/conversations/{conversationId}/chat",
+  return (options.client ?? _heyApiClient).post<
+    SendMessageResponse,
+    SendMessageError,
+    ThrowOnError
+  >({
+    url: "/api/projects/{id}/conversations/{conversationId}/messages",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -541,7 +547,19 @@ export const sendMessage = <ThrowOnError extends boolean = false>(
 }
 
 /**
- * Stop ongoing chat generation
+ * Stream generation events (SSE)
+ */
+export const streamEvents = <ThrowOnError extends boolean = false>(
+  options: Options<StreamEventsData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<unknown, unknown, ThrowOnError>({
+    url: "/api/projects/{id}/conversations/{conversationId}/events",
+    ...options,
+  })
+}
+
+/**
+ * Stop ongoing generation
  */
 export const stopGeneration = <ThrowOnError extends boolean = false>(
   options: Options<StopGenerationData, ThrowOnError>

@@ -199,10 +199,10 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     if (!isLoading) return false
     const lastMessage = messages[messages.length - 1]
     if (!lastMessage || lastMessage.role !== "assistant") return false
-    // Show loader if assistant message has no content and no tool invocations
+    // Show loader if assistant message has no content and no tool parts
     const hasContent = lastMessage.content.trim().length > 0
-    const hasTools = lastMessage.toolInvocations && lastMessage.toolInvocations.length > 0
-    return !hasContent && !hasTools
+    const hasToolParts = lastMessage.parts?.some((p) => p.type === "tool-use") ?? false
+    return !hasContent && !hasToolParts
   })()
 
   // Check if conversation is selected but has no messages

@@ -6,14 +6,7 @@
 
 import { describe, expect, test } from "bun:test"
 import type { Conversation, Message } from "../../src/domain"
-import {
-  createProject,
-  isAssistantMessage,
-  isConversationActive,
-  isSystemMessage,
-  isUserMessage,
-  isValidProjectId,
-} from "../../src/domain"
+import { createProject, isConversationActive, isValidProjectId } from "../../src/domain"
 
 describe("Project Entity", () => {
   describe("createProject", () => {
@@ -119,58 +112,28 @@ describe("Message Entity", () => {
     id: "msg-123",
     conversationId: "conv-123",
     role,
-    content: "test message",
+    parts: [{ type: "text", text: "test message" }],
     createdAt: new Date(),
   })
 
-  describe("isUserMessage", () => {
-    test("returns true for user role", () => {
-      const msg = createMessage("user")
-      expect(isUserMessage(msg)).toBe(true)
-    })
-
-    test("returns false for assistant role", () => {
-      const msg = createMessage("assistant")
-      expect(isUserMessage(msg)).toBe(false)
-    })
-
-    test("returns false for system role", () => {
-      const msg = createMessage("system")
-      expect(isUserMessage(msg)).toBe(false)
-    })
+  test("creates message with text part", () => {
+    const msg = createMessage("user")
+    expect(msg.parts).toHaveLength(1)
+    expect(msg.parts[0]?.type).toBe("text")
   })
 
-  describe("isAssistantMessage", () => {
-    test("returns true for assistant role", () => {
-      const msg = createMessage("assistant")
-      expect(isAssistantMessage(msg)).toBe(true)
-    })
-
-    test("returns false for user role", () => {
-      const msg = createMessage("user")
-      expect(isAssistantMessage(msg)).toBe(false)
-    })
-
-    test("returns false for system role", () => {
-      const msg = createMessage("system")
-      expect(isAssistantMessage(msg)).toBe(false)
-    })
+  test("creates message with user role", () => {
+    const msg = createMessage("user")
+    expect(msg.role).toBe("user")
   })
 
-  describe("isSystemMessage", () => {
-    test("returns true for system role", () => {
-      const msg = createMessage("system")
-      expect(isSystemMessage(msg)).toBe(true)
-    })
+  test("creates message with assistant role", () => {
+    const msg = createMessage("assistant")
+    expect(msg.role).toBe("assistant")
+  })
 
-    test("returns false for user role", () => {
-      const msg = createMessage("user")
-      expect(isSystemMessage(msg)).toBe(false)
-    })
-
-    test("returns false for assistant role", () => {
-      const msg = createMessage("assistant")
-      expect(isSystemMessage(msg)).toBe(false)
-    })
+  test("creates message with system role", () => {
+    const msg = createMessage("system")
+    expect(msg.role).toBe("system")
   })
 })

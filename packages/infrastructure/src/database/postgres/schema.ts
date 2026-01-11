@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core"
 
 export const projects = pgTable("projects", {
   id: text("id").primaryKey(),
@@ -26,7 +26,25 @@ export const messages = pgTable("messages", {
     .notNull()
     .references(() => conversations.id, { onDelete: "cascade" }),
   role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
-  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+})
+
+export const messageParts = pgTable("message_parts", {
+  id: text("id").primaryKey(),
+  messageId: text("message_id")
+    .notNull()
+    .references(() => messages.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
+  type: text("type", { enum: ["text", "tool-use"] }).notNull(),
+  // For type="text"
+  text: text("text"),
+  // For type="tool-use"
+  toolCallId: text("tool_call_id"),
+  toolName: text("tool_name"),
+  toolInput: jsonb("tool_input").$type<Record<string, unknown>>(),
+  toolOutput: jsonb("tool_output"),
+  toolStatus: text("tool_status", { enum: ["success", "error", "aborted"] }),
+  toolError: text("tool_error"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 })
 
@@ -51,5 +69,7 @@ export type ConversationRow = typeof conversations.$inferSelect
 export type NewConversationRow = typeof conversations.$inferInsert
 export type MessageRow = typeof messages.$inferSelect
 export type NewMessageRow = typeof messages.$inferInsert
+export type MessagePartRow = typeof messageParts.$inferSelect
+export type NewMessagePartRow = typeof messageParts.$inferInsert
 export type ModelRow = typeof models.$inferSelect
 export type NewModelRow = typeof models.$inferInsert

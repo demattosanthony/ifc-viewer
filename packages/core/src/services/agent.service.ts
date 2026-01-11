@@ -7,9 +7,9 @@
  */
 
 import type { Context } from "../context"
-import type { Conversation } from "../domain"
+import type { Conversation, Message, MessagePartText } from "../domain"
 import { NotFoundError } from "../domain/errors"
-import type { AIEvent, AIMessage } from "../ports"
+import type { AIEvent, AIMessage, AIMessageToolCallPart } from "../ports"
 
 const MAX_TITLE_LENGTH = 50
 
@@ -21,7 +21,6 @@ export type AgentChatInput = {
   projectId: string
   conversationId: string
   content: string
-  history?: Array<{ role: "user" | "assistant"; content: string }>
   signal?: AbortSignal
 }
 
@@ -43,17 +42,95 @@ function generateTitle(content: string): string {
 }
 
 /**
+ * Convert persisted messages to AI SDK format.
+ * Handles multi-part messages with tool calls and results.
+ *
+ * Important: Anthropic requires:
+ * 1. Tool calls in an assistant message must be followed by tool results
+ * 2. Text that comes after tool execution must be in a SEPARATE assistant message
+ *    after the tool results, not bundled with the tool calls
+ */
+function toAIMessages(messages: Message[]): AIMessage[] {
+  const result: AIMessage[] = []
+
+  for (const msg of messages) {
+    if (msg.role === "user" || msg.role === "system") {
+      // User/system messages: extract text from parts
+      const text = msg.parts
+        .filter((p): p is MessagePartText => p.type === "text")
+        .map((p) => p.text)
+        .join("")
+      result.push({ role: msg.role, content: text })
+      continue
+    }
+
+    // Assistant message: separate tool calls from text
+    // Text that appears after tool calls is the response to tool results,
+    // so it must come in a separate assistant message AFTER the tool results
+    const toolCallParts: AIMessageToolCallPart[] = []
+    const toolResults: {
+      type: "tool-result"
+      toolCallId: string
+      toolName: string
+      output: unknown
+    }[] = []
+    const textParts: string[] = []
+
+    for (const part of msg.parts) {
+      if (part.type === "text" && part.text.trim()) {
+        textParts.push(part.text)
+      } else if (part.type === "tool-use" && part.output !== undefined) {
+        // Only include tool calls that have outputs (Anthropic requires matching pairs)
+        toolCallParts.push({
+          type: "tool-call",
+          toolCallId: part.id,
+          toolName: part.name,
+          input: part.input,
+        })
+        toolResults.push({
+          type: "tool-result",
+          toolCallId: part.id,
+          toolName: part.name,
+          output: part.output,
+        })
+      }
+      // Skip tool-use parts without outputs (incomplete from aborted sessions)
+    }
+
+    // If there are tool calls, add them first, then results, then text response
+    if (toolCallParts.length > 0) {
+      // Assistant message with tool calls only
+      result.push({ role: "assistant", content: toolCallParts })
+
+      // Tool results immediately after
+      result.push({ role: "tool", content: toolResults })
+
+      // Text response (if any) comes after tool results in a separate assistant message
+      if (textParts.length > 0) {
+        result.push({ role: "assistant", content: textParts.join("") })
+      }
+    } else if (textParts.length > 0) {
+      // No tool calls, just text
+      result.push({ role: "assistant", content: textParts.join("") })
+    }
+  }
+
+  return result
+}
+
+/**
  * Run an agent chat session within an existing conversation.
  *
  * This service handles the full orchestration:
  * 1. Validates project and conversation exist
  * 2. Creates compute environment on-demand (if not already running)
- * 3. Fetches message history from DB
- * 4. Saves user message and updates status (transaction)
+ * 3. Fetches message history from DB and converts to AI format
+ * 4. Updates conversation status
  * 5. Streams AI response
- * 6. Saves assistant response and updates status (transaction)
+ * 6. Updates conversation status on completion
  *
- * File changes are tracked via ChangeTracker and persisted when compute is disposed.
+ * Note: The caller is responsible for creating messages (user message before,
+ * assistant message after). This service focuses on AI orchestration.
  *
  * @param ctx - Application context
  * @param input - Chat input (projectId, conversationId, content)
@@ -78,27 +155,14 @@ export async function* runAgentChat(
     throw new NotFoundError("Conversation", conversationId)
   }
 
-  // 3. Build message history
-  let messageHistory: AIMessage[]
-
-  if (input.history && input.history.length > 0) {
-    messageHistory = input.history.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }))
-  } else {
-    const messages = await ctx.db.messages.findByConversationId(conversationId)
-    messageHistory = messages.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    }))
-  }
+  // 3. Build message history from DB
+  const messages = await ctx.db.messages.findByConversationId(conversationId)
+  const messageHistory = toAIMessages(messages)
 
   // Check if this is the first message (for auto-generating title)
-  // Note: The user message is already in history (created by the route)
-  const isFirstMessage = messageHistory.length <= 1
+  const isFirstMessage = messages.length <= 1
 
-  // 4. Update conversation status (user message already created by route)
+  // 4. Update conversation status
   const updates: Conversation.UpdateInput = { status: "streaming" }
   if (isFirstMessage && !conversation.title) {
     updates.title = generateTitle(input.content)
@@ -138,19 +202,10 @@ export async function* runAgentChat(
       yield event
     }
 
-    // 6. Save assistant message and update conversation status (atomic operation)
-    await ctx.db.transaction(async (uow) => {
-      if (assistantText) {
-        await uow.messages.create({
-          conversationId,
-          role: "assistant",
-          content: assistantText,
-        })
-      }
-      await uow.conversations.update(conversationId, { status: "active" })
-    })
+    // 6. Update conversation status on success
+    await ctx.db.conversations.update(conversationId, { status: "active" })
   } catch (error) {
-    // Handle abort - single operation, no transaction needed
+    // Handle abort
     if (error instanceof Error && error.name === "AbortError") {
       await ctx.db.conversations.update(conversationId, { status: "aborted" })
     } else {

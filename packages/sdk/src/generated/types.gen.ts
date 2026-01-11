@@ -196,220 +196,6 @@ export type UpdateProjectResponses = {
 
 export type UpdateProjectResponse = UpdateProjectResponses[keyof UpdateProjectResponses]
 
-export type ListModelsData = {
-  body?: never
-  path: {
-    id: string
-  }
-  query?: never
-  url: "/api/projects/{id}/models/"
-}
-
-export type ListModelsErrors = {
-  /**
-   * Response for status 404
-   */
-  404: {
-    error: string
-  }
-}
-
-export type ListModelsError = ListModelsErrors[keyof ListModelsErrors]
-
-export type ListModelsResponses = {
-  /**
-   * Response for status 200
-   */
-  200: Array<{
-    id: string
-    projectId: string
-    name: string
-    discipline: "architecture" | "structure" | "mep" | "site" | "other"
-    filePath: string
-    fileSize: number
-    visible: boolean
-    createdAt: string
-    updatedAt: string
-  }>
-}
-
-export type ListModelsResponse = ListModelsResponses[keyof ListModelsResponses]
-
-export type UploadModelData = {
-  body: {
-    file: unknown
-    name?: string
-    discipline?: "architecture" | "structure" | "mep" | "site" | "other"
-  }
-  path: {
-    id: string
-  }
-  query?: never
-  url: "/api/projects/{id}/models/"
-}
-
-export type UploadModelErrors = {
-  /**
-   * Response for status 400
-   */
-  400: {
-    error: string
-  }
-  /**
-   * Response for status 404
-   */
-  404: {
-    error: string
-  }
-}
-
-export type UploadModelError = UploadModelErrors[keyof UploadModelErrors]
-
-export type UploadModelResponses = {
-  /**
-   * Response for status 200
-   */
-  200: {
-    id: string
-    projectId: string
-    name: string
-    discipline: "architecture" | "structure" | "mep" | "site" | "other"
-    filePath: string
-    fileSize: number
-    visible: boolean
-    createdAt: string
-    updatedAt: string
-  }
-}
-
-export type UploadModelResponse = UploadModelResponses[keyof UploadModelResponses]
-
-export type DeleteModelData = {
-  body?: never
-  path: {
-    id: string
-    modelId: string
-  }
-  query?: never
-  url: "/api/projects/{id}/models/{modelId}"
-}
-
-export type DeleteModelErrors = {
-  /**
-   * Response for status 404
-   */
-  404: {
-    error: string
-  }
-}
-
-export type DeleteModelError = DeleteModelErrors[keyof DeleteModelErrors]
-
-export type DeleteModelResponses = {
-  /**
-   * Response for status 200
-   */
-  200: {
-    success: boolean
-  }
-}
-
-export type DeleteModelResponse = DeleteModelResponses[keyof DeleteModelResponses]
-
-export type GetModelData = {
-  body?: never
-  path: {
-    id: string
-    modelId: string
-  }
-  query?: never
-  url: "/api/projects/{id}/models/{modelId}"
-}
-
-export type GetModelErrors = {
-  /**
-   * Response for status 404
-   */
-  404: {
-    error: string
-  }
-}
-
-export type GetModelError = GetModelErrors[keyof GetModelErrors]
-
-export type GetModelResponses = {
-  /**
-   * Response for status 200
-   */
-  200: {
-    id: string
-    projectId: string
-    name: string
-    discipline: "architecture" | "structure" | "mep" | "site" | "other"
-    filePath: string
-    fileSize: number
-    visible: boolean
-    createdAt: string
-    updatedAt: string
-  }
-}
-
-export type GetModelResponse = GetModelResponses[keyof GetModelResponses]
-
-export type UpdateModelData = {
-  body: {
-    name?: string
-    discipline?: "architecture" | "structure" | "mep" | "site" | "other"
-    visible?: boolean
-  }
-  path: {
-    id: string
-    modelId: string
-  }
-  query?: never
-  url: "/api/projects/{id}/models/{modelId}"
-}
-
-export type UpdateModelErrors = {
-  /**
-   * Response for status 404
-   */
-  404: {
-    error: string
-  }
-}
-
-export type UpdateModelError = UpdateModelErrors[keyof UpdateModelErrors]
-
-export type UpdateModelResponses = {
-  /**
-   * Response for status 200
-   */
-  200: {
-    id: string
-    projectId: string
-    name: string
-    discipline: "architecture" | "structure" | "mep" | "site" | "other"
-    filePath: string
-    fileSize: number
-    visible: boolean
-    createdAt: string
-    updatedAt: string
-  }
-}
-
-export type UpdateModelResponse = UpdateModelResponses[keyof UpdateModelResponses]
-
-export type GetModelFileData = {
-  body?: never
-  path: {
-    id: string
-    modelId: string
-  }
-  query?: never
-  url: "/api/projects/{id}/models/{modelId}/file"
-}
-
 export type DeleteProjectFileData = {
   body?: never
   path: {
@@ -750,6 +536,215 @@ export type ConfirmProjectUploadResponses = {
 export type ConfirmProjectUploadResponse =
   ConfirmProjectUploadResponses[keyof ConfirmProjectUploadResponses]
 
+export type ListModelsData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: "/api/projects/{id}/models/"
+}
+
+export type ListModelsErrors = {
+  /**
+   * Response for status 404
+   */
+  404: {
+    error: string
+  }
+}
+
+export type ListModelsError = ListModelsErrors[keyof ListModelsErrors]
+
+export type ListModelsResponses = {
+  /**
+   * Response for status 200
+   */
+  200: Array<{
+    id: string
+    projectId: string
+    name: string
+    discipline: "architecture" | "structure" | "mep" | "site" | "other"
+    filePath: string
+    fileSize: number
+    createdAt: string
+    updatedAt: string
+  }>
+}
+
+export type ListModelsResponse = ListModelsResponses[keyof ListModelsResponses]
+
+export type UploadModelData = {
+  body: {
+    file: unknown
+    name?: string
+    discipline?: "architecture" | "structure" | "mep" | "site" | "other"
+  }
+  path: {
+    id: string
+  }
+  query?: never
+  url: "/api/projects/{id}/models/"
+}
+
+export type UploadModelErrors = {
+  /**
+   * Response for status 400
+   */
+  400: {
+    error: string
+  }
+  /**
+   * Response for status 404
+   */
+  404: {
+    error: string
+  }
+}
+
+export type UploadModelError = UploadModelErrors[keyof UploadModelErrors]
+
+export type UploadModelResponses = {
+  /**
+   * Response for status 200
+   */
+  200: {
+    id: string
+    projectId: string
+    name: string
+    discipline: "architecture" | "structure" | "mep" | "site" | "other"
+    filePath: string
+    fileSize: number
+    createdAt: string
+    updatedAt: string
+  }
+}
+
+export type UploadModelResponse = UploadModelResponses[keyof UploadModelResponses]
+
+export type DeleteModelData = {
+  body?: never
+  path: {
+    id: string
+    modelId: string
+  }
+  query?: never
+  url: "/api/projects/{id}/models/{modelId}"
+}
+
+export type DeleteModelErrors = {
+  /**
+   * Response for status 404
+   */
+  404: {
+    error: string
+  }
+}
+
+export type DeleteModelError = DeleteModelErrors[keyof DeleteModelErrors]
+
+export type DeleteModelResponses = {
+  /**
+   * Response for status 200
+   */
+  200: {
+    success: boolean
+  }
+}
+
+export type DeleteModelResponse = DeleteModelResponses[keyof DeleteModelResponses]
+
+export type GetModelData = {
+  body?: never
+  path: {
+    id: string
+    modelId: string
+  }
+  query?: never
+  url: "/api/projects/{id}/models/{modelId}"
+}
+
+export type GetModelErrors = {
+  /**
+   * Response for status 404
+   */
+  404: {
+    error: string
+  }
+}
+
+export type GetModelError = GetModelErrors[keyof GetModelErrors]
+
+export type GetModelResponses = {
+  /**
+   * Response for status 200
+   */
+  200: {
+    id: string
+    projectId: string
+    name: string
+    discipline: "architecture" | "structure" | "mep" | "site" | "other"
+    filePath: string
+    fileSize: number
+    createdAt: string
+    updatedAt: string
+  }
+}
+
+export type GetModelResponse = GetModelResponses[keyof GetModelResponses]
+
+export type UpdateModelData = {
+  body: {
+    name?: string
+    discipline?: "architecture" | "structure" | "mep" | "site" | "other"
+  }
+  path: {
+    id: string
+    modelId: string
+  }
+  query?: never
+  url: "/api/projects/{id}/models/{modelId}"
+}
+
+export type UpdateModelErrors = {
+  /**
+   * Response for status 404
+   */
+  404: {
+    error: string
+  }
+}
+
+export type UpdateModelError = UpdateModelErrors[keyof UpdateModelErrors]
+
+export type UpdateModelResponses = {
+  /**
+   * Response for status 200
+   */
+  200: {
+    id: string
+    projectId: string
+    name: string
+    discipline: "architecture" | "structure" | "mep" | "site" | "other"
+    filePath: string
+    fileSize: number
+    createdAt: string
+    updatedAt: string
+  }
+}
+
+export type UpdateModelResponse = UpdateModelResponses[keyof UpdateModelResponses]
+
+export type GetModelFileData = {
+  body?: never
+  path: {
+    id: string
+    modelId: string
+  }
+  query?: never
+  url: "/api/projects/{id}/models/{modelId}/file"
+}
+
 export type ClearConversationsData = {
   body?: never
   path: {
@@ -904,9 +899,26 @@ export type GetConversationResponses = {
       id: string
       conversationId: string
       role: "user" | "assistant" | "system"
-      content: string
+      parts: Array<
+        | {
+            type: "text"
+            text: string
+          }
+        | {
+            type: "tool-use"
+            id: string
+            name: string
+            input: {
+              [key: string]: unknown
+            }
+            output?: unknown
+            status: "success" | "error" | "aborted"
+            error?: string
+          }
+      >
       createdAt: string
     }>
+    isGenerating: boolean
   }
 }
 
@@ -915,17 +927,67 @@ export type GetConversationResponse = GetConversationResponses[keyof GetConversa
 export type SendMessageData = {
   body: {
     content: string
-    history?: Array<{
-      role: "user" | "assistant"
-      content: string
-    }>
   }
   path: {
     id: string
     conversationId: string
   }
   query?: never
-  url: "/api/projects/{id}/conversations/{conversationId}/chat"
+  url: "/api/projects/{id}/conversations/{conversationId}/messages"
+}
+
+export type SendMessageErrors = {
+  /**
+   * Response for status 404
+   */
+  404: {
+    error: string
+  }
+}
+
+export type SendMessageError = SendMessageErrors[keyof SendMessageErrors]
+
+export type SendMessageResponses = {
+  /**
+   * Response for status 200
+   */
+  200: {
+    message: {
+      id: string
+      conversationId: string
+      role: "user" | "assistant" | "system"
+      parts: Array<
+        | {
+            type: "text"
+            text: string
+          }
+        | {
+            type: "tool-use"
+            id: string
+            name: string
+            input: {
+              [key: string]: unknown
+            }
+            output?: unknown
+            status: "success" | "error" | "aborted"
+            error?: string
+          }
+      >
+      createdAt: string
+    }
+  }
+}
+
+export type SendMessageResponse = SendMessageResponses[keyof SendMessageResponses]
+
+export type StreamEventsData = {
+  body?: never
+  path: {
+    id: string
+    conversationId: string
+  }
+  query?: never
+  url: "/api/projects/{id}/conversations/{conversationId}/events"
 }
 
 export type StopGenerationData = {

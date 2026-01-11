@@ -11,7 +11,7 @@ import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
 import { createFileTools } from "./tools/file-tools"
 import { createPythonTools } from "./tools/python-tools"
 import { createShellTools } from "./tools/shell-tools"
-import { formatUsageStats, getErrorMessage } from "./utils"
+import { formatUsageStats, getErrorMessage, toModelMessages } from "./utils"
 
 /** Anthropic-specific provider configuration */
 export interface AnthropicProviderConfig extends AIProviderConfig {
@@ -82,7 +82,7 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
         })
 
         const result = await agent.stream({
-          messages: options.messages,
+          messages: toModelMessages(options.messages),
           abortSignal: options.signal,
         })
 
