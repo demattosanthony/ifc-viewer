@@ -25,6 +25,10 @@ export type {
   AIFileDeletedEvent,
   AIFinishEvent,
   AIMessage,
+  AIMessageContent,
+  AIMessageTextPart,
+  AIMessageToolCallPart,
+  AIMessageToolResultPart,
   AIProvider,
   AIProviderConfig,
   AIReadyEvent,
@@ -76,6 +80,7 @@ export type {
 export type {
   ConversationRepository,
   Database,
+  MessagePartRepository,
   MessageRepository,
   ModelRepository,
   ProjectRepository,

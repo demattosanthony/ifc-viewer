@@ -14,13 +14,16 @@ export {
   createProject,
   getModelStorageKey,
   inferDiscipline,
-  isAssistantMessage,
   isConversationActive,
-  isSystemMessage,
-  isUserMessage,
   isValidProjectId,
   // Message
   type Message,
+  type MessagePart,
+  MessagePartSchema,
+  type MessagePartText,
+  MessagePartTextSchema,
+  type MessagePartToolUse,
+  MessagePartToolUseSchema,
   type MessageRole,
   MessageRoleSchema,
   MessageSchema,
@@ -32,22 +35,10 @@ export {
   // Project
   type Project,
   ProjectSchema,
+  type ToolUseStatus,
+  ToolUseStatusSchema,
 } from "./entities"
 // Errors
 export * from "./errors"
-
-// Agent types (value objects)
-export type {
-  AgentMessage,
-  AgentMessageRole,
-  MessagePart,
-  Position,
-  Range,
-  TextPart,
-  ToolInvocation,
-  ToolInvocationState,
-  ToolPart,
-  UsageStats,
-} from "./value-objects"
 // Value Objects
 export { Slug } from "./value-objects"

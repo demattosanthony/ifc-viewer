@@ -4,6 +4,27 @@
  * Helper functions for AI adapters.
  */
 
+import type { AIMessage } from "@ifc-viewer/core"
+import type {
+  AssistantModelMessage,
+  ModelMessage,
+  SystemModelMessage,
+  ToolCallPart,
+  ToolModelMessage,
+  ToolResultPart,
+  UserModelMessage,
+} from "ai"
+
+/** Extract the output type that ToolResultPart expects */
+type ToolResultOutput = ToolResultPart["output"]
+
+/** Assert that a value is a valid tool result output */
+function asToolResultOutput(value: unknown): ToolResultOutput {
+  // The SDK accepts string, number, boolean, objects, and arrays
+  // At the adapter boundary, we trust that tool outputs are SDK-compatible
+  return value as ToolResultOutput
+}
+
 /**
  * Safely extract error message from unknown error type
  */
@@ -68,4 +89,72 @@ export function formatUsageStats(
     completionTokens,
     totalTokens: promptTokens + completionTokens,
   }
+}
+
+/**
+ * Convert domain AIMessage to SDK ModelMessage format.
+ * This is the adapter boundary where domain types meet SDK types.
+ */
+function toModelMessage(message: AIMessage): ModelMessage {
+  switch (message.role) {
+    case "system": {
+      const content = typeof message.content === "string" ? message.content : ""
+      return { role: "system", content } satisfies SystemModelMessage
+    }
+    case "user": {
+      if (typeof message.content === "string") {
+        return { role: "user", content: message.content } satisfies UserModelMessage
+      }
+      // User messages with parts
+      const parts = message.content.map((part) => {
+        if (part.type === "text") {
+          return { type: "text" as const, text: part.text }
+        }
+        throw new Error(`Unexpected part type in user message: ${part.type}`)
+      })
+      return { role: "user", content: parts } satisfies UserModelMessage
+    }
+    case "assistant": {
+      if (typeof message.content === "string") {
+        return { role: "assistant", content: message.content } satisfies AssistantModelMessage
+      }
+      // Assistant messages with tool calls
+      const parts = message.content.map((part) => {
+        if (part.type === "text") {
+          return { type: "text" as const, text: part.text }
+        }
+        if (part.type === "tool-call") {
+          return {
+            type: "tool-call" as const,
+            toolCallId: part.toolCallId,
+            toolName: part.toolName,
+            input: part.input,
+          } satisfies ToolCallPart
+        }
+        throw new Error(`Unexpected part type in assistant message: ${part.type}`)
+      })
+      return { role: "assistant", content: parts } satisfies AssistantModelMessage
+    }
+    case "tool": {
+      if (!Array.isArray(message.content)) {
+        throw new Error("Tool message content must be an array")
+      }
+      const parts = message.content.map((part) => {
+        if (part.type === "tool-result") {
+          return {
+            type: "tool-result" as const,
+            toolCallId: part.toolCallId,
+            toolName: part.toolName,
+            output: asToolResultOutput(part.output),
+          } satisfies ToolResultPart
+        }
+        throw new Error(`Unexpected part type in tool message: ${part.type}`)
+      })
+      return { role: "tool", content: parts } satisfies ToolModelMessage
+    }
+  }
+}
+
+export function toModelMessages(messages: AIMessage[]): ModelMessage[] {
+  return messages.map(toModelMessage)
 }

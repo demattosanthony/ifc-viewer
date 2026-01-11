@@ -1,6 +1,6 @@
-import type { AgentMessage, MessagePart } from "@ifc-viewer/core"
 import { Markdown } from "@ifc-viewer/ui/components"
 import { memo } from "react"
+import type { StreamingMessage, UIMessagePart, UIToolPart } from "../types"
 import { Tool, type ToolPart } from "./tool"
 import { CommandPreview } from "./tool-views/command-preview"
 import { FilePreview } from "./tool-views/file-preview"
@@ -8,10 +8,8 @@ import { PythonPreview } from "./tool-views/python-preview"
 import { ReadFilePreview } from "./tool-views/read-file-preview"
 
 interface ChatMessageProps {
-  message: AgentMessage
+  message: StreamingMessage
 }
-
-type ToolInvocation = NonNullable<AgentMessage["toolInvocations"]>[number]
 
 // Type guard for tool results with success/error pattern
 interface ToolResult {
@@ -23,30 +21,30 @@ function isToolResult(value: unknown): value is ToolResult {
   return typeof value === "object" && value !== null && ("success" in value || "error" in value)
 }
 
-function getToolState(invocation: ToolInvocation): {
+function getToolState(tool: UIToolPart): {
   isStreaming: boolean
   isComplete: boolean
   error?: string
 } {
-  const isStreaming = invocation.state === "streaming"
-  const isComplete = invocation.state === "completed" || invocation.state === "error"
+  const isStreaming = tool.state === "streaming"
+  const isComplete = tool.state === "completed" || tool.state === "error"
 
   let error: string | undefined
-  if (invocation.state === "error") {
-    error = invocation.error
-  } else if (invocation.state === "completed" && isToolResult(invocation.result)) {
-    if (invocation.result.success === false) {
-      error = invocation.result.error || "Tool execution failed"
+  if (tool.state === "error") {
+    error = tool.error
+  } else if (tool.state === "completed" && isToolResult(tool.output)) {
+    if (tool.output.success === false) {
+      error = tool.output.error || "Tool execution failed"
     }
   }
 
   return { isStreaming, isComplete, error }
 }
 
-function mapToolInvocationToToolPart(invocation: ToolInvocation): ToolPart {
+function mapToToolPart(tool: UIToolPart): ToolPart {
   let state: ToolPart["state"]
 
-  switch (invocation.state) {
+  switch (tool.state) {
     case "streaming":
       state = "streaming"
       break
@@ -55,7 +53,7 @@ function mapToolInvocationToToolPart(invocation: ToolInvocation): ToolPart {
       state = "input-streaming"
       break
     case "completed": {
-      const hasError = isToolResult(invocation.result) && invocation.result.success === false
+      const hasError = isToolResult(tool.output) && tool.output.success === false
       state = hasError ? "output-error" : "output-available"
       break
     }
@@ -70,39 +68,39 @@ function mapToolInvocationToToolPart(invocation: ToolInvocation): ToolPart {
   }
 
   return {
-    type: invocation.toolName,
+    type: tool.name,
     state,
-    input: invocation.args as Record<string, unknown>,
-    output: invocation.result as Record<string, unknown> | undefined,
-    toolCallId: invocation.id,
-    errorText: invocation.error,
+    input: tool.input,
+    output: tool.output as Record<string, unknown> | undefined,
+    toolCallId: tool.id,
+    errorText: tool.error,
   }
 }
 
-function ToolCard({ invocation }: { invocation: ToolInvocation }) {
-  const { isStreaming, isComplete, error } = getToolState(invocation)
-  const args = invocation.args as Record<string, unknown>
-  const result = invocation.result as Record<string, unknown> | undefined
+function ToolCard({ tool }: { tool: UIToolPart }) {
+  const { isStreaming, isComplete, error } = getToolState(tool)
+  const input = tool.input
+  const output = tool.output as Record<string, unknown> | undefined
 
-  // Write file tool - content is in args
-  if (["write_file", "writeFile"].includes(invocation.toolName)) {
-    const path = args?.path as string | undefined
-    const content = args?.content as string | undefined
+  // Write file tool - content is in input
+  if (["write_file", "writeFile"].includes(tool.name)) {
+    const path = input?.path as string | undefined
+    const content = input?.content as string | undefined
 
     if (path && content) {
       return <FilePreview path={path} content={content} isStreaming={isStreaming} />
     }
   }
 
-  // Read file tool - content is in result
-  if (["read_file", "readFile"].includes(invocation.toolName)) {
-    const path = args?.path as string | undefined
+  // Read file tool - content is in output
+  if (["read_file", "readFile"].includes(tool.name)) {
+    const path = input?.path as string | undefined
 
     if (path) {
       return (
         <ReadFilePreview
           path={path}
-          result={result as { success?: boolean; content?: string; error?: string } | undefined}
+          result={output as { success?: boolean; content?: string; error?: string } | undefined}
           isStreaming={isStreaming}
           isComplete={isComplete}
         />
@@ -111,16 +109,16 @@ function ToolCard({ invocation }: { invocation: ToolInvocation }) {
   }
 
   // Command tools
-  if (["shell_execute", "executeCommand"].includes(invocation.toolName)) {
-    const command = args?.command as string | undefined
-    const title = args?.title as string | undefined
+  if (["shell_execute", "executeCommand"].includes(tool.name)) {
+    const command = input?.command as string | undefined
+    const title = input?.title as string | undefined
 
     if (command) {
       return (
         <CommandPreview
           title={title}
           command={command}
-          output={result}
+          output={output}
           isStreaming={isStreaming}
           isComplete={isComplete}
           error={error}
@@ -130,16 +128,16 @@ function ToolCard({ invocation }: { invocation: ToolInvocation }) {
   }
 
   // Python execution tool
-  if (invocation.toolName === "executePython") {
-    const code = args?.code as string | undefined
-    const title = args?.title as string | undefined
+  if (tool.name === "executePython") {
+    const code = input?.code as string | undefined
+    const title = input?.title as string | undefined
 
     if (code) {
       return (
         <PythonPreview
           title={title}
           code={code}
-          output={result}
+          output={output}
           isStreaming={isStreaming}
           isComplete={isComplete}
           error={error}
@@ -149,7 +147,7 @@ function ToolCard({ invocation }: { invocation: ToolInvocation }) {
   }
 
   // Fallback to generic Tool component
-  return <Tool toolPart={mapToolInvocationToToolPart(invocation)} />
+  return <Tool toolPart={mapToToolPart(tool)} />
 }
 
 function UserMessage({ content }: { content: string }) {
@@ -172,8 +170,8 @@ function AssistantText({ content }: { content: string }) {
  * This prevents visual line breaks between text from different steps
  * when there are no tool calls in between.
  */
-function mergeConsecutiveTextParts(parts: MessagePart[]): MessagePart[] {
-  const merged: MessagePart[] = []
+function mergeConsecutiveTextParts(parts: UIMessagePart[]): UIMessagePart[] {
+  const merged: UIMessagePart[] = []
 
   for (const part of parts) {
     const last = merged[merged.length - 1]
@@ -182,7 +180,7 @@ function mergeConsecutiveTextParts(parts: MessagePart[]): MessagePart[] {
       // Merge with previous text part
       merged[merged.length - 1] = {
         ...last,
-        content: last.content + part.content,
+        text: last.text + part.text,
       }
     } else {
       merged.push(part)
@@ -192,13 +190,13 @@ function mergeConsecutiveTextParts(parts: MessagePart[]): MessagePart[] {
   return merged
 }
 
-function renderMessagePart(part: MessagePart, index: number) {
+function renderMessagePart(part: UIMessagePart, index: number) {
   if (part.type === "text") {
-    return <AssistantText key={`text-${index}`} content={part.content} />
+    return <AssistantText key={`text-${index}`} content={part.text} />
   }
 
-  if (part.type === "tool") {
-    return <ToolCard key={`tool-${part.toolInvocation.id}`} invocation={part.toolInvocation} />
+  if (part.type === "tool-use") {
+    return <ToolCard key={`tool-${part.id}`} tool={part} />
   }
 
   return null
@@ -208,10 +206,9 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
   const isUser = message.role === "user"
   const hasParts = message.parts && message.parts.length > 0
   const hasContent = message.content.trim().length > 0
-  const hasTools = message.toolInvocations && message.toolInvocations.length > 0
 
-  // Don't render empty assistant messages without tools or parts
-  if (!isUser && !hasContent && !hasTools && !hasParts) {
+  // Don't render empty assistant messages without parts
+  if (!isUser && !hasContent && !hasParts) {
     return null
   }
 
@@ -230,20 +227,9 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
 
   return (
     <div className="w-full space-y-3">
-      {hasParts ? (
-        partsToRender.map((part, index) => renderMessagePart(part, index))
-      ) : (
-        <>
-          {hasContent && <AssistantText content={message.content} />}
-          {hasTools && (
-            <div className="space-y-2">
-              {message.toolInvocations!.map((invocation) => (
-                <ToolCard key={invocation.id} invocation={invocation} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      {hasParts
+        ? partsToRender.map((part, index) => renderMessagePart(part, index))
+        : hasContent && <AssistantText content={message.content} />}
     </div>
   )
 })

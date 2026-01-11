@@ -5,7 +5,7 @@
  * Implementations: SQLite, Postgres, memory
  */
 
-import type { Conversation, Message, Model, Project } from "../domain"
+import type { Conversation, Message, MessagePart, Model, Project } from "../domain"
 
 // ============================================================================
 // Repository Interfaces
@@ -36,6 +36,13 @@ export interface MessageRepository {
   findByConversationId(conversationId: string): Promise<Message[]>
 }
 
+/** Message part repository interface */
+export interface MessagePartRepository {
+  createMany(messageId: string, parts: MessagePart[]): Promise<void>
+  findByMessageId(messageId: string): Promise<MessagePart[]>
+  findByMessageIds(messageIds: string[]): Promise<Map<string, MessagePart[]>>
+}
+
 /** Model repository interface */
 export interface ModelRepository {
   create(input: Model.CreateInput): Promise<Model>
@@ -58,6 +65,7 @@ export interface UnitOfWork {
   projects: ProjectRepository
   conversations: ConversationRepository
   messages: MessageRepository
+  messageParts: MessagePartRepository
   models: ModelRepository
 }
 

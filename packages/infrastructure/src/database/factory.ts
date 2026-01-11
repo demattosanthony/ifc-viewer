@@ -2,6 +2,7 @@ import { resolve } from "node:path"
 import type { Database, UnitOfWork } from "@ifc-viewer/core"
 import {
   createConversationRepository as createMemoryConversationRepository,
+  createMessagePartRepository as createMemoryMessagePartRepository,
   createMessageRepository as createMemoryMessageRepository,
   createModelRepository as createMemoryModelRepository,
   createProjectRepository as createMemoryProjectRepository,
@@ -9,6 +10,7 @@ import {
 import {
   createPostgresConnection,
   createConversationRepository as createPostgresConversationRepository,
+  createMessagePartRepository as createPostgresMessagePartRepository,
   createMessageRepository as createPostgresMessageRepository,
   createModelRepository as createPostgresModelRepository,
   createProjectRepository as createPostgresProjectRepository,
@@ -18,6 +20,7 @@ import {
 import {
   createSQLiteConnection,
   createConversationRepository as createSqliteConversationRepository,
+  createMessagePartRepository as createSqliteMessagePartRepository,
   createMessageRepository as createSqliteMessageRepository,
   createModelRepository as createSqliteModelRepository,
   createProjectRepository as createSqliteProjectRepository,
@@ -60,17 +63,19 @@ function createMemoryDatabase(): Database {
   const projects = createMemoryProjectRepository()
   const conversations = createMemoryConversationRepository()
   const messages = createMemoryMessageRepository()
+  const messageParts = createMemoryMessagePartRepository()
   const models = createMemoryModelRepository()
 
   return {
     projects,
     conversations,
     messages,
+    messageParts,
     models,
     async transaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
       // Memory adapter: pass-through (no real transaction needed)
       // The same repositories are used since Map operations are synchronous
-      return fn({ projects, conversations, messages, models })
+      return fn({ projects, conversations, messages, messageParts, models })
     },
     dispose: async () => {},
   }
@@ -87,6 +92,7 @@ async function createSQLiteDatabase(config: SQLiteDatabaseConfig): Promise<Datab
     projects: createSqliteProjectRepository(dbOrTx),
     conversations: createSqliteConversationRepository(dbOrTx),
     messages: createSqliteMessageRepository(dbOrTx),
+    messageParts: createSqliteMessagePartRepository(dbOrTx),
     models: createSqliteModelRepository(dbOrTx),
   })
 
@@ -115,6 +121,7 @@ async function createPostgresDatabase(config: PostgresDatabaseConfig): Promise<D
     projects: createPostgresProjectRepository(dbOrTx),
     conversations: createPostgresConversationRepository(dbOrTx),
     messages: createPostgresMessageRepository(dbOrTx),
+    messageParts: createPostgresMessagePartRepository(dbOrTx),
     models: createPostgresModelRepository(dbOrTx),
   })
 

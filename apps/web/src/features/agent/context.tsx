@@ -1,7 +1,7 @@
 "use client"
 
-import type { AgentMessage, AIEvent, MessagePart, ToolInvocation } from "@ifc-viewer/core"
-import type { ListConversationsResponse } from "@ifc-viewer/sdk"
+import type { AIEvent } from "@ifc-viewer/core"
+import type { GetConversationResponse, ListConversationsResponse } from "@ifc-viewer/sdk"
 import { fetchSSE } from "@ifc-viewer/sdk"
 import {
   createConversationMutation,
@@ -20,6 +20,12 @@ import {
   useRef,
   useState,
 } from "react"
+import {
+  type StreamingMessage,
+  toStreamingMessages,
+  type UIMessagePart,
+  type UIToolPart,
+} from "./types"
 
 // ============================================================================
 // Types
@@ -38,7 +44,7 @@ interface StreamingToolState {
 }
 
 interface AgentContextValue {
-  messages: AgentMessage[]
+  messages: StreamingMessage[]
   isLoading: boolean
   conversationId: string | null
   conversations: Conversation[]
@@ -60,22 +66,6 @@ const AgentContext = createContext<AgentContextValue | null>(null)
 
 function getSessionStorageKey(projectId: string): string {
   return `ifc-viewer:conversation:${projectId}`
-}
-
-interface ApiMessage {
-  id: string
-  role: string
-  content: string
-  createdAt: string
-}
-
-function toAgentMessages(messages: ApiMessage[]): AgentMessage[] {
-  return messages.map((m) => ({
-    id: m.id,
-    role: m.role as "user" | "assistant",
-    content: m.content,
-    createdAt: new Date(m.createdAt),
-  }))
 }
 
 function extractStreamingField(buffer: string, fieldName: string): string | null {
@@ -107,6 +97,10 @@ function extractStreamingField(buffer: string, fieldName: string): string | null
   return content
 }
 
+function isToolPart(part: UIMessagePart): part is UIToolPart {
+  return part.type === "tool-use"
+}
+
 // ============================================================================
 // Provider
 // ============================================================================
@@ -118,7 +112,7 @@ interface AgentProviderProps {
 
 export function AgentProvider({ projectId, children }: AgentProviderProps) {
   const queryClient = useQueryClient()
-  const [messages, setMessages] = useState<AgentMessage[]>([])
+  const [messages, setMessages] = useState<StreamingMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(() => {
     return sessionStorage.getItem(getSessionStorageKey(projectId))
@@ -176,9 +170,9 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
             const lastPart = parts[parts.length - 1]
 
             if (lastPart?.type === "text" && lastPart.stepIndex === currentStep) {
-              parts[parts.length - 1] = { ...lastPart, content: lastPart.content + event.content }
+              parts[parts.length - 1] = { ...lastPart, text: lastPart.text + event.content }
             } else {
-              parts.push({ type: "text", content: event.content, stepIndex: currentStep })
+              parts.push({ type: "text", text: event.content, stepIndex: currentStep })
             }
 
             return [
@@ -203,24 +197,18 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
             const lastMsg = prev[lastIdx]
             if (lastMsg?.role !== "assistant") return prev
 
-            const toolInvocation: ToolInvocation = {
+            const toolPart: UIToolPart = {
+              type: "tool-use",
               id: event.id,
-              toolName: event.name,
-              args: {},
+              name: event.name,
+              input: {},
               state: "streaming",
+              stepIndex: currentStepRef.current,
             }
-            const parts: MessagePart[] = [
-              ...(lastMsg.parts || []),
-              { type: "tool", toolInvocation, stepIndex: currentStepRef.current },
-            ]
 
             return [
               ...prev.slice(0, lastIdx),
-              {
-                ...lastMsg,
-                parts,
-                toolInvocations: [...(lastMsg.toolInvocations || []), toolInvocation],
-              },
+              { ...lastMsg, parts: [...(lastMsg.parts || []), toolPart] },
             ]
           })
           break
@@ -230,14 +218,14 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           if (!toolState) break
 
           toolState.buffer += event.delta
-          const extractedArgs: Record<string, unknown> = {}
+          const extractedInput: Record<string, unknown> = {}
 
           if (toolState.name === "writeFile") {
             const path = extractStreamingField(toolState.buffer, "path")
             const content = extractStreamingField(toolState.buffer, "content")
 
             if (path) {
-              extractedArgs.path = path
+              extractedInput.path = path
               if (path !== toolState.lastPath) {
                 toolState.lastPath = path
                 emitPresenceEvent({ type: "editor-open", path })
@@ -245,7 +233,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
             }
 
             if (content !== null) {
-              extractedArgs.content = content
+              extractedInput.content = content
               if (content.length > toolState.lastContentLength) {
                 const newChunk = content.slice(toolState.lastContentLength)
                 toolState.lastContentLength = content.length
@@ -271,7 +259,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           } else if (toolState.name === "executeCommand") {
             const command = extractStreamingField(toolState.buffer, "command")
             if (command !== null) {
-              extractedArgs.command = command
+              extractedInput.command = command
               if (command.length > toolState.lastContentLength) {
                 const newChunk = command.slice(toolState.lastContentLength)
                 toolState.lastContentLength = command.length
@@ -280,31 +268,19 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
             }
           }
 
-          if (Object.keys(extractedArgs).length > 0) {
+          if (Object.keys(extractedInput).length > 0) {
             setMessages((prev) => {
               const lastIdx = prev.length - 1
               const lastMsg = prev[lastIdx]
               if (lastMsg?.role !== "assistant") return prev
 
-              const newToolInvocations = lastMsg.toolInvocations?.map((t) =>
-                t.id === event.id ? { ...t, args: { ...t.args, ...extractedArgs } } : t
-              )
-              const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
-                p.type === "tool" && p.toolInvocation.id === event.id
-                  ? {
-                      ...p,
-                      toolInvocation: {
-                        ...p.toolInvocation,
-                        args: { ...p.toolInvocation.args, ...extractedArgs },
-                      },
-                    }
+              const newParts = (lastMsg.parts || []).map((p) =>
+                isToolPart(p) && p.id === event.id
+                  ? { ...p, input: { ...p.input, ...extractedInput } }
                   : p
               )
 
-              return [
-                ...prev.slice(0, lastIdx),
-                { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
-              ]
+              return [...prev.slice(0, lastIdx), { ...lastMsg, parts: newParts }]
             })
           }
           break
@@ -320,48 +296,31 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
             const lastMsg = prev[lastIdx]
             if (lastMsg?.role !== "assistant") return prev
 
-            const existingIdx = lastMsg.toolInvocations?.findIndex((t) => t.id === event.id) ?? -1
+            const existingToolIdx = (lastMsg.parts || []).findIndex(
+              (p) => isToolPart(p) && p.id === event.id
+            )
 
-            if (existingIdx >= 0) {
-              const newToolInvocations = lastMsg.toolInvocations!.map((t) =>
-                t.id === event.id ? { ...t, args: event.args, state: "running" as const } : t
-              )
-              const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
-                p.type === "tool" && p.toolInvocation.id === event.id
-                  ? {
-                      ...p,
-                      toolInvocation: {
-                        ...p.toolInvocation,
-                        args: event.args,
-                        state: "running" as const,
-                      },
-                    }
+            if (existingToolIdx >= 0) {
+              const newParts = (lastMsg.parts || []).map((p) =>
+                isToolPart(p) && p.id === event.id
+                  ? { ...p, input: event.args, state: "running" as const }
                   : p
               )
-              return [
-                ...prev.slice(0, lastIdx),
-                { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
-              ]
+              return [...prev.slice(0, lastIdx), { ...lastMsg, parts: newParts }]
             }
 
-            const toolInvocation: ToolInvocation = {
+            const toolPart: UIToolPart = {
+              type: "tool-use",
               id: event.id,
-              toolName: event.name,
-              args: event.args,
+              name: event.name,
+              input: event.args,
               state: "running",
+              stepIndex: currentStepRef.current,
             }
-            const parts: MessagePart[] = [
-              ...(lastMsg.parts || []),
-              { type: "tool", toolInvocation, stepIndex: currentStepRef.current },
-            ]
 
             return [
               ...prev.slice(0, lastIdx),
-              {
-                ...lastMsg,
-                parts,
-                toolInvocations: [...(lastMsg.toolInvocations || []), toolInvocation],
-              },
+              { ...lastMsg, parts: [...(lastMsg.parts || []), toolPart] },
             ]
           })
           break
@@ -370,28 +329,15 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           setMessages((prev) => {
             const lastIdx = prev.length - 1
             const lastMsg = prev[lastIdx]
-            if (lastMsg?.role !== "assistant" || !lastMsg.toolInvocations) return prev
+            if (lastMsg?.role !== "assistant") return prev
 
-            const newToolInvocations = lastMsg.toolInvocations.map((t) =>
-              t.id === event.id ? { ...t, result: event.result, state: "completed" as const } : t
-            )
-            const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
-              p.type === "tool" && p.toolInvocation.id === event.id
-                ? {
-                    ...p,
-                    toolInvocation: {
-                      ...p.toolInvocation,
-                      result: event.result,
-                      state: "completed" as const,
-                    },
-                  }
+            const newParts = (lastMsg.parts || []).map((p) =>
+              isToolPart(p) && p.id === event.id
+                ? { ...p, output: event.result, state: "completed" as const }
                 : p
             )
 
-            return [
-              ...prev.slice(0, lastIdx),
-              { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
-            ]
+            return [...prev.slice(0, lastIdx), { ...lastMsg, parts: newParts }]
           })
           break
 
@@ -402,26 +348,16 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           setMessages((prev) => {
             const lastIdx = prev.length - 1
             const lastMsg = prev[lastIdx]
-            if (lastMsg?.role !== "assistant" || !lastMsg.toolInvocations) return prev
+            if (lastMsg?.role !== "assistant") return prev
 
-            const newToolInvocations = lastMsg.toolInvocations.map((t) =>
-              t.state === "running" || t.state === "pending" || t.state === "streaming"
-                ? { ...t, state: "completed" as const }
-                : t
-            )
-            const newParts: MessagePart[] = (lastMsg.parts || []).map((p) =>
-              p.type === "tool" &&
-              (p.toolInvocation.state === "running" ||
-                p.toolInvocation.state === "pending" ||
-                p.toolInvocation.state === "streaming")
-                ? { ...p, toolInvocation: { ...p.toolInvocation, state: "completed" as const } }
+            const newParts = (lastMsg.parts || []).map((p) =>
+              isToolPart(p) &&
+              (p.state === "running" || p.state === "pending" || p.state === "streaming")
+                ? { ...p, state: "completed" as const }
                 : p
             )
 
-            return [
-              ...prev.slice(0, lastIdx),
-              { ...lastMsg, toolInvocations: newToolInvocations, parts: newParts },
-            ]
+            return [...prev.slice(0, lastIdx), { ...lastMsg, parts: newParts }]
           })
           break
 
@@ -470,8 +406,8 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
 
         if (!convRes.ok || cancelled) return
 
-        const conv = await convRes.json()
-        const dbMessages = toAgentMessages(conv.messages)
+        const conv = (await convRes.json()) as GetConversationResponse
+        const dbMessages = toStreamingMessages(conv.messages)
 
         if (conv.isGenerating) {
           // Active generation - connect to /events
@@ -485,7 +421,6 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
               id: `msg-replay-${Date.now()}`,
               role: "assistant",
               content: "",
-              toolInvocations: [],
               parts: [],
               createdAt: new Date(),
             },
@@ -607,18 +542,17 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
       }
 
       // Optimistically add user message + empty assistant message
-      const userMessage: AgentMessage = {
+      const userMessage: StreamingMessage = {
         id: `msg-${Date.now()}`,
         role: "user",
         content,
         createdAt: new Date(),
       }
 
-      const assistantMessage: AgentMessage = {
+      const assistantMessage: StreamingMessage = {
         id: `msg-${Date.now() + 1}`,
         role: "assistant",
         content: "",
-        toolInvocations: [],
         parts: [],
         createdAt: new Date(),
       }

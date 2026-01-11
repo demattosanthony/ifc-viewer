@@ -27,6 +27,7 @@ import {
   readProjectFile,
   sendMessage,
   stopGeneration,
+  streamEvents,
   updateModel,
   updateProject,
   uploadModel,
@@ -74,9 +75,12 @@ import type {
   ListProjectsData,
   ReadProjectFileData,
   SendMessageData,
+  SendMessageError,
+  SendMessageResponse,
   StopGenerationData,
   StopGenerationError,
   StopGenerationResponse,
+  StreamEventsData,
   UpdateModelData,
   UpdateModelError,
   UpdateModelResponse,
@@ -276,138 +280,6 @@ export const updateProjectMutation = (
     },
   }
   return mutationOptions
-}
-
-export const listModelsQueryKey = (options: Options<ListModelsData>) =>
-  createQueryKey("listModels", options)
-
-export const listModelsOptions = (options: Options<ListModelsData>) => {
-  return queryOptions({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await listModels({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      })
-      return data
-    },
-    queryKey: listModelsQueryKey(options),
-  })
-}
-
-export const uploadModelQueryKey = (options: Options<UploadModelData>) =>
-  createQueryKey("uploadModel", options)
-
-export const uploadModelOptions = (options: Options<UploadModelData>) => {
-  return queryOptions({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await uploadModel({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      })
-      return data
-    },
-    queryKey: uploadModelQueryKey(options),
-  })
-}
-
-export const uploadModelMutation = (
-  options?: Partial<Options<UploadModelData>>
-): UseMutationOptions<UploadModelResponse, UploadModelError, Options<UploadModelData>> => {
-  const mutationOptions: UseMutationOptions<
-    UploadModelResponse,
-    UploadModelError,
-    Options<UploadModelData>
-  > = {
-    mutationFn: async (localOptions) => {
-      const { data } = await uploadModel({
-        ...options,
-        ...localOptions,
-        throwOnError: true,
-      })
-      return data
-    },
-  }
-  return mutationOptions
-}
-
-export const deleteModelMutation = (
-  options?: Partial<Options<DeleteModelData>>
-): UseMutationOptions<DeleteModelResponse, DeleteModelError, Options<DeleteModelData>> => {
-  const mutationOptions: UseMutationOptions<
-    DeleteModelResponse,
-    DeleteModelError,
-    Options<DeleteModelData>
-  > = {
-    mutationFn: async (localOptions) => {
-      const { data } = await deleteModel({
-        ...options,
-        ...localOptions,
-        throwOnError: true,
-      })
-      return data
-    },
-  }
-  return mutationOptions
-}
-
-export const getModelQueryKey = (options: Options<GetModelData>) =>
-  createQueryKey("getModel", options)
-
-export const getModelOptions = (options: Options<GetModelData>) => {
-  return queryOptions({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getModel({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      })
-      return data
-    },
-    queryKey: getModelQueryKey(options),
-  })
-}
-
-export const updateModelMutation = (
-  options?: Partial<Options<UpdateModelData>>
-): UseMutationOptions<UpdateModelResponse, UpdateModelError, Options<UpdateModelData>> => {
-  const mutationOptions: UseMutationOptions<
-    UpdateModelResponse,
-    UpdateModelError,
-    Options<UpdateModelData>
-  > = {
-    mutationFn: async (localOptions) => {
-      const { data } = await updateModel({
-        ...options,
-        ...localOptions,
-        throwOnError: true,
-      })
-      return data
-    },
-  }
-  return mutationOptions
-}
-
-export const getModelFileQueryKey = (options: Options<GetModelFileData>) =>
-  createQueryKey("getModelFile", options)
-
-export const getModelFileOptions = (options: Options<GetModelFileData>) => {
-  return queryOptions({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getModelFile({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      })
-      return data
-    },
-    queryKey: getModelFileQueryKey(options),
-  })
 }
 
 export const deleteProjectFileMutation = (
@@ -680,6 +552,138 @@ export const confirmProjectUploadMutation = (
   return mutationOptions
 }
 
+export const listModelsQueryKey = (options: Options<ListModelsData>) =>
+  createQueryKey("listModels", options)
+
+export const listModelsOptions = (options: Options<ListModelsData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await listModels({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: listModelsQueryKey(options),
+  })
+}
+
+export const uploadModelQueryKey = (options: Options<UploadModelData>) =>
+  createQueryKey("uploadModel", options)
+
+export const uploadModelOptions = (options: Options<UploadModelData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await uploadModel({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: uploadModelQueryKey(options),
+  })
+}
+
+export const uploadModelMutation = (
+  options?: Partial<Options<UploadModelData>>
+): UseMutationOptions<UploadModelResponse, UploadModelError, Options<UploadModelData>> => {
+  const mutationOptions: UseMutationOptions<
+    UploadModelResponse,
+    UploadModelError,
+    Options<UploadModelData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await uploadModel({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const deleteModelMutation = (
+  options?: Partial<Options<DeleteModelData>>
+): UseMutationOptions<DeleteModelResponse, DeleteModelError, Options<DeleteModelData>> => {
+  const mutationOptions: UseMutationOptions<
+    DeleteModelResponse,
+    DeleteModelError,
+    Options<DeleteModelData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await deleteModel({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const getModelQueryKey = (options: Options<GetModelData>) =>
+  createQueryKey("getModel", options)
+
+export const getModelOptions = (options: Options<GetModelData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getModel({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: getModelQueryKey(options),
+  })
+}
+
+export const updateModelMutation = (
+  options?: Partial<Options<UpdateModelData>>
+): UseMutationOptions<UpdateModelResponse, UpdateModelError, Options<UpdateModelData>> => {
+  const mutationOptions: UseMutationOptions<
+    UpdateModelResponse,
+    UpdateModelError,
+    Options<UpdateModelData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await updateModel({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const getModelFileQueryKey = (options: Options<GetModelFileData>) =>
+  createQueryKey("getModelFile", options)
+
+export const getModelFileOptions = (options: Options<GetModelFileData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getModelFile({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: getModelFileQueryKey(options),
+  })
+}
+
 export const clearConversationsMutation = (
   options?: Partial<Options<ClearConversationsData>>
 ): UseMutationOptions<
@@ -826,8 +830,12 @@ export const sendMessageOptions = (options: Options<SendMessageData>) => {
 
 export const sendMessageMutation = (
   options?: Partial<Options<SendMessageData>>
-): UseMutationOptions<unknown, DefaultError, Options<SendMessageData>> => {
-  const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<SendMessageData>> = {
+): UseMutationOptions<SendMessageResponse, SendMessageError, Options<SendMessageData>> => {
+  const mutationOptions: UseMutationOptions<
+    SendMessageResponse,
+    SendMessageError,
+    Options<SendMessageData>
+  > = {
     mutationFn: async (localOptions) => {
       const { data } = await sendMessage({
         ...options,
@@ -838,6 +846,24 @@ export const sendMessageMutation = (
     },
   }
   return mutationOptions
+}
+
+export const streamEventsQueryKey = (options: Options<StreamEventsData>) =>
+  createQueryKey("streamEvents", options)
+
+export const streamEventsOptions = (options: Options<StreamEventsData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await streamEvents({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: streamEventsQueryKey(options),
+  })
 }
 
 export const stopGenerationQueryKey = (options: Options<StopGenerationData>) =>

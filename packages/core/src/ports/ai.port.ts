@@ -34,10 +34,42 @@ export interface AIChatOptions {
   onEvent?: (event: AIEvent) => void
 }
 
+// ============================================================================
+// AI Message Types (for AI SDK compatibility)
+// ============================================================================
+
+/** Text part of an AI message */
+export interface AIMessageTextPart {
+  type: "text"
+  text: string
+}
+
+/** Tool call part of an AI message (matches SDK's ToolCallPart) */
+export interface AIMessageToolCallPart {
+  type: "tool-call"
+  toolCallId: string
+  toolName: string
+  input: Record<string, unknown>
+}
+
+/** Tool result part of an AI message (matches SDK's ToolResultPart) */
+export interface AIMessageToolResultPart {
+  type: "tool-result"
+  toolCallId: string
+  toolName: string
+  output: unknown
+}
+
+/** Message content can be string or parts array */
+export type AIMessageContent =
+  | string
+  | (AIMessageTextPart | AIMessageToolCallPart)[]
+  | AIMessageToolResultPart[]
+
 /** Message in conversation */
 export interface AIMessage {
-  role: "user" | "assistant" | "system"
-  content: string
+  role: "user" | "assistant" | "system" | "tool"
+  content: AIMessageContent
 }
 
 /** Token usage statistics */

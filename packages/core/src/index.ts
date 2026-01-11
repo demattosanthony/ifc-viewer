@@ -39,20 +39,7 @@ export {
   createContext,
   withContext,
 } from "./context"
-// Domain Layer - Agent Types
-export type {
-  AgentMessage,
-  AgentMessageRole,
-  MessagePart,
-  Position,
-  Range,
-  TextPart,
-  ToolInvocation,
-  ToolInvocationState,
-  ToolPart,
-  UsageStats,
-} from "./domain"
-// Domain Layer - Entities
+// Domain Layer - Entities & Value Objects
 export {
   // Conversation
   type Conversation,
@@ -62,13 +49,16 @@ export {
   createProject,
   getModelStorageKey,
   inferDiscipline,
-  isAssistantMessage,
   isConversationActive,
-  isSystemMessage,
-  isUserMessage,
   isValidProjectId,
   // Message
   type Message,
+  type MessagePart,
+  MessagePartSchema,
+  type MessagePartText,
+  MessagePartTextSchema,
+  type MessagePartToolUse,
+  MessagePartToolUseSchema,
   type MessageRole,
   MessageRoleSchema,
   MessageSchema,
@@ -80,6 +70,8 @@ export {
   // Project
   type Project,
   ProjectSchema,
+  type ToolUseStatus,
+  ToolUseStatusSchema,
 } from "./domain"
 // Domain Layer - Errors
 export {
@@ -110,6 +102,10 @@ export type {
   AIFileDeletedEvent,
   AIFinishEvent,
   AIMessage,
+  AIMessageContent,
+  AIMessageTextPart,
+  AIMessageToolCallPart,
+  AIMessageToolResultPart,
   // AI
   AIProvider,
   AIProviderConfig,
@@ -145,6 +141,7 @@ export type {
   FileReadOptions,
   FileStat,
   FileSystem,
+  MessagePartRepository,
   MessageRepository,
   ModelRepository,
   ProjectRepository,
