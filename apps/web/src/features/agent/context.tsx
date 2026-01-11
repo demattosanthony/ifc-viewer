@@ -150,7 +150,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
     }
   }, [])
 
-  const handleAgentEvent = useCallback(
+  const handleAIEvent = useCallback(
     (event: AIEvent) => {
       emitPresenceEvent(event)
 
@@ -432,7 +432,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           await fetchSSE<AIEvent>({
             url: `${apiUrl}/api/projects/${projectId}/conversations/${convId}/events`,
             method: "GET",
-            onEvent: handleAgentEvent,
+            onEvent: handleAIEvent,
             signal: controller.signal,
             eventName: "message",
           })
@@ -460,7 +460,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
       cancelled = true
       controller.abort()
     }
-  }, [conversationId, projectId, handleAgentEvent])
+  }, [conversationId, projectId, handleAIEvent])
 
   // ============================================================================
   // Conversation Management
@@ -579,7 +579,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
         await fetchSSE<AIEvent>({
           url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/events`,
           method: "GET",
-          onEvent: handleAgentEvent,
+          onEvent: handleAIEvent,
           signal: controller.signal,
           eventName: "message",
         })
@@ -596,7 +596,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
         })
       }
     },
-    [projectId, conversationId, createConvMutation, handleAgentEvent, queryClient]
+    [projectId, conversationId, createConvMutation, handleAIEvent, queryClient]
   )
 
   const stop = useCallback(async () => {

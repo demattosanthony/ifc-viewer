@@ -86,10 +86,7 @@ export {
 export { Slug } from "./domain/value-objects"
 // Ports - Infrastructure Interfaces
 export type {
-  AIApproveToolMessage,
-  AIChatMessage,
   AIChatOptions,
-  AIClientMessage,
   AIEditorCursorEvent,
   AIEditorDeleteEvent,
   AIEditorInsertEvent,
@@ -106,16 +103,15 @@ export type {
   AIMessageTextPart,
   AIMessageToolCallPart,
   AIMessageToolResultPart,
-  // AI
+  AIPresenceEvent,
   AIProvider,
   AIProviderConfig,
   AIReadyEvent,
-  AIRejectToolMessage,
   AIReplayEndEvent,
   AIReplayStartEvent,
   AIStepEndEvent,
   AIStepStartEvent,
-  AIStopMessage,
+  AIStreamEvent,
   AIStreamStartEvent,
   AITerminalAppendEvent,
   AITerminalExecuteEvent,
@@ -164,16 +160,7 @@ export type {
   StreamStatus,
   // Stream Store
   StreamStore,
-  TerminalClientMessage,
-  TerminalDataEvent,
-  TerminalErrorEvent,
-  TerminalExitEvent,
-  TerminalInputMessage,
   TerminalOptions,
-  TerminalReadyEvent,
-  TerminalResizeMessage,
-  // Terminal WebSocket events (internal - used by compute system)
-  TerminalServerEvent,
   TerminalSession,
   UnitOfWork,
 } from "./ports"

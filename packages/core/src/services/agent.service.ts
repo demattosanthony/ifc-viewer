@@ -9,7 +9,7 @@
 import type { Context } from "../context"
 import type { Conversation, Message, MessagePartText } from "../domain"
 import { NotFoundError } from "../domain/errors"
-import type { AIEvent, AIMessage, AIMessageTextPart, AIMessageToolCallPart } from "../ports"
+import type { AIEvent, AIMessage, AIMessageToolCallPart } from "../ports"
 
 const MAX_TITLE_LENGTH = 50
 
@@ -44,6 +44,11 @@ function generateTitle(content: string): string {
 /**
  * Convert persisted messages to AI SDK format.
  * Handles multi-part messages with tool calls and results.
+ *
+ * Important: Anthropic requires:
+ * 1. Tool calls in an assistant message must be followed by tool results
+ * 2. Text that comes after tool execution must be in a SEPARATE assistant message
+ *    after the tool results, not bundled with the tool calls
  */
 function toAIMessages(messages: Message[]): AIMessage[] {
   const result: AIMessage[] = []
@@ -59,36 +64,54 @@ function toAIMessages(messages: Message[]): AIMessage[] {
       continue
     }
 
-    // Assistant message: build parts with tool calls
-    const contentParts: (AIMessageTextPart | AIMessageToolCallPart)[] = []
-    const toolResults: { id: string; name: string; output: unknown }[] = []
+    // Assistant message: separate tool calls from text
+    // Text that appears after tool calls is the response to tool results,
+    // so it must come in a separate assistant message AFTER the tool results
+    const toolCallParts: AIMessageToolCallPart[] = []
+    const toolResults: {
+      type: "tool-result"
+      toolCallId: string
+      toolName: string
+      output: unknown
+    }[] = []
+    const textParts: string[] = []
 
     for (const part of msg.parts) {
       if (part.type === "text" && part.text.trim()) {
-        contentParts.push({ type: "text", text: part.text })
-      } else if (part.type === "tool-use") {
-        contentParts.push({
+        textParts.push(part.text)
+      } else if (part.type === "tool-use" && part.output !== undefined) {
+        // Only include tool calls that have outputs (Anthropic requires matching pairs)
+        toolCallParts.push({
           type: "tool-call",
           toolCallId: part.id,
           toolName: part.name,
           input: part.input,
         })
-        if (part.output !== undefined) {
-          toolResults.push({ id: part.id, name: part.name, output: part.output })
-        }
+        toolResults.push({
+          type: "tool-result",
+          toolCallId: part.id,
+          toolName: part.name,
+          output: part.output,
+        })
       }
+      // Skip tool-use parts without outputs (incomplete from aborted sessions)
     }
 
-    if (contentParts.length > 0) {
-      result.push({ role: "assistant", content: contentParts })
-    }
+    // If there are tool calls, add them first, then results, then text response
+    if (toolCallParts.length > 0) {
+      // Assistant message with tool calls only
+      result.push({ role: "assistant", content: toolCallParts })
 
-    // Add tool result messages
-    for (const tr of toolResults) {
-      result.push({
-        role: "tool",
-        content: [{ type: "tool-result", toolCallId: tr.id, toolName: tr.name, output: tr.output }],
-      })
+      // Tool results immediately after
+      result.push({ role: "tool", content: toolResults })
+
+      // Text response (if any) comes after tool results in a separate assistant message
+      if (textParts.length > 0) {
+        result.push({ role: "assistant", content: textParts.join("") })
+      }
+    } else if (textParts.length > 0) {
+      // No tool calls, just text
+      result.push({ role: "assistant", content: textParts.join("") })
     }
   }
 

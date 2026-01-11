@@ -5,6 +5,21 @@
  * These can be used with any HTTP framework (Elysia, Express, Hono, etc.)
  */
 
+export type {
+  AgentApproveToolMessage,
+  AgentChatMessage,
+  AgentClientMessage,
+  AgentRejectToolMessage,
+  AgentStopMessage,
+  TerminalClientMessage,
+  TerminalDataEvent,
+  TerminalErrorEvent,
+  TerminalExitEvent,
+  TerminalInputMessage,
+  TerminalReadyEvent,
+  TerminalResizeMessage,
+  TerminalServerEvent,
+} from "./agent.dto"
 // Conversations
 export {
   ConversationListResponse,

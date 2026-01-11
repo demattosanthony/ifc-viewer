@@ -4,25 +4,27 @@
  * Helper functions for AI adapters.
  */
 
-import type { AIMessage } from "@ifc-viewer/core"
 import type {
-  AssistantModelMessage,
-  ModelMessage,
-  SystemModelMessage,
-  ToolCallPart,
-  ToolModelMessage,
-  ToolResultPart,
-  UserModelMessage,
-} from "ai"
+  AIMessage,
+  AIMessageTextPart,
+  AIMessageToolCallPart,
+  AIMessageToolResultPart,
+} from "@ifc-viewer/core"
+import type { JSONValue, ModelMessage, ToolResultPart } from "ai"
 
 /** Extract the output type that ToolResultPart expects */
 type ToolResultOutput = ToolResultPart["output"]
 
-/** Assert that a value is a valid tool result output */
-function asToolResultOutput(value: unknown): ToolResultOutput {
-  // The SDK accepts string, number, boolean, objects, and arrays
-  // At the adapter boundary, we trust that tool outputs are SDK-compatible
-  return value as ToolResultOutput
+/**
+ * Convert a domain tool output to the SDK's ToolResultOutput format.
+ * The SDK expects a discriminated union with a `type` field.
+ */
+function toToolResultOutput(value: unknown): ToolResultOutput {
+  if (typeof value === "string") {
+    return { type: "text", value }
+  }
+  // For objects, arrays, numbers, booleans - use JSON format
+  return { type: "json", value: value as JSONValue }
 }
 
 /**
@@ -93,68 +95,68 @@ export function formatUsageStats(
 
 /**
  * Convert domain AIMessage to SDK ModelMessage format.
- * This is the adapter boundary where domain types meet SDK types.
+ * Uses type guards for proper type narrowing without casts.
  */
-function toModelMessage(message: AIMessage): ModelMessage {
-  switch (message.role) {
-    case "system": {
-      const content = typeof message.content === "string" ? message.content : ""
-      return { role: "system", content } satisfies SystemModelMessage
-    }
-    case "user": {
-      if (typeof message.content === "string") {
-        return { role: "user", content: message.content } satisfies UserModelMessage
-      }
-      // User messages with parts
-      const parts = message.content.map((part) => {
-        if (part.type === "text") {
-          return { type: "text" as const, text: part.text }
-        }
-        throw new Error(`Unexpected part type in user message: ${part.type}`)
-      })
-      return { role: "user", content: parts } satisfies UserModelMessage
-    }
-    case "assistant": {
-      if (typeof message.content === "string") {
-        return { role: "assistant", content: message.content } satisfies AssistantModelMessage
-      }
-      // Assistant messages with tool calls
-      const parts = message.content.map((part) => {
-        if (part.type === "text") {
-          return { type: "text" as const, text: part.text }
-        }
-        if (part.type === "tool-call") {
-          return {
-            type: "tool-call" as const,
-            toolCallId: part.toolCallId,
-            toolName: part.toolName,
-            input: part.input,
-          } satisfies ToolCallPart
-        }
-        throw new Error(`Unexpected part type in assistant message: ${part.type}`)
-      })
-      return { role: "assistant", content: parts } satisfies AssistantModelMessage
-    }
-    case "tool": {
-      if (!Array.isArray(message.content)) {
-        throw new Error("Tool message content must be an array")
-      }
-      const parts = message.content.map((part) => {
-        if (part.type === "tool-result") {
-          return {
-            type: "tool-result" as const,
-            toolCallId: part.toolCallId,
-            toolName: part.toolName,
-            output: asToolResultOutput(part.output),
-          } satisfies ToolResultPart
-        }
-        throw new Error(`Unexpected part type in tool message: ${part.type}`)
-      })
-      return { role: "tool", content: parts } satisfies ToolModelMessage
+function toModelMessage(message: AIMessage): ModelMessage | undefined {
+  const { role, content } = message
+
+  if (role === "system") {
+    return {
+      role: "system",
+      content: typeof content === "string" ? content : "",
     }
   }
+
+  if (role === "user") {
+    if (typeof content === "string") {
+      return { role: "user", content }
+    }
+    const textParts = content
+      .filter((part): part is AIMessageTextPart => part.type === "text")
+      .map((part) => ({ type: "text" as const, text: part.text }))
+    return { role: "user", content: textParts }
+  }
+
+  if (role === "assistant") {
+    if (typeof content === "string") {
+      return { role: "assistant", content }
+    }
+    const parts = content
+      .filter(
+        (part): part is AIMessageTextPart | AIMessageToolCallPart =>
+          part.type === "text" || part.type === "tool-call"
+      )
+      .map((part) =>
+        part.type === "text"
+          ? { type: "text" as const, text: part.text }
+          : {
+              type: "tool-call" as const,
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              input: part.input,
+            }
+      )
+    return { role: "assistant", content: parts }
+  }
+
+  if (role === "tool") {
+    if (typeof content === "string") {
+      return undefined
+    }
+    const resultParts = content
+      .filter((part): part is AIMessageToolResultPart => part.type === "tool-result")
+      .map((part) => ({
+        type: "tool-result" as const,
+        toolCallId: part.toolCallId,
+        toolName: part.toolName,
+        output: toToolResultOutput(part.output),
+      }))
+    return { role: "tool", content: resultParts }
+  }
+
+  return undefined
 }
 
 export function toModelMessages(messages: AIMessage[]): ModelMessage[] {
-  return messages.map(toModelMessage)
+  return messages.map(toModelMessage).filter((m): m is ModelMessage => m !== undefined)
 }
