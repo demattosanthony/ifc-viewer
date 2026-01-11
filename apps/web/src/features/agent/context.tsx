@@ -413,10 +413,9 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           // Active generation - connect to /events
           console.log("[Agent] Reconnecting to active generation")
 
-          // Get user messages, add empty assistant for streaming
-          const userMessages = dbMessages.filter((m) => m.role === "user")
+          // Keep all existing messages, add empty assistant for streaming
           setMessages([
-            ...userMessages,
+            ...dbMessages,
             {
               id: `msg-replay-${Date.now()}`,
               role: "assistant",
