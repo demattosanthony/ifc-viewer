@@ -39,6 +39,7 @@ async function startDevServers() {
       "bun",
       "run",
       "--env-file=.env",
+      "--elide-lines=0",
       "--filter=@ifc-viewer/server",
       "--filter=@ifc-viewer/web",
       "dev",
