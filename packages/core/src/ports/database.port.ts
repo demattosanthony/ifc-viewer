@@ -48,6 +48,7 @@ export interface ModelRepository {
   create(input: Model.CreateInput): Promise<Model>
   findById(id: string): Promise<Model | null>
   findByProjectId(projectId: string): Promise<Model[]>
+  findByFilePath(projectId: string, filePath: string): Promise<Model | null>
   update(id: string, input: Model.UpdateInput): Promise<Model>
   delete(id: string): Promise<void>
   deleteByProjectId(projectId: string): Promise<void>

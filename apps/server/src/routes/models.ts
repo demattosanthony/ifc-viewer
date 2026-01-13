@@ -90,6 +90,32 @@ export function modelsRoutes(ctx: Context) {
         },
       }
     )
+    .get(
+      "/:modelId/fragment",
+      async ({ params, set }) => {
+        const result = await controller.getModelFragment(params.id, params.modelId)
+        if (!result.success) {
+          set.status = result.status
+          return { error: result.error }
+        }
+
+        // Return binary data with proper headers
+        set.headers["content-type"] = result.data.contentType
+        set.headers["content-disposition"] = `attachment; filename="model.frag"`
+        return new Response(result.data.data.buffer as ArrayBuffer)
+      },
+      {
+        params: z.object({
+          id: z.string(),
+          modelId: z.string(),
+        }),
+        detail: {
+          summary: "Download pre-converted fragment file",
+          tags: ["Models"],
+          operationId: "getModelFragment",
+        },
+      }
+    )
     .post(
       "/",
       async ({ params, body, set }) => {

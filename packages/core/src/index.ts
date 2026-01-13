@@ -181,13 +181,16 @@ export {
   deleteProjectModels,
   type FileChange,
   type FileSnapshot,
+  getModelFragmentData,
   getModelWithData,
   listProjectModels,
+  type OnFileSyncCallback,
   // Agent
   runAgentChat,
   type UpdateModelInput,
   type UploadModelInput,
   updateModel,
+  updateModelFragment,
   // Model
   uploadModel,
 } from "./services"

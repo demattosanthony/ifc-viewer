@@ -36,6 +36,7 @@ import type {
   GetModelData,
   GetModelError,
   GetModelFileData,
+  GetModelFragmentData,
   GetModelResponse,
   GetProjectData,
   GetProjectError,
@@ -438,6 +439,18 @@ export const getModelFile = <ThrowOnError extends boolean = false>(
 ) => {
   return (options.client ?? _heyApiClient).get<unknown, unknown, ThrowOnError>({
     url: "/api/projects/{id}/models/{modelId}/file",
+    ...options,
+  })
+}
+
+/**
+ * Download pre-converted fragment file
+ */
+export const getModelFragment = <ThrowOnError extends boolean = false>(
+  options: Options<GetModelFragmentData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<unknown, unknown, ThrowOnError>({
+    url: "/api/projects/{id}/models/{modelId}/fragment",
     ...options,
   })
 }

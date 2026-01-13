@@ -567,6 +567,9 @@ export type ListModelsResponses = {
     discipline: "architecture" | "structure" | "mep" | "site" | "other"
     filePath: string
     fileSize: number
+    fragmentPath: string | null
+    fragmentSize: number | null
+    fragmentVersion: string | null
     createdAt: string
     updatedAt: string
   }>
@@ -615,6 +618,9 @@ export type UploadModelResponses = {
     discipline: "architecture" | "structure" | "mep" | "site" | "other"
     filePath: string
     fileSize: number
+    fragmentPath: string | null
+    fragmentSize: number | null
+    fragmentVersion: string | null
     createdAt: string
     updatedAt: string
   }
@@ -686,6 +692,9 @@ export type GetModelResponses = {
     discipline: "architecture" | "structure" | "mep" | "site" | "other"
     filePath: string
     fileSize: number
+    fragmentPath: string | null
+    fragmentSize: number | null
+    fragmentVersion: string | null
     createdAt: string
     updatedAt: string
   }
@@ -728,6 +737,9 @@ export type UpdateModelResponses = {
     discipline: "architecture" | "structure" | "mep" | "site" | "other"
     filePath: string
     fileSize: number
+    fragmentPath: string | null
+    fragmentSize: number | null
+    fragmentVersion: string | null
     createdAt: string
     updatedAt: string
   }
@@ -743,6 +755,16 @@ export type GetModelFileData = {
   }
   query?: never
   url: "/api/projects/{id}/models/{modelId}/file"
+}
+
+export type GetModelFragmentData = {
+  body?: never
+  path: {
+    id: string
+    modelId: string
+  }
+  query?: never
+  url: "/api/projects/{id}/models/{modelId}/fragment"
 }
 
 export type ClearConversationsData = {

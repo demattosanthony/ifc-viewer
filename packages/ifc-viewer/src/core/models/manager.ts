@@ -59,6 +59,67 @@ export class ModelManager {
     }
   }
 
+  /**
+   * Initialize the fragments system if not already done.
+   */
+  private initializeFragments(): void {
+    if (this.fragmentsInitialized) return
+
+    const fragments = this.components.get(OBC.FragmentsManager)
+    fragments.init(this.workerUrl)
+    this.fragmentsInitialized = true
+
+    // Update fragments when camera stops moving
+    this.world.camera?.controls?.addEventListener("rest", () => fragments.core.update(true))
+
+    // Update models to use new camera when Views switches cameras
+    this.world.onCameraChanged.add((camera) => {
+      for (const [, model] of fragments.list) {
+        // biome-ignore lint/correctness/useHookAtTopLevel: useCamera is a method, not a React hook
+        model.useCamera(camera.three)
+      }
+      fragments.core.update(true)
+    })
+  }
+
+  /**
+   * Load a pre-converted fragment file directly.
+   * This is faster than loading IFC as it skips the conversion step.
+   */
+  async loadFragment(buffer: ArrayBuffer, name: string): Promise<void> {
+    const fragments = this.components.get(OBC.FragmentsManager)
+
+    this.initializeFragments()
+
+    const handleModelLoaded = ({ value: model }: { value: FragmentsModel }) => {
+      model.useCamera(this.camera.three)
+      this.world.scene.three.add(model.object)
+      fragments.core.update(true)
+
+      this.onModelLoaded?.({ id: model.modelId, name })
+    }
+
+    try {
+      fragments.list.onItemSet.add(handleModelLoaded)
+
+      // Load the pre-converted fragment directly via FragmentsModels.load()
+      // Generate a unique model ID for this fragment
+      const modelId = `frag-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      await fragments.core.load(buffer, {
+        modelId,
+        camera: this.camera.three,
+      })
+
+      this.camera.fitToItems()
+    } finally {
+      fragments.list.onItemSet.remove(handleModelLoaded)
+    }
+  }
+
+  /**
+   * Load an IFC file (converts to fragments on-the-fly).
+   * Use loadFragment() if pre-converted fragments are available.
+   */
   async loadModel(buffer: ArrayBuffer, name: string, onProgress?: ProgressCallback): Promise<void> {
     const ifcLoader = this.components.get(OBC.IfcLoader)
     const fragments = this.components.get(OBC.FragmentsManager)
@@ -94,22 +155,7 @@ export class ModelManager {
 
       ifcLoader.onIfcImporterInitialized.add(importerHandler)
 
-      if (!this.fragmentsInitialized) {
-        fragments.init(this.workerUrl)
-        this.fragmentsInitialized = true
-
-        // Update fragments when camera stops moving
-        this.world.camera?.controls?.addEventListener("rest", () => fragments.core.update(true))
-
-        // Update models to use new camera when Views switches cameras
-        this.world.onCameraChanged.add((camera) => {
-          for (const [, model] of fragments.list) {
-            // biome-ignore lint/correctness/useHookAtTopLevel: useCamera is a method, not a React hook
-            model.useCamera(camera.three)
-          }
-          fragments.core.update(true)
-        })
-      }
+      this.initializeFragments()
 
       fragments.list.onItemSet.add(handleModelLoaded)
 

@@ -6,6 +6,7 @@ import {
   createAIProviderFromEnv,
   createDatabase,
   createDockerComputer,
+  createFragmentRegenerator,
   createLocalComputer,
   createMemoryStreamStore,
   createStorage,
@@ -80,11 +81,15 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     await mkdir(localWorkspacesDir, { recursive: true })
   }
 
+  // Create fragment regenerator callback for when agent modifies IFC files
+  const onFileSync = createFragmentRegenerator(db, storage)
+
   const ctx = createContext({
     db,
     storage,
     ai,
     streams,
+    onFileSync,
 
     async computeFactory(projectId: string): Promise<Computer> {
       if (computeProvider === "docker") {

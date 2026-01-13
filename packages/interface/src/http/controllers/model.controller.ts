@@ -7,6 +7,7 @@
 import {
   type Context,
   deleteModel,
+  getModelFragmentData,
   getModelWithData,
   isDomainError,
   listProjectModels,
@@ -14,6 +15,11 @@ import {
   updateModel,
   uploadModel,
 } from "@ifc-viewer/core"
+import {
+  convertIfcToFragments,
+  FRAGMENT_VERSION,
+  getFragmentPath,
+} from "@ifc-viewer/infrastructure"
 import { createLogger } from "@ifc-viewer/logger"
 import type { UpdateModelRequest, UploadModelRequest } from "../../dto"
 import { err, type HttpResult, notFound, ok, serverError } from "../types"
@@ -55,7 +61,7 @@ export class ModelController {
   }
 
   /**
-   * Get model file data (for viewer to load)
+   * Get model file data (for viewer to load IFC)
    */
   async getModelFile(
     projectId: string,
@@ -64,6 +70,29 @@ export class ModelController {
     const result = await getModelWithData(this.ctx, modelId)
     if (!result) {
       return notFound(`Model ${modelId} not found`)
+    }
+
+    // Verify model belongs to project
+    if (result.model.projectId !== projectId) {
+      return notFound(`Model ${modelId} not found in project ${projectId}`)
+    }
+
+    return ok({
+      data: result.data,
+      contentType: "application/octet-stream",
+    })
+  }
+
+  /**
+   * Get model fragment data (pre-converted for fast loading)
+   */
+  async getModelFragment(
+    projectId: string,
+    modelId: string
+  ): Promise<HttpResult<{ data: Uint8Array; contentType: string }>> {
+    const result = await getModelFragmentData(this.ctx, modelId)
+    if (!result) {
+      return notFound(`Fragment for model ${modelId} not found`)
     }
 
     // Verify model belongs to project
@@ -87,12 +116,39 @@ export class ModelController {
     metadata?: UploadModelRequest
   ): Promise<HttpResult<Model>> {
     try {
+      // Convert IFC to fragments
+      let fragmentData: Uint8Array | undefined
+      let fragmentPath: string | undefined
+      let fragmentVersion: string | undefined
+
+      try {
+        const converted = await convertIfcToFragments(data)
+        fragmentData = converted
+        fragmentPath = getFragmentPath(`models/${fileName}`)
+        fragmentVersion = FRAGMENT_VERSION
+        log.debug("Fragment conversion succeeded", {
+          projectId,
+          fileName,
+          fragmentSize: converted.byteLength,
+        })
+      } catch (conversionError) {
+        // Log but don't fail - client can still convert on-the-fly
+        log.warn("Fragment conversion failed, client will convert on-the-fly", {
+          projectId,
+          fileName,
+          error: conversionError,
+        })
+      }
+
       const model = await uploadModel(this.ctx, {
         projectId,
         name: metadata?.name ?? fileName.replace(/\.ifc$/i, ""),
         discipline: metadata?.discipline,
         fileName,
         data,
+        fragmentData,
+        fragmentPath,
+        fragmentVersion,
       })
 
       log.info("Model uploaded", {
@@ -100,6 +156,7 @@ export class ModelController {
         modelId: model.id,
         name: model.name,
         size: model.fileSize,
+        hasFragment: !!model.fragmentPath,
       })
 
       return ok(model)

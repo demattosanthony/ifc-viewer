@@ -100,6 +100,13 @@ export {
   type PostgresDatabaseConfig,
   type SQLiteDatabaseConfig,
 } from "./database"
+// Fragments
+export {
+  convertIfcToFragments,
+  createFragmentRegenerator,
+  FRAGMENT_VERSION,
+  getFragmentPath,
+} from "./fragments"
 // Storage
 export {
   // Utilities

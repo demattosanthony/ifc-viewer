@@ -8,7 +8,11 @@
 
 import { createLogger } from "@ifc-viewer/logger"
 import type { AIProvider, Computer, Database, Storage, StreamStore } from "./ports"
-import { type ChangeTracker, createChangeTracker } from "./services/change-tracker"
+import {
+  type ChangeTracker,
+  createChangeTracker,
+  type OnFileSyncCallback,
+} from "./services/change-tracker"
 
 const log = createLogger("context")
 
@@ -46,6 +50,8 @@ export type ContextConfig = {
   ai: AIProvider
   streams: StreamStore
   computeFactory: ComputeFactory
+  /** Optional callback called after each file sync in compute */
+  onFileSync?: OnFileSyncCallback
 }
 
 // ============================================================================
@@ -153,6 +159,7 @@ export function createContext(config: ContextConfig): Context {
             computer,
             storage: config.storage,
             projectId,
+            onFileSync: config.onFileSync,
           })
           computes.set(projectId, { computer, tracker, idleTimer: scheduleIdle(projectId) })
           log.debug("Compute ready", { projectId })

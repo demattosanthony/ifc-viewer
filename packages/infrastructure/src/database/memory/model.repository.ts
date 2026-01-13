@@ -14,6 +14,9 @@ export function createModelRepository(): ModelRepository {
         discipline: input.discipline ?? "other",
         filePath: input.filePath,
         fileSize: input.fileSize,
+        fragmentPath: input.fragmentPath ?? null,
+        fragmentSize: input.fragmentSize ?? null,
+        fragmentVersion: input.fragmentVersion ?? null,
         createdAt: now,
         updatedAt: now,
       })
@@ -36,6 +39,15 @@ export function createModelRepository(): ModelRepository {
       return results.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     },
 
+    async findByFilePath(projectId: string, filePath: string): Promise<Model | null> {
+      for (const entity of store.values()) {
+        if (entity.projectId === projectId && entity.filePath === filePath) {
+          return entity
+        }
+      }
+      return null
+    },
+
     async update(id: string, input: Model.UpdateInput): Promise<Model> {
       const existing = store.get(id)
       if (!existing) throw new Error(`Model ${id} not found`)
@@ -44,6 +56,10 @@ export function createModelRepository(): ModelRepository {
         ...existing,
         name: input.name !== undefined ? input.name : existing.name,
         discipline: input.discipline !== undefined ? input.discipline : existing.discipline,
+        fragmentPath: input.fragmentPath !== undefined ? input.fragmentPath : existing.fragmentPath,
+        fragmentSize: input.fragmentSize !== undefined ? input.fragmentSize : existing.fragmentSize,
+        fragmentVersion:
+          input.fragmentVersion !== undefined ? input.fragmentVersion : existing.fragmentVersion,
         updatedAt: new Date(),
       })
       store.set(id, updated)

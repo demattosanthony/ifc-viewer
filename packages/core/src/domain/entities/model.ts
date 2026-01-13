@@ -23,6 +23,12 @@ export const ModelSchema = z.object({
   filePath: z.string(),
   /** File size in bytes */
   fileSize: z.number(),
+  /** Path to pre-converted fragment file in storage (null if not converted) */
+  fragmentPath: z.string().nullable(),
+  /** Fragment file size in bytes */
+  fragmentSize: z.number().nullable(),
+  /** Fragment format version for invalidation */
+  fragmentVersion: z.string().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 })
@@ -38,11 +44,17 @@ export namespace Model {
     discipline?: ModelDiscipline
     filePath: string
     fileSize: number
+    fragmentPath?: string | null
+    fragmentSize?: number | null
+    fragmentVersion?: string | null
   }
 
   export type UpdateInput = {
     name?: string
     discipline?: ModelDiscipline
+    fragmentPath?: string | null
+    fragmentSize?: number | null
+    fragmentVersion?: string | null
   }
 }
 
