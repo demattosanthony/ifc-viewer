@@ -333,6 +333,27 @@ async function runGeneration(ctx: Context, params: GenerationParams): Promise<vo
       await ctx.streams.append(streamId, event)
     }
 
+    if (abortController.signal.aborted) {
+      // Mark any in-progress tool calls as aborted
+      for (const part of parts) {
+        if (part.type === "tool-use" && part.output === undefined) {
+          part.status = "aborted"
+          part.error = part.error ?? "Cancelled"
+        }
+      }
+      // Save partial assistant message if any parts were generated
+      if (parts.length > 0) {
+        await ctx.db.messages.create({
+          conversationId,
+          role: "assistant",
+          parts,
+        })
+      }
+      await ctx.db.conversations.update(conversationId, { status: "active" })
+      await ctx.streams.abort(streamId)
+      return
+    }
+
     // Save assistant message with all parts
     if (parts.length > 0) {
       await ctx.db.messages.create({
@@ -349,6 +370,7 @@ async function runGeneration(ctx: Context, params: GenerationParams): Promise<vo
       for (const part of parts) {
         if (part.type === "tool-use" && part.output === undefined) {
           part.status = "aborted"
+          part.error = part.error ?? "Cancelled"
         }
       }
       // Save partial assistant message if any parts were generated
