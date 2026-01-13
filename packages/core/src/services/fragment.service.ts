@@ -1,22 +1,30 @@
 /**
- * Fragment Regenerator
+ * Fragment Service
  *
  * Handles regeneration of fragment files when IFC files are modified.
  * Used as a callback for the change-tracker to keep fragments up-to-date
  * when the AI agent modifies IFC models.
  */
 
-import type { Database, OnFileSyncCallback, Storage } from "@ifc-viewer/core"
-import { getModelStorageKey } from "@ifc-viewer/core"
 import { createLogger } from "@ifc-viewer/logger"
-import { convertIfcToFragments, FRAGMENT_VERSION, getFragmentPath } from "./converter.ts"
+import { getModelStorageKey } from "../domain"
+import type { Database, IFCProcessor, Storage } from "../ports"
+import type { OnFileSyncCallback } from "./change-tracker"
 
-const log = createLogger("fragment-regenerator")
+const log = createLogger("fragment-service")
 
 /**
  * Create an onFileSync callback that regenerates fragments for IFC files.
+ *
+ * @param db - Database instance for model metadata
+ * @param storage - Storage instance for file operations
+ * @param ifcProcessor - IFC processor for converting IFC to fragments
  */
-export function createFragmentRegenerator(db: Database, storage: Storage): OnFileSyncCallback {
+export function createFragmentRegenerator(
+  db: Database,
+  storage: Storage,
+  ifcProcessor: IFCProcessor
+): OnFileSyncCallback {
   return async (projectId, change) => {
     // Only handle IFC files in the models/ directory
     const path = change.path
@@ -47,9 +55,9 @@ export function createFragmentRegenerator(db: Database, storage: Storage): OnFil
         return
       }
 
-      // Convert to fragments
-      const fragmentData = await convertIfcToFragments(obj.data)
-      const fragmentPath = getFragmentPath(path)
+      // Convert to fragments using the processor
+      const fragmentData = await ifcProcessor.convert(obj.data)
+      const fragmentPath = ifcProcessor.getFragmentPath(path)
 
       // Store the new fragment (overwrite if exists)
       const fragmentStorageKey = getModelStorageKey(projectId, fragmentPath)
@@ -61,7 +69,7 @@ export function createFragmentRegenerator(db: Database, storage: Storage): OnFil
       await db.models.update(model.id, {
         fragmentPath,
         fragmentSize: fragmentData.byteLength,
-        fragmentVersion: FRAGMENT_VERSION,
+        fragmentVersion: ifcProcessor.version,
       })
 
       log.info("Fragment regenerated successfully", {

@@ -17,7 +17,6 @@ interface FileTreeItemProps {
   file: FileEntry
   depth: number
   isExpanded: boolean
-  isLoading: boolean
   onToggle: () => void
   onClick: () => void
   onNewFile: (path: string) => void
@@ -30,7 +29,6 @@ export function FileTreeItem({
   file,
   depth,
   isExpanded,
-  isLoading,
   onToggle,
   onClick,
   onNewFile,
@@ -124,18 +122,7 @@ export function FileTreeItem({
       </div>
 
       {/* Children (expanded directory contents) */}
-      {isDir &&
-        isExpanded &&
-        (isLoading ? (
-          <div
-            className="h-[22px] flex items-center text-muted-foreground text-[13px]"
-            style={{ paddingLeft: indent + 32 }}
-          >
-            loading...
-          </div>
-        ) : (
-          children
-        ))}
+      {isDir && isExpanded && children}
     </div>
   )
 }

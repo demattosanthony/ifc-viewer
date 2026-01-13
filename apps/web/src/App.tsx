@@ -1,3 +1,4 @@
+import { Toaster } from "@ifc-viewer/ui/components"
 import { ViewerProvider } from "@ifc-viewer/viewer"
 import { AgentProvider } from "@/features/agent/context"
 import { EditorProvider } from "@/features/editor/context"
@@ -53,6 +54,7 @@ export default function App() {
       <AppModeProvider>
         <AppContent />
       </AppModeProvider>
+      <Toaster position="bottom-right" />
     </ThemeProvider>
   )
 }

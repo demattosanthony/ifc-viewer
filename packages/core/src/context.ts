@@ -7,7 +7,7 @@
  */
 
 import { createLogger } from "@ifc-viewer/logger"
-import type { AIProvider, Computer, Database, Storage, StreamStore } from "./ports"
+import type { AIProvider, Computer, Database, IFCProcessor, Storage, StreamStore } from "./ports"
 import {
   type ChangeTracker,
   createChangeTracker,
@@ -36,6 +36,8 @@ export type Context = {
   storage: Storage
   ai: AIProvider
   streams: StreamStore
+  /** Optional IFC processor for converting IFC files to fragments */
+  ifcProcessor?: IFCProcessor
   getCompute(projectId: string): Computer | undefined
   getTracker(projectId: string): ChangeTracker | undefined
   getOrCreateCompute(projectId: string): Promise<{ computer: Computer; tracker: ChangeTracker }>
@@ -50,6 +52,8 @@ export type ContextConfig = {
   ai: AIProvider
   streams: StreamStore
   computeFactory: ComputeFactory
+  /** Optional IFC processor for converting IFC files to fragments */
+  ifcProcessor?: IFCProcessor
   /** Optional callback called after each file sync in compute */
   onFileSync?: OnFileSyncCallback
 }
@@ -125,6 +129,7 @@ export function createContext(config: ContextConfig): Context {
     storage: config.storage,
     ai: config.ai,
     streams: config.streams,
+    ifcProcessor: config.ifcProcessor,
 
     getCompute(projectId: string): Computer | undefined {
       return computes.get(projectId)?.computer

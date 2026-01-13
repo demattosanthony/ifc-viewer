@@ -137,6 +137,8 @@ export type {
   FileReadOptions,
   FileStat,
   FileSystem,
+  // IFC Processor
+  IFCProcessor,
   MessagePartRepository,
   MessageRepository,
   ModelRepository,
@@ -175,6 +177,8 @@ export {
   type CreateProjectInput,
   // Change tracking
   createChangeTracker,
+  // Fragments
+  createFragmentRegenerator,
   // Project
   createProjectWithStorage,
   deleteModel,

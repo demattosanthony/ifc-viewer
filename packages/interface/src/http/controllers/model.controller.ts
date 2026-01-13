@@ -15,11 +15,6 @@ import {
   updateModel,
   uploadModel,
 } from "@ifc-viewer/core"
-import {
-  convertIfcToFragments,
-  FRAGMENT_VERSION,
-  getFragmentPath,
-} from "@ifc-viewer/infrastructure"
 import { createLogger } from "@ifc-viewer/logger"
 import type { UpdateModelRequest, UploadModelRequest } from "../../dto"
 import { err, type HttpResult, notFound, ok, serverError } from "../types"
@@ -116,28 +111,30 @@ export class ModelController {
     metadata?: UploadModelRequest
   ): Promise<HttpResult<Model>> {
     try {
-      // Convert IFC to fragments
+      // Convert IFC to fragments if processor is available
       let fragmentData: Uint8Array | undefined
       let fragmentPath: string | undefined
       let fragmentVersion: string | undefined
 
-      try {
-        const converted = await convertIfcToFragments(data)
-        fragmentData = converted
-        fragmentPath = getFragmentPath(`models/${fileName}`)
-        fragmentVersion = FRAGMENT_VERSION
-        log.debug("Fragment conversion succeeded", {
-          projectId,
-          fileName,
-          fragmentSize: converted.byteLength,
-        })
-      } catch (conversionError) {
-        // Log but don't fail - client can still convert on-the-fly
-        log.warn("Fragment conversion failed, client will convert on-the-fly", {
-          projectId,
-          fileName,
-          error: conversionError,
-        })
+      if (this.ctx.ifcProcessor) {
+        try {
+          const converted = await this.ctx.ifcProcessor.convert(data)
+          fragmentData = converted
+          fragmentPath = this.ctx.ifcProcessor.getFragmentPath(`models/${fileName}`)
+          fragmentVersion = this.ctx.ifcProcessor.version
+          log.debug("Fragment conversion succeeded", {
+            projectId,
+            fileName,
+            fragmentSize: converted.byteLength,
+          })
+        } catch (conversionError) {
+          // Log but don't fail - client can still convert on-the-fly
+          log.warn("Fragment conversion failed, client will convert on-the-fly", {
+            projectId,
+            fileName,
+            error: conversionError,
+          })
+        }
       }
 
       const model = await uploadModel(this.ctx, {

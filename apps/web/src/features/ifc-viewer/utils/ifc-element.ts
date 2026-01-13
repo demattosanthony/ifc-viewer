@@ -24,60 +24,91 @@ export interface BasicInfo {
   predefinedType?: string
 }
 
+interface IfcAttribute<T> {
+  value: T
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function unwrapIfcValue(value: unknown): unknown {
+  if (isRecord(value) && "value" in value) {
+    return unwrapIfcValue((value as IfcAttribute<unknown>).value)
+  }
+  return value
+}
+
+function getIfcString(value: unknown): string | undefined {
+  const resolvedValue = unwrapIfcValue(value)
+  return typeof resolvedValue === "string" && resolvedValue.length > 0 ? resolvedValue : undefined
+}
+
+function getIfcNumber(value: unknown): number | undefined {
+  const resolvedValue = unwrapIfcValue(value)
+  return typeof resolvedValue === "number" ? resolvedValue : undefined
+}
+
 export function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—"
-  if (typeof value === "boolean") return value ? "Yes" : "No"
-  if (typeof value === "number") {
-    if (Number.isInteger(value)) return value.toString()
-    return value.toFixed(4).replace(/\.?0+$/, "")
+  const resolvedValue = unwrapIfcValue(value)
+  if (resolvedValue === null || resolvedValue === undefined) return "—"
+  if (typeof resolvedValue === "boolean") return resolvedValue ? "Yes" : "No"
+  if (typeof resolvedValue === "number") {
+    if (Number.isInteger(resolvedValue)) return resolvedValue.toString()
+    return resolvedValue.toFixed(4).replace(/\.?0+$/, "")
   }
-  if (typeof value === "string") return value || "—"
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "—"
-    if (value.every((v) => typeof v === "number")) {
-      return value.join(", ")
+  if (typeof resolvedValue === "string") return resolvedValue || "—"
+  if (Array.isArray(resolvedValue)) {
+    if (resolvedValue.length === 0) return "—"
+    const normalizedValues = resolvedValue.map(unwrapIfcValue)
+    if (normalizedValues.every((v) => typeof v === "number")) {
+      return normalizedValues.join(", ")
     }
+    if (normalizedValues.every((v) => typeof v === "string")) {
+      return normalizedValues.filter((v) => v.length > 0).join(", ") || "—"
+    }
+    return JSON.stringify(normalizedValues)
   }
-  return JSON.stringify(value)
+  return JSON.stringify(resolvedValue)
 }
 
 export function extractMaterials(hasAssociations: unknown[]): Material[] {
   const materials: Material[] = []
 
   for (const assoc of hasAssociations) {
-    if (typeof assoc !== "object" || assoc === null) continue
-    const a = assoc as Record<string, unknown>
+    if (!isRecord(assoc)) continue
 
-    if (Array.isArray(a.Materials)) {
-      for (const mat of a.Materials) {
-        if (typeof mat === "object" && mat !== null && "Name" in mat) {
-          materials.push({ name: (mat as { Name: string }).Name })
+    const associationMaterials = assoc.Materials
+    if (Array.isArray(associationMaterials)) {
+      for (const mat of associationMaterials) {
+        if (!isRecord(mat)) continue
+        const name = getIfcString(mat.Name)
+        if (name) {
+          materials.push({ name })
         }
       }
     }
 
-    if (Array.isArray(a.ForLayerSet)) {
-      for (const layerSet of a.ForLayerSet) {
-        if (
-          typeof layerSet === "object" &&
-          layerSet !== null &&
-          Array.isArray((layerSet as Record<string, unknown>).MaterialLayers)
-        ) {
-          const layers = (layerSet as Record<string, unknown>).MaterialLayers as unknown[]
-          for (const layer of layers) {
-            if (typeof layer === "object" && layer !== null) {
-              const l = layer as Record<string, unknown>
-              const thickness = l.LayerThickness as number | undefined
-              if (Array.isArray(l.Material) && l.Material.length > 0) {
-                const mat = l.Material[0] as Record<string, unknown>
-                if (mat.Name) {
-                  materials.push({
-                    name: mat.Name as string,
-                    thickness: thickness ? thickness * 100 : undefined,
-                  })
-                }
-              }
-            }
+    const layerSets = assoc.ForLayerSet
+    if (Array.isArray(layerSets)) {
+      for (const layerSet of layerSets) {
+        if (!isRecord(layerSet)) continue
+        const layers = layerSet.MaterialLayers
+        if (!Array.isArray(layers)) continue
+
+        for (const layer of layers) {
+          if (!isRecord(layer)) continue
+          const thickness = getIfcNumber(layer.LayerThickness)
+          const layerMaterials = layer.Material
+          if (!Array.isArray(layerMaterials) || layerMaterials.length === 0) continue
+          const mat = layerMaterials[0]
+          if (!isRecord(mat)) continue
+          const name = getIfcString(mat.Name)
+          if (name) {
+            materials.push({
+              name,
+              thickness: thickness !== undefined ? thickness * 100 : undefined,
+            })
           }
         }
       }
@@ -91,22 +122,23 @@ export function extractPropertySets(isDefinedBy: unknown[]): PropertySet[] {
   const psets: PropertySet[] = []
 
   for (const def of isDefinedBy) {
-    if (typeof def !== "object" || def === null) continue
-    const d = def as Record<string, unknown>
+    if (!isRecord(def)) continue
+    const name = getIfcString(def.Name)
+    const properties = def.HasProperties
+    if (!name || !Array.isArray(properties)) continue
 
-    if (d.Name && Array.isArray(d.HasProperties)) {
-      const props: { name: string; value: unknown }[] = []
-      for (const prop of d.HasProperties) {
-        if (typeof prop === "object" && prop !== null) {
-          const p = prop as Record<string, unknown>
-          if (p.Name && p.NominalValue !== undefined) {
-            props.push({ name: p.Name as string, value: p.NominalValue })
-          }
-        }
-      }
-      if (props.length > 0) {
-        psets.push({ name: d.Name as string, properties: props })
-      }
+    const props: { name: string; value: unknown }[] = []
+    for (const prop of properties) {
+      if (!isRecord(prop)) continue
+      const propName = getIfcString(prop.Name)
+      if (!propName) continue
+      const value = unwrapIfcValue(prop.NominalValue)
+      if (value === undefined) continue
+      props.push({ name: propName, value })
+    }
+
+    if (props.length > 0) {
+      psets.push({ name, properties: props })
     }
   }
 
@@ -116,17 +148,20 @@ export function extractPropertySets(isDefinedBy: unknown[]): PropertySet[] {
 export function extractLocation(containedInStructure: unknown[]): ElementLocation | null {
   if (!Array.isArray(containedInStructure) || containedInStructure.length === 0) return null
 
-  const structure = containedInStructure[0] as Record<string, unknown>
-  if (!structure) return null
+  const structure = containedInStructure[0]
+  if (!isRecord(structure)) return null
 
-  const level = (structure.Name as string) || (structure.LongName as string)
+  const level = getIfcString(structure.Name) ?? getIfcString(structure.LongName)
   let building = ""
 
   const decomposes = structure.Decomposes
   if (Array.isArray(decomposes) && decomposes.length > 0) {
-    const parent = decomposes[0] as Record<string, unknown> | undefined
-    if (parent?.Name) {
-      building = parent.Name as string
+    const parent = decomposes[0]
+    if (isRecord(parent)) {
+      const parentName = getIfcString(parent.Name)
+      if (parentName) {
+        building = parentName
+      }
     }
   }
 
@@ -138,15 +173,20 @@ export function extractElementData(element: Record<string, unknown>) {
   const isDefinedBy = element.IsDefinedBy as unknown[] | undefined
   const containedInStructure = element.ContainedInStructure as unknown[] | undefined
 
+  const name = getIfcString(element.Name) ?? ""
+  const type = getIfcString(element.ObjectType) ?? ""
+  const tag = getIfcString(element.Tag) ?? ""
+  const predefinedType = getIfcString(element.PredefinedType)
+
   return {
     materials: hasAssociations ? extractMaterials(hasAssociations) : [],
     propertySets: isDefinedBy ? extractPropertySets(isDefinedBy) : [],
     location: containedInStructure ? extractLocation(containedInStructure) : null,
     basicInfo: {
-      name: element.Name as string,
-      type: element.ObjectType as string,
-      tag: element.Tag as string,
-      predefinedType: element.PredefinedType as string | undefined,
+      name,
+      type,
+      tag,
+      predefinedType,
     } as BasicInfo,
   }
 }

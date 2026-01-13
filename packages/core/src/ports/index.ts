@@ -72,6 +72,8 @@ export type {
   ProjectRepository,
   UnitOfWork,
 } from "./database.port"
+// IFC Processor
+export type { IFCProcessor } from "./ifc-processor.port"
 // Storage
 export type {
   Storage,

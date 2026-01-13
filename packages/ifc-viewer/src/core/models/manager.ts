@@ -8,6 +8,16 @@ import type {
   ProgressCallback,
 } from "../../types"
 
+const ELEMENT_LOOKUP_CONFIG = {
+  attributesDefault: true,
+  relations: {
+    ContainedInStructure: { attributes: true, relations: true },
+    HasAssociations: { attributes: true, relations: true },
+    IsDefinedBy: { attributes: true, relations: true },
+    IsTypedBy: { attributes: true, relations: true },
+  },
+} as const
+
 export class ModelManager {
   private components: OBC.Components
   private world: OBC.World
@@ -16,6 +26,8 @@ export class ModelManager {
   private fragmentsInitialized = false
   private onModelLoaded?: ModelLoadedCallback
   private onModelUnloaded?: ModelUnloadedCallback
+  private elementDataCache = new Map<string, Map<number, ElementData | null>>()
+  private elementDataRequests = new Map<string, Map<number, Promise<ElementData | null>>>()
 
   constructor(
     components: OBC.Components,
@@ -47,16 +59,49 @@ export class ModelManager {
 
   async getElement(modelId: string, elementId: number): Promise<ElementData | null> {
     const model = this.getModel(modelId)
-    if (!model) return null
-
-    try {
-      const item = model.getItem(elementId)
-      const data = await item.getData()
-      return data || null
-    } catch (error) {
-      console.error(`Failed to get element ${elementId} from model ${modelId}:`, error)
+    if (!model) {
       return null
     }
+
+    const cachedModel = this.elementDataCache.get(modelId)
+    if (cachedModel?.has(elementId)) {
+      return cachedModel.get(elementId) ?? null
+    }
+
+    const pendingRequests = this.elementDataRequests.get(modelId)
+    const pendingRequest = pendingRequests?.get(elementId)
+    if (pendingRequest) {
+      return pendingRequest
+    }
+
+    const requestMap = pendingRequests ?? new Map<number, Promise<ElementData | null>>()
+    if (!pendingRequests) {
+      this.elementDataRequests.set(modelId, requestMap)
+    }
+
+    const request = (async () => {
+      try {
+        const [data] = await model.getItemsData([elementId], ELEMENT_LOOKUP_CONFIG)
+        const resolvedData = data ?? null
+        const modelCache =
+          this.elementDataCache.get(modelId) ?? new Map<number, ElementData | null>()
+        if (!this.elementDataCache.has(modelId)) {
+          this.elementDataCache.set(modelId, modelCache)
+        }
+        modelCache.set(elementId, resolvedData)
+        return resolvedData
+      } catch (error) {
+        return null
+      } finally {
+        requestMap.delete(elementId)
+        if (requestMap.size === 0) {
+          this.elementDataRequests.delete(modelId)
+        }
+      }
+    })()
+
+    requestMap.set(elementId, request)
+    return request
   }
 
   /**
@@ -184,6 +229,8 @@ export class ModelManager {
       this.world.scene.three.remove(model.object)
       model.dispose()
       fragments.list.delete(modelId)
+      this.elementDataCache.delete(modelId)
+      this.elementDataRequests.delete(modelId)
 
       if (this.fragmentsInitialized) {
         fragments.core.update(true)
@@ -217,6 +264,8 @@ export class ModelManager {
     }
 
     fragments.list.clear()
+    this.elementDataCache.clear()
+    this.elementDataRequests.clear()
     this.fragmentsInitialized = false
   }
 }

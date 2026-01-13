@@ -52,6 +52,7 @@ export type {
   Computer,
   ConversationRepository,
   Database,
+  IFCProcessor,
   MessageRepository,
   ProjectRepository,
   Storage,
@@ -100,13 +101,8 @@ export {
   type PostgresDatabaseConfig,
   type SQLiteDatabaseConfig,
 } from "./database"
-// Fragments
-export {
-  convertIfcToFragments,
-  createFragmentRegenerator,
-  FRAGMENT_VERSION,
-  getFragmentPath,
-} from "./fragments"
+// IFC Processor
+export { createThatOpenIFCProcessor } from "./ifc-processor"
 // Storage
 export {
   // Utilities
