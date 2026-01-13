@@ -1,6 +1,4 @@
 import { formDataBodySerializer } from "@ifc-viewer/sdk"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useCallback, useState } from "react"
 import {
   confirmProjectUploadMutation,
   createProjectDirectoryMutation,
@@ -11,6 +9,8 @@ import {
   uploadProjectFileMutation,
   writeProjectFileMutation,
 } from "@ifc-viewer/sdk/hooks"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useCallback, useState } from "react"
 
 /** Check if a file is an IFC model based on extension */
 function isIfcFile(filename: string): boolean {
