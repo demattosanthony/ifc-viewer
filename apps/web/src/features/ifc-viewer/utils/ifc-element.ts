@@ -24,19 +24,12 @@ export interface BasicInfo {
   predefinedType?: string
 }
 
-interface IfcAttribute<T> {
-  value: T
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
 
 function unwrapIfcValue(value: unknown): unknown {
-  if (isRecord(value) && "value" in value) {
-    return unwrapIfcValue((value as IfcAttribute<unknown>).value)
-  }
-  return value
+  return isRecord(value) && "value" in value ? value.value : value
 }
 
 function getIfcString(value: unknown): string | undefined {

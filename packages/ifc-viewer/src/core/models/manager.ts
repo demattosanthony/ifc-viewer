@@ -26,8 +26,8 @@ export class ModelManager {
   private fragmentsInitialized = false
   private onModelLoaded?: ModelLoadedCallback
   private onModelUnloaded?: ModelUnloadedCallback
-  private elementDataCache = new Map<string, Map<number, ElementData | null>>()
-  private elementDataRequests = new Map<string, Map<number, Promise<ElementData | null>>>()
+  private elementCache = new Map<string, ElementData | null>()
+  private pendingRequests = new Map<string, Promise<ElementData | null>>()
 
   constructor(
     components: OBC.Components,
@@ -59,48 +59,24 @@ export class ModelManager {
 
   async getElement(modelId: string, elementId: number): Promise<ElementData | null> {
     const model = this.getModel(modelId)
-    if (!model) {
-      return null
-    }
+    if (!model) return null
 
-    const cachedModel = this.elementDataCache.get(modelId)
-    if (cachedModel?.has(elementId)) {
-      return cachedModel.get(elementId) ?? null
-    }
+    const key = `${modelId}:${elementId}`
 
-    const pendingRequests = this.elementDataRequests.get(modelId)
-    const pendingRequest = pendingRequests?.get(elementId)
-    if (pendingRequest) {
-      return pendingRequest
-    }
+    if (this.elementCache.has(key)) return this.elementCache.get(key) ?? null
+    if (this.pendingRequests.has(key)) return this.pendingRequests.get(key)!
 
-    const requestMap = pendingRequests ?? new Map<number, Promise<ElementData | null>>()
-    if (!pendingRequests) {
-      this.elementDataRequests.set(modelId, requestMap)
-    }
+    const request = model
+      .getItemsData([elementId], ELEMENT_LOOKUP_CONFIG)
+      .then(([data]) => {
+        const result = data ?? null
+        this.elementCache.set(key, result)
+        return result
+      })
+      .catch(() => null)
+      .finally(() => this.pendingRequests.delete(key))
 
-    const request = (async () => {
-      try {
-        const [data] = await model.getItemsData([elementId], ELEMENT_LOOKUP_CONFIG)
-        const resolvedData = data ?? null
-        const modelCache =
-          this.elementDataCache.get(modelId) ?? new Map<number, ElementData | null>()
-        if (!this.elementDataCache.has(modelId)) {
-          this.elementDataCache.set(modelId, modelCache)
-        }
-        modelCache.set(elementId, resolvedData)
-        return resolvedData
-      } catch (error) {
-        return null
-      } finally {
-        requestMap.delete(elementId)
-        if (requestMap.size === 0) {
-          this.elementDataRequests.delete(modelId)
-        }
-      }
-    })()
-
-    requestMap.set(elementId, request)
+    this.pendingRequests.set(key, request)
     return request
   }
 
@@ -229,8 +205,7 @@ export class ModelManager {
       this.world.scene.three.remove(model.object)
       model.dispose()
       fragments.list.delete(modelId)
-      this.elementDataCache.delete(modelId)
-      this.elementDataRequests.delete(modelId)
+      this.clearModelCache(modelId)
 
       if (this.fragmentsInitialized) {
         fragments.core.update(true)
@@ -264,8 +239,18 @@ export class ModelManager {
     }
 
     fragments.list.clear()
-    this.elementDataCache.clear()
-    this.elementDataRequests.clear()
+    this.elementCache.clear()
+    this.pendingRequests.clear()
     this.fragmentsInitialized = false
+  }
+
+  private clearModelCache(modelId: string): void {
+    const prefix = `${modelId}:`
+    for (const key of this.elementCache.keys()) {
+      if (key.startsWith(prefix)) this.elementCache.delete(key)
+    }
+    for (const key of this.pendingRequests.keys()) {
+      if (key.startsWith(prefix)) this.pendingRequests.delete(key)
+    }
   }
 }

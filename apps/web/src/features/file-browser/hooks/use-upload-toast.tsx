@@ -51,20 +51,15 @@ export function useUploadToast(
   // Handle completion
   useEffect(() => {
     if (!isUploading && result && toastId.current !== null) {
-      const pluralize = (count: number) => (count === 1 ? "file" : "files")
-
       if (result.failed === 0) {
-        // All succeeded
-        toast.success(`Uploaded ${result.success} ${pluralize(result.success)}`, {
+        toast.success(`Uploaded ${result.success} file${result.success === 1 ? "" : "s"}`, {
           id: toastId.current,
         })
       } else if (result.success === 0) {
-        // All failed
-        toast.error(`Failed to upload ${result.failed} ${pluralize(result.failed)}`, {
+        toast.error(`Failed to upload ${result.failed} file${result.failed === 1 ? "" : "s"}`, {
           id: toastId.current,
         })
       } else {
-        // Mixed results
         toast.warning(`Uploaded ${result.success}, failed ${result.failed}`, {
           id: toastId.current,
         })

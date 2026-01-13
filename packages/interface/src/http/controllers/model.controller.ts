@@ -111,30 +111,27 @@ export class ModelController {
     metadata?: UploadModelRequest
   ): Promise<HttpResult<Model>> {
     try {
-      // Convert IFC to fragments if processor is available
+      // Convert IFC to fragments
       let fragmentData: Uint8Array | undefined
       let fragmentPath: string | undefined
       let fragmentVersion: string | undefined
 
-      if (this.ctx.ifcProcessor) {
-        try {
-          const converted = await this.ctx.ifcProcessor.convert(data)
-          fragmentData = converted
-          fragmentPath = this.ctx.ifcProcessor.getFragmentPath(`models/${fileName}`)
-          fragmentVersion = this.ctx.ifcProcessor.version
-          log.debug("Fragment conversion succeeded", {
-            projectId,
-            fileName,
-            fragmentSize: converted.byteLength,
-          })
-        } catch (conversionError) {
-          // Log but don't fail - client can still convert on-the-fly
-          log.warn("Fragment conversion failed, client will convert on-the-fly", {
-            projectId,
-            fileName,
-            error: conversionError,
-          })
-        }
+      try {
+        fragmentData = await this.ctx.ifcProcessor.convert(data)
+        fragmentPath = this.ctx.ifcProcessor.getFragmentPath(`models/${fileName}`)
+        fragmentVersion = this.ctx.ifcProcessor.version
+        log.debug("Fragment conversion succeeded", {
+          projectId,
+          fileName,
+          fragmentSize: fragmentData.byteLength,
+        })
+      } catch (conversionError) {
+        // Log but don't fail - client can still convert on-the-fly
+        log.warn("Fragment conversion failed, client will convert on-the-fly", {
+          projectId,
+          fileName,
+          error: conversionError,
+        })
       }
 
       const model = await uploadModel(this.ctx, {

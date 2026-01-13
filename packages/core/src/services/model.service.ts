@@ -126,40 +126,6 @@ export async function getModelFragmentData(
 }
 
 /**
- * Update a model's fragment data.
- * Used for regenerating fragments after IFC changes.
- */
-export async function updateModelFragment(
-  ctx: Context,
-  modelId: string,
-  fragmentData: Uint8Array,
-  fragmentPath: string,
-  fragmentVersion: string
-): Promise<Model> {
-  const model = await ctx.db.models.findById(modelId)
-  if (!model) throw new NotFoundError("Model", modelId)
-
-  // Delete old fragment if exists
-  if (model.fragmentPath) {
-    const oldFragmentKey = getModelStorageKey(model.projectId, model.fragmentPath)
-    await ctx.storage.delete(oldFragmentKey)
-  }
-
-  // Store new fragment
-  const fragmentStorageKey = getModelStorageKey(model.projectId, fragmentPath)
-  await ctx.storage.put(fragmentStorageKey, fragmentData, {
-    contentType: "application/octet-stream",
-  })
-
-  // Update model metadata
-  return ctx.db.models.update(modelId, {
-    fragmentPath,
-    fragmentSize: fragmentData.byteLength,
-    fragmentVersion,
-  })
-}
-
-/**
  * List all models for a project.
  */
 export async function listProjectModels(ctx: Context, projectId: string): Promise<Model[]> {

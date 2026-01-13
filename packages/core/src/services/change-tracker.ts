@@ -188,14 +188,11 @@ export function createChangeTracker(options: CreateChangeTrackerOptions): Change
       }
     }
 
-    // Call the onFileSync callback if provided
+    // Call the onFileSync callback if provided (fire-and-forget, don't block sync)
     if (onFileSync) {
-      try {
-        await onFileSync(projectId, change)
-      } catch (err) {
-        // Log but don't fail the sync
+      onFileSync(projectId, change).catch((err) => {
         console.error(`onFileSync callback failed for ${path}:`, err)
-      }
+      })
     }
   }
 

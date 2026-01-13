@@ -1,13 +1,7 @@
 import { mkdir, readFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import {
-  type Computer,
-  type Context,
-  createContext,
-  createFragmentRegenerator,
-  uploadModel,
-} from "@ifc-viewer/core"
+import { type Computer, type Context, createContext, uploadModel } from "@ifc-viewer/core"
 import {
   createAIProviderFromEnv,
   createDatabase,
@@ -87,9 +81,7 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     await mkdir(localWorkspacesDir, { recursive: true })
   }
 
-  // Create fragment regenerator callback for when agent modifies IFC files
   const ifcProcessor = createThatOpenIFCProcessor()
-  const onFileSync = createFragmentRegenerator(db, storage, ifcProcessor)
 
   const ctx = createContext({
     db,
@@ -97,7 +89,6 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     ai,
     streams,
     ifcProcessor,
-    onFileSync,
 
     async computeFactory(projectId: string): Promise<Computer> {
       if (computeProvider === "docker") {

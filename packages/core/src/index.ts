@@ -177,8 +177,6 @@ export {
   type CreateProjectInput,
   // Change tracking
   createChangeTracker,
-  // Fragments
-  createFragmentRegenerator,
   // Project
   createProjectWithStorage,
   deleteModel,
@@ -194,7 +192,6 @@ export {
   type UpdateModelInput,
   type UploadModelInput,
   updateModel,
-  updateModelFragment,
   // Model
   uploadModel,
 } from "./services"

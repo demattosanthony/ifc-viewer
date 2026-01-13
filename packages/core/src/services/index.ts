@@ -22,7 +22,6 @@ export {
   type FileSnapshot,
   type OnFileSyncCallback,
 } from "./change-tracker"
-export { createFragmentRegenerator } from "./fragment.service"
 export {
   deleteModel,
   deleteProjectModels,
@@ -32,7 +31,6 @@ export {
   type UpdateModelInput,
   type UploadModelInput,
   updateModel,
-  updateModelFragment,
   uploadModel,
 } from "./model.service"
 export {
