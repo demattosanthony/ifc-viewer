@@ -32,8 +32,11 @@ import {
   SuccessResponse,
   sseResponse,
 } from "@ifc-viewer/interface"
+import { createLogger } from "@ifc-viewer/logger"
 import { Elysia } from "elysia"
 import { z } from "zod"
+
+const log = createLogger("conversations")
 
 // Track abort controllers by conversationId
 const abortControllers = new Map<string, AbortController>()
@@ -424,6 +427,17 @@ async function runGeneration(ctx: Context, params: GenerationParams): Promise<vo
       await ctx.streams.abort(streamId)
     } else {
       const message = err instanceof Error ? err.message : "Unknown error"
+      const stack = err instanceof Error ? err.stack : undefined
+
+      // Log error for debugging
+      log.error("AI chat generation failed", {
+        projectId,
+        conversationId,
+        streamId,
+        error: message,
+        stack,
+      })
+
       // Append error and finish events BEFORE marking stream as failed
       await ctx.streams.append(streamId, { type: "error", message } satisfies AIEvent)
       await ctx.streams.append(streamId, {
