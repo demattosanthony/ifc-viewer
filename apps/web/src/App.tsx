@@ -22,7 +22,7 @@ function AppContent() {
             config={{
               gridEnabled: false,
               statsEnabled: true,
-              backgroundColor: "#202124",
+              backgroundColor: "#1e1e1e",
             }}
           >
             <ViewerModeLayout projectId={projectId} />
@@ -34,7 +34,7 @@ function AppContent() {
             config={{
               gridEnabled: false,
               statsEnabled: true,
-              backgroundColor: "#202124",
+              backgroundColor: "#1e1e1e",
             }}
           >
             <EditorProvider initialFile="models/sample.ifc">
