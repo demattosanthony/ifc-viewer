@@ -7,6 +7,7 @@ import { CodeEditor } from "./viewers/code-editor"
 import { HtmlViewer } from "./viewers/html-viewer"
 import { IFCViewer } from "./viewers/ifc-viewer"
 import { PdfViewer } from "./viewers/pdf-viewer"
+import { UnsupportedViewer } from "./viewers/unsupported-viewer"
 
 interface EditorPaneProps {
   projectId: string
@@ -98,6 +99,10 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       return (
         <PdfViewer content={content.content} contentType={content.type} filename={activeTab.name} />
       )
+
+    case "unsupported":
+      return <UnsupportedViewer filename={activeTab.name} />
+
     default:
       return (
         <CodeEditor
