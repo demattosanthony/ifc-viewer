@@ -435,6 +435,29 @@ export class InteractionManager {
     return result
   }
 
+  /**
+   * Programmatically select elements and highlight them
+   * @param modelId The model ID containing the elements
+   * @param localIds Array of element IDs to select
+   * @param clearPrevious Whether to clear previous selection (default: true)
+   */
+  async selectElements(modelId: string, localIds: number[], clearPrevious = true): Promise<void> {
+    if (clearPrevious) {
+      this.clearSelection()
+    }
+
+    for (const localId of localIds) {
+      await this.addToSelection(modelId, localId)
+    }
+
+    // Update orbit to selection center
+    if (this.adaptiveOrbitOnSelect) {
+      await this.setOrbitToSelection()
+    }
+
+    this.emitSelectionEvent()
+  }
+
   dispose(): void {
     this.clearHover()
     this.clearSelection()

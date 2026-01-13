@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 type Direction = "horizontal" | "vertical"
 type Side = "left" | "right" | "top" | "bottom"
@@ -15,6 +15,8 @@ interface UseResizableOptions {
    * - "bottom": drag up to grow (default for vertical)
    */
   side?: Side
+  /** Persist size in localStorage when provided */
+  storageKey?: string
   /** For horizontal: collapse when dragged below threshold. For vertical: no collapse behavior */
   collapseThreshold?: number
   onCollapse?: () => void
@@ -36,13 +38,50 @@ export function useResizable({
   maxSize,
   direction,
   side,
+  storageKey,
   collapseThreshold,
   onCollapse,
   onExpand,
 }: UseResizableOptions): UseResizableReturn {
-  const [size, setSize] = useState(initialSize)
+  const clampSize = useCallback(
+    (value: number) => Math.max(minSize, Math.min(value, maxSize)),
+    [minSize, maxSize]
+  )
+
+  const [size, setSize] = useState(() => {
+    if (!storageKey || typeof window === "undefined") {
+      return initialSize
+    }
+
+    const storedSize = window.localStorage.getItem(storageKey)
+    if (!storedSize) {
+      return initialSize
+    }
+
+    const parsedSize = Number.parseFloat(storedSize)
+    if (!Number.isFinite(parsedSize)) {
+      return initialSize
+    }
+
+    return clampSize(parsedSize)
+  })
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const expandedSizeRef = useRef(size)
   const isDraggingRef = useRef(false)
+
+  useEffect(() => {
+    if (!isCollapsed) {
+      expandedSizeRef.current = size
+    }
+  }, [size, isCollapsed])
+
+  useEffect(() => {
+    if (!storageKey || typeof window === "undefined") {
+      return
+    }
+
+    window.localStorage.setItem(storageKey, String(size))
+  }, [size, storageKey])
 
   const collapse = useCallback(() => {
     setIsCollapsed(true)
@@ -52,10 +91,11 @@ export function useResizable({
   const expand = useCallback(
     (toSize?: number) => {
       setIsCollapsed(false)
-      setSize(toSize ?? initialSize)
+      const nextSize = clampSize(toSize ?? expandedSizeRef.current ?? initialSize)
+      setSize(nextSize)
       onExpand?.()
     },
-    [initialSize, onExpand]
+    [clampSize, initialSize, onExpand]
   )
 
   const handleResizeStart = useCallback(
@@ -90,7 +130,7 @@ export function useResizable({
           onCollapse?.()
         } else {
           setIsCollapsed(false)
-          setSize(Math.max(minSize, Math.min(newSize, maxSize)))
+          setSize(clampSize(newSize))
         }
       }
 
@@ -107,7 +147,7 @@ export function useResizable({
       document.addEventListener("mousemove", handleMouseMove)
       document.addEventListener("mouseup", handleMouseUp)
     },
-    [size, direction, side, minSize, maxSize, collapseThreshold, onCollapse]
+    [size, direction, side, clampSize, collapseThreshold, onCollapse]
   )
 
   return {

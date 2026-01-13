@@ -5,6 +5,7 @@ import { FolderPlus, PanelLeft, Plus, Upload } from "lucide-react"
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { useEditor } from "@/features/editor/context"
 import { useResizable } from "@/features/editor/hooks/use-resizable"
+import { ModeSwitch } from "@/shared/components/mode-switch"
 import { useFileOperations } from "../hooks/use-file-operations"
 import { DeleteDialog } from "./delete-dialog"
 import { FileTreeItem } from "./file-tree-item"
@@ -21,9 +22,9 @@ export interface FileBrowserHandle {
   refreshPath: (path: string) => void
 }
 
-const MIN_WIDTH = 160
-const MAX_WIDTH = 400
-const DEFAULT_WIDTH = 275
+const MIN_WIDTH = 200
+const MAX_WIDTH = 450
+const DEFAULT_WIDTH = 280
 const COLLAPSED_WIDTH = 48
 
 export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(function FileBrowser(
@@ -50,6 +51,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
     minSize: MIN_WIDTH,
     maxSize: MAX_WIDTH,
     direction: "horizontal",
+    storageKey: "ifc-viewer:left-sidebar-width",
     collapseThreshold: MIN_WIDTH - 50,
   })
 
@@ -262,10 +264,8 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
   return (
     <div className="relative flex" style={{ width }}>
       <div className="flex-1 bg-background border-r border-border flex flex-col min-w-0">
-        <div className="flex items-center justify-between px-2 h-[35px] border-b border-border">
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Explorer
-          </span>
+        <div className="flex items-center justify-between px-2 h-[41px] border-b border-border">
+          <ModeSwitch />
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => handleStartNewItem("file", ".")}

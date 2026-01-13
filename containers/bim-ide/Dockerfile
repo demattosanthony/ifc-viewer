@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Useful CLI tools
     jq \
     unzip \
+    # For entrypoint user switching
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (LTS)
@@ -55,12 +57,17 @@ RUN echo 'PS1="\[\033[36m\]\w\[\033[0m\] $ "' >> /etc/bash.bashrc \
 RUN mkdir -p /workspace && chown ${USER_ID}:${GROUP_ID} /workspace
 WORKDIR /workspace
 
-# Switch to non-root user
-USER bimuser
+# Configure bimuser's bashrc
+RUN echo 'PS1="\[\033[36m\]\w\[\033[0m\] $ "' >> /home/bimuser/.bashrc \
+    && echo 'alias ll="ls -la"' >> /home/bimuser/.bashrc
 
-# Configure user's bashrc (override default prompt)
-RUN echo 'PS1="\[\033[36m\]\w\[\033[0m\] $ "' >> ~/.bashrc \
-    && echo 'alias ll="ls -la"' >> ~/.bashrc
+# Copy and configure entrypoint script
+# Entrypoint runs as root to fix file ownership, then switches to bimuser
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Use entrypoint to ensure workspace files are owned by bimuser
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Keep container running (for exec-based interaction)
 CMD ["tail", "-f", "/dev/null"]

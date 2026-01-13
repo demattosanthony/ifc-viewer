@@ -45,28 +45,8 @@ function isBinaryContent(data: Uint8Array, path: string): boolean {
   return false
 }
 
-/**
- * Parse a storage key to extract file info
- */
-function _parseStorageEntry(
-  key: string,
-  prefix: string,
-  _size: number,
-  _lastModified?: Date
-): { name: string; path: string; isFile: boolean } {
-  // Remove prefix to get relative path
-  const relativePath = key.slice(prefix.length)
-  const parts = relativePath.split("/")
-  const name = parts[0] ?? relativePath
-
-  // If there are more parts after the first, this entry represents a directory
-  const isFile = parts.length === 1 && !relativePath.endsWith("/")
-
-  return {
-    name,
-    path: relativePath,
-    isFile,
-  }
+function isIfcFilePath(path: string): boolean {
+  return path.toLowerCase().endsWith(".ifc")
 }
 
 export class ProjectFilesController {
@@ -240,13 +220,23 @@ export class ProjectFilesController {
     log.debug("Deleting file", { projectId, path })
 
     try {
-      const storageKey = buildStorageKey(projectId, path)
+      const normalizedPath = normalizeStoragePath(path)
+      const storageKey = buildStorageKey(projectId, normalizedPath)
 
       // Delete the exact key (if file) and all keys with this prefix (if directory)
       await this.ctx.storage.delete(storageKey)
       await deleteStoragePrefix(this.ctx.storage, `${storageKey}/`)
 
       log.debug("Deleted from storage", { storageKey })
+
+      if (isIfcFilePath(normalizedPath)) {
+        const models = await this.ctx.db.models.findByProjectId(projectId)
+        const model = models.find((entry) => entry.filePath === normalizedPath)
+        if (model) {
+          await this.ctx.db.models.delete(model.id)
+          log.info("Model metadata deleted", { projectId, modelId: model.id, path: normalizedPath })
+        }
+      }
 
       return ok({ success: true, path })
     } catch (error) {

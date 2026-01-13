@@ -1,8 +1,8 @@
 "use client"
 
 import type { AIEvent } from "@ifc-viewer/core"
-import type { GetConversationResponse, ListConversationsResponse } from "@ifc-viewer/sdk"
-import { fetchSSE } from "@ifc-viewer/sdk"
+import type { ListConversationsResponse } from "@ifc-viewer/sdk"
+import { fetchSSE, getConversation, sendMessage as sendMessageApi } from "@ifc-viewer/sdk"
 import {
   createConversationMutation,
   deleteConversationMutation,
@@ -401,12 +401,11 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
 
     async function loadConversation() {
       try {
-        // Fetch conversation (includes isGenerating flag)
-        const convRes = await fetch(`${apiUrl}/api/projects/${projectId}/conversations/${convId}`)
+        const { data: conv, error } = await getConversation({
+          path: { id: projectId, conversationId: convId },
+        })
 
-        if (!convRes.ok || cancelled) return
-
-        const conv = (await convRes.json()) as GetConversationResponse
+        if (error || !conv || cancelled) return
         const dbMessages = toStreamingMessages(conv.messages)
 
         if (conv.isGenerating) {
@@ -560,18 +559,13 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
       setIsLoading(true)
 
       try {
-        // POST to /messages to start generation
-        const res = await fetch(
-          `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/messages`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content }),
-          }
-        )
+        const { error } = await sendMessageApi({
+          path: { id: projectId, conversationId: activeConvId },
+          body: { content },
+        })
 
-        if (!res.ok) {
-          throw new Error(`Failed to send message: ${res.status}`)
+        if (error) {
+          throw new Error("Failed to send message")
         }
 
         // Connect to /events to receive generation events

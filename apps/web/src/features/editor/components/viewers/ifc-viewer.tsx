@@ -1,16 +1,8 @@
-import { listModels, readProjectFile } from "@ifc-viewer/sdk"
+import { getModelFile, listModels, readProjectFile } from "@ifc-viewer/sdk"
 import { listModelsQueryKey } from "@ifc-viewer/sdk/hooks"
 import { useViewer } from "@ifc-viewer/viewer"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useRef, useState } from "react"
-
-/** Get the API base URL for direct fetch calls */
-function getApiBaseUrl(): string {
-  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL
-  }
-  return "http://localhost:3000"
-}
 
 export interface IFCViewerProps {
   projectId: string
@@ -30,7 +22,7 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
       const { data } = await listModels({ path: { id: projectId } })
       return data ?? []
     },
-    staleTime: 60_000, // Models list changes infrequently
+    staleTime: 60_000,
   })
 
   // Find the model matching this filePath
@@ -44,15 +36,15 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
     queryKey: ["ifc-content", projectId, filePath, model?.id],
     queryFn: async () => {
       if (model) {
-        // Use Models API - fetch raw binary directly
-        // Note: Using fetch() directly here as it returns binary data (not JSON)
-        const response = await fetch(
-          `${getApiBaseUrl()}/api/projects/${projectId}/models/${model.id}/file`
-        )
-        if (!response.ok) {
-          throw new Error(`Failed to fetch model file: ${response.statusText}`)
+        // Use Models API with SDK - fetch as blob and convert to ArrayBuffer
+        const response = await getModelFile({
+          path: { id: projectId, modelId: model.id },
+          parseAs: "blob",
+        })
+        if (!response.data) {
+          throw new Error("Failed to fetch model file: No data received")
         }
-        const buffer = await response.arrayBuffer()
+        const buffer = await (response.data as Blob).arrayBuffer()
         return { type: "binary" as const, buffer }
       } else {
         // Fall back to file API for unregistered IFC files
@@ -64,7 +56,7 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
       }
     },
     enabled: isInitialized && loadedPathRef.current !== filePath && modelsQuery.isSuccess,
-    staleTime: Infinity, // IFC files are large, don't refetch
+    staleTime: Infinity,
   })
 
   // Load the model when content is available
@@ -85,10 +77,8 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
         let buffer: ArrayBuffer
 
         if (result.type === "binary") {
-          // Models API returns ArrayBuffer directly
           buffer = result.buffer
         } else if (result.data?.type === "binary") {
-          // File API returns base64 encoded binary
           const binary = atob(result.data.content ?? "")
           buffer = new ArrayBuffer(binary.length)
           const view = new Uint8Array(buffer)
@@ -96,7 +86,6 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
             view[i] = binary.charCodeAt(i)
           }
         } else {
-          // File API returns text content
           const encoder = new TextEncoder()
           buffer = encoder.encode(result.data?.content ?? "").buffer
         }

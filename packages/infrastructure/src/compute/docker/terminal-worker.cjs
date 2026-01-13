@@ -48,7 +48,7 @@ async function initTerminal(containerId, options = {}) {
     // Support custom command (default to bash for backward compatibility)
     const command = options.command || ["/bin/bash", "-l"];
 
-    // Create exec with TTY
+    // Create exec with TTY as bimuser
     exec = await container.exec({
       Cmd: command,
       AttachStdin: true,
@@ -57,6 +57,7 @@ async function initTerminal(containerId, options = {}) {
       Tty: true,
       Env: envArray,
       WorkingDir: cwd,
+      User: "bimuser",
     });
     
     // Start with hijack to get bidirectional stream

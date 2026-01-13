@@ -152,7 +152,9 @@ function ToolCard({ tool }: { tool: UIToolPart }) {
 
 function UserMessage({ content }: { content: string }) {
   return (
-    <div className="rounded-xl bg-secondary/80 px-4 py-3 text-sm text-foreground">{content}</div>
+    <div className="max-w-[80%] rounded-xl bg-secondary/80 px-4 py-3 text-sm text-foreground">
+      {content}
+    </div>
   )
 }
 
@@ -215,7 +217,7 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
   // User message - compact rounded box
   if (isUser) {
     return (
-      <div className="w-full">
+      <div className="flex w-full justify-end">
         <UserMessage content={message.content} />
       </div>
     )
