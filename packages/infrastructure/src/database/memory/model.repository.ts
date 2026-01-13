@@ -56,6 +56,8 @@ export function createModelRepository(): ModelRepository {
         ...existing,
         name: input.name !== undefined ? input.name : existing.name,
         discipline: input.discipline !== undefined ? input.discipline : existing.discipline,
+        filePath: input.filePath !== undefined ? input.filePath : existing.filePath,
+        fileSize: input.fileSize !== undefined ? input.fileSize : existing.fileSize,
         fragmentPath: input.fragmentPath !== undefined ? input.fragmentPath : existing.fragmentPath,
         fragmentSize: input.fragmentSize !== undefined ? input.fragmentSize : existing.fragmentSize,
         fragmentVersion:

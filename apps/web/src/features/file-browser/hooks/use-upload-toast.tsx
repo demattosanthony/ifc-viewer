@@ -48,6 +48,15 @@ export function useUploadToast(
     }
   }, [isUploading, progress])
 
+  // Cleanup: dismiss toast on unmount to prevent stuck loading toast
+  useEffect(() => {
+    return () => {
+      if (toastId.current !== null) {
+        toast.dismiss(toastId.current)
+      }
+    }
+  }, [])
+
   // Handle completion
   useEffect(() => {
     if (!isUploading && result && toastId.current !== null) {

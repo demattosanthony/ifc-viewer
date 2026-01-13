@@ -68,6 +68,8 @@ export function createModelRepository(db: DrizzleDB | DrizzleTransaction): Model
       const updates: Partial<ModelRow> = { updatedAt: new Date() }
       if (input.name !== undefined) updates.name = input.name
       if (input.discipline !== undefined) updates.discipline = input.discipline
+      if (input.filePath !== undefined) updates.filePath = input.filePath
+      if (input.fileSize !== undefined) updates.fileSize = input.fileSize
       if (input.fragmentPath !== undefined) updates.fragmentPath = input.fragmentPath
       if (input.fragmentSize !== undefined) updates.fragmentSize = input.fragmentSize
       if (input.fragmentVersion !== undefined) updates.fragmentVersion = input.fragmentVersion

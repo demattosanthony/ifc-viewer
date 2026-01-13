@@ -227,14 +227,18 @@ export function createIFCSyncHandler(options: CreateIFCSyncHandlerOptions): OnFi
             }
           }
 
-          // Update model - but filePath is not in UpdateInput
-          // We'd need to add it or handle this differently
-          // For now, log a warning
-          log.warn("Model file path update not fully supported", {
+          // Update model metadata with new paths
+          await db.models.update(model.id, {
+            filePath: path,
+            fragmentPath: model.fragmentPath ? newFragmentPath : null,
+          })
+
+          log.info("Model file path updated", {
             projectId,
             modelId: model.id,
             oldPath: change.oldPath,
             newPath: path,
+            newFragmentPath: model.fragmentPath ? newFragmentPath : null,
           })
         } catch (error) {
           log.error("Failed to handle moved IFC file", { projectId, path, error })

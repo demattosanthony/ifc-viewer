@@ -52,6 +52,10 @@ export namespace Model {
   export type UpdateInput = {
     name?: string
     discipline?: ModelDiscipline
+    /** Path to IFC file (for move operations) */
+    filePath?: string
+    /** File size in bytes (for move operations) */
+    fileSize?: number
     fragmentPath?: string | null
     fragmentSize?: number | null
     fragmentVersion?: string | null
