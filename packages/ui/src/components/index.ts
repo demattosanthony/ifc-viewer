@@ -85,6 +85,14 @@ export {
   PromptInputTextarea,
 } from "./prompt-input"
 
+// Reasoning
+export {
+  Reasoning,
+  ReasoningBlock,
+  type ReasoningBlockProps,
+  type ReasoningProps,
+} from "./reasoning"
+
 // Separator
 export { Separator } from "./separator"
 

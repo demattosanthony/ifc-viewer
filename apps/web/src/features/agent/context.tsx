@@ -24,6 +24,7 @@ import {
   type StreamingMessage,
   toStreamingMessages,
   type UIMessagePart,
+  type UIReasoningPart,
   type UIToolPart,
 } from "./types"
 
@@ -41,6 +42,11 @@ interface StreamingToolState {
   lastPath: string | null
   currentLine: number
   currentColumn: number
+}
+
+interface StreamingReasoningState {
+  id: string
+  text: string
 }
 
 interface AgentContextValue {
@@ -101,6 +107,10 @@ function isToolPart(part: UIMessagePart): part is UIToolPart {
   return part.type === "tool-use"
 }
 
+function isReasoningPart(part: UIMessagePart): part is UIReasoningPart {
+  return part.type === "reasoning"
+}
+
 // ============================================================================
 // Provider
 // ============================================================================
@@ -122,6 +132,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
   const presenceCallbacksRef = useRef<Set<(event: AIEvent) => void>>(new Set())
   const currentStepRef = useRef<number>(0)
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map())
+  const streamingReasoningRef = useRef<Map<string, StreamingReasoningState>>(new Map())
   const isActivelyStreamingRef = useRef(false)
   const streamFinishedRef = useRef(false)
   const streamTokenRef = useRef(0)
@@ -372,22 +383,87 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           })
           break
 
-        case "finish":
-          streamFinishedRef.current = true
-          setIsLoading(false)
-          currentStepRef.current = 0
-          streamingToolsRef.current.clear()
+        // Reasoning events (extended thinking)
+        case "reasoning-start":
+          streamingReasoningRef.current.set(event.id, { id: event.id, text: "" })
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1
+            const lastMsg = prev[lastIdx]
+            if (lastMsg?.role !== "assistant") return prev
+
+            const reasoningPart: UIReasoningPart = {
+              type: "reasoning",
+              id: event.id,
+              text: "",
+              state: "streaming",
+              stepIndex: currentStepRef.current,
+            }
+
+            return [
+              ...prev.slice(0, lastIdx),
+              { ...lastMsg, parts: [...(lastMsg.parts || []), reasoningPart] },
+            ]
+          })
+          break
+
+        case "reasoning-delta": {
+          const reasoningState = streamingReasoningRef.current.get(event.id)
+          if (!reasoningState) break
+
+          reasoningState.text += event.delta
+
           setMessages((prev) => {
             const lastIdx = prev.length - 1
             const lastMsg = prev[lastIdx]
             if (lastMsg?.role !== "assistant") return prev
 
             const newParts = (lastMsg.parts || []).map((p) =>
-              isToolPart(p) &&
-              (p.state === "running" || p.state === "pending" || p.state === "streaming")
-                ? { ...p, state: "completed" as const }
-                : p
+              isReasoningPart(p) && p.id === event.id ? { ...p, text: p.text + event.delta } : p
             )
+
+            return [...prev.slice(0, lastIdx), { ...lastMsg, parts: newParts }]
+          })
+          break
+        }
+
+        case "reasoning-end":
+          streamingReasoningRef.current.delete(event.id)
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1
+            const lastMsg = prev[lastIdx]
+            if (lastMsg?.role !== "assistant") return prev
+
+            const newParts = (lastMsg.parts || []).map((p) =>
+              isReasoningPart(p) && p.id === event.id ? { ...p, state: "done" as const } : p
+            )
+
+            return [...prev.slice(0, lastIdx), { ...lastMsg, parts: newParts }]
+          })
+          break
+
+        case "finish":
+          streamFinishedRef.current = true
+          setIsLoading(false)
+          currentStepRef.current = 0
+          streamingToolsRef.current.clear()
+          streamingReasoningRef.current.clear()
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1
+            const lastMsg = prev[lastIdx]
+            if (lastMsg?.role !== "assistant") return prev
+
+            const newParts = (lastMsg.parts || []).map((p) => {
+              if (
+                isToolPart(p) &&
+                (p.state === "running" || p.state === "pending" || p.state === "streaming")
+              ) {
+                return { ...p, state: "completed" as const }
+              }
+              if (isReasoningPart(p) && p.state === "streaming") {
+                return { ...p, state: "done" as const }
+              }
+              return p
+            })
 
             return [...prev.slice(0, lastIdx), { ...lastMsg, parts: newParts }]
           })
@@ -398,6 +474,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           setIsLoading(false)
           currentStepRef.current = 0
           streamingToolsRef.current.clear()
+          streamingReasoningRef.current.clear()
           markInFlightTools(event.message)
           console.error("[Agent] Error:", event.message)
           break

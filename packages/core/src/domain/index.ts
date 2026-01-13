@@ -19,6 +19,8 @@ export {
   // Message
   type Message,
   type MessagePart,
+  type MessagePartReasoning,
+  MessagePartReasoningSchema,
   MessagePartSchema,
   type MessagePartText,
   MessagePartTextSchema,

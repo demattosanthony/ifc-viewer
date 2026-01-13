@@ -14,6 +14,13 @@ function rowToMessagePart(row: MessagePartRow): MessagePart {
       text: row.text ?? "",
     }
   }
+  if (row.type === "reasoning") {
+    return {
+      type: "reasoning",
+      id: row.reasoningId ?? "",
+      text: row.text ?? "",
+    }
+  }
   return {
     type: "tool-use",
     id: row.toolCallId ?? "",
@@ -38,12 +45,16 @@ export function createMessagePartRepository(
           id: generateId(),
           messageId,
           position,
-          type: part.type as "text" | "tool-use",
+          type: part.type as "text" | "tool-use" | "reasoning",
           createdAt: now,
         }
 
         if (part.type === "text") {
           return { ...base, text: part.text }
+        }
+
+        if (part.type === "reasoning") {
+          return { ...base, reasoningId: part.id, text: part.text }
         }
 
         return {

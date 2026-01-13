@@ -25,6 +25,9 @@ export type ToolStreamingState =
   | "error"
   | "needs-approval"
 
+/** Streaming states for reasoning */
+export type ReasoningStreamingState = "streaming" | "done"
+
 /** Text part: API type + stepIndex */
 export type UITextPart = ApiTextPart & { stepIndex: number }
 
@@ -34,7 +37,16 @@ export type UIToolPart = Omit<ApiToolPart, "status"> & {
   stepIndex: number
 }
 
-export type UIMessagePart = UITextPart | UIToolPart
+/** Reasoning part: for displaying AI thinking/reasoning traces */
+export type UIReasoningPart = {
+  type: "reasoning"
+  id: string
+  text: string
+  state: ReasoningStreamingState
+  stepIndex: number
+}
+
+export type UIMessagePart = UITextPart | UIToolPart | UIReasoningPart
 
 /** Message with UI streaming state */
 export interface StreamingMessage {
@@ -49,13 +61,39 @@ export interface StreamingMessage {
 // Converter (API → UI)
 // ============================================================================
 
+// Reasoning part from API (may or may not exist in SDK types yet)
+interface ApiReasoningPart {
+  type: "reasoning"
+  id: string
+  text: string
+}
+
+function isApiReasoningPart(p: ApiPart | ApiReasoningPart): p is ApiReasoningPart {
+  return p.type === "reasoning"
+}
+
 /** Convert API messages to UI format */
 export function toStreamingMessages(messages: ApiMessage[]): StreamingMessage[] {
   return messages.map((m) => {
-    const parts: UIMessagePart[] = m.parts.map((p) => {
+    // Cast parts to allow reasoning type (SDK may not have it yet)
+    const apiParts = m.parts as (ApiPart | ApiReasoningPart)[]
+
+    const parts: UIMessagePart[] = apiParts.map((p) => {
       if (p.type === "text") {
         return { ...p, stepIndex: 0 }
       }
+
+      // Handle reasoning parts (may not be in SDK types yet)
+      if (isApiReasoningPart(p)) {
+        return {
+          type: "reasoning" as const,
+          id: p.id,
+          text: p.text,
+          state: "done" as const,
+          stepIndex: 0,
+        }
+      }
+
       const { status, ...rest } = p
       const state = status === "success" ? "completed" : "error"
       const error = status === "aborted" ? (rest.error ?? "Cancelled") : rest.error
