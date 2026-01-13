@@ -47,7 +47,7 @@ bun run db:start         # Start Postgres container
 bun run db:stop          # Stop Postgres container
 
 # SDK (regenerate after API changes)
-bun run generate:sdk     # Requires server running
+bun run generate:sdk
 
 # Docker
 bun run docker:build:bim-ide  # Build compute container
@@ -152,7 +152,7 @@ await writeFile.mutateAsync({
 });
 ```
 
-**When you modify API routes, regenerate the SDK:** `bun run generate:sdk`
+**Regenerate the SDK whenever API routes or DTOs change:** `bun run generate:sdk`
 
 Exceptions where `fetch()` is OK: SSE streaming (`fetchSSE`), external APIs, S3 presigned uploads.
 

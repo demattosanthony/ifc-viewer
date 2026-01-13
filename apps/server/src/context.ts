@@ -26,60 +26,44 @@ const SAMPLE_PY_SCRIPT_PATH = resolve(__dirname, "..", "assets", "print_info.py"
 const DEFAULT_DOCKER_IMAGE = "bim-ide:latest"
 
 export type ComputeProvider = "local" | "docker"
+export type AppContextMode = "server" | "offline"
 
-export type AppContextConfig = {
-  /** Directory for local compute workspaces (only used when computeProvider is "local") */
-  localWorkspacesDir?: string
-  dataDirectory?: string
-  storageDirectory?: string
-  databaseUrl?: string
-  computeProvider?: ComputeProvider
-  dockerImage?: string
-}
+export async function createAppContext(mode: AppContextMode = "server"): Promise<Context> {
+  const isOffline = mode === "offline"
+  const computeProvider: ComputeProvider = isOffline
+    ? "local"
+    : ((process.env.COMPUTE_PROVIDER as ComputeProvider | undefined) ?? "docker")
+  const dockerImage = process.env.DOCKER_IMAGE
 
-function getDatabaseConfig(config: AppContextConfig): DatabaseConfig {
-  const databaseUrl = config.databaseUrl ?? process.env.DATABASE_URL
-  if (databaseUrl) {
-    return { type: "postgres", connectionString: databaseUrl }
-  }
-  const dataDirectory =
-    config.dataDirectory ?? process.env.DATA_DIR ?? resolve(MONOREPO_ROOT, ".data", "sqlite")
-  return { type: "sqlite", dataDirectory }
-}
+  const dbConfig: DatabaseConfig = isOffline
+    ? { type: "memory" }
+    : (() => {
+        const databaseUrl = process.env.DATABASE_URL
+        if (databaseUrl) {
+          return { type: "postgres", connectionString: databaseUrl }
+        }
+        const dataDirectory = process.env.DATA_DIR ?? resolve(MONOREPO_ROOT, ".data", "sqlite")
+        return { type: "sqlite", dataDirectory }
+      })()
 
-export async function createAppContext(config: AppContextConfig = {}): Promise<Context> {
-  const storageDirectory =
-    config.storageDirectory ??
-    process.env.STORAGE_LOCAL_BASE_DIR ??
-    resolve(MONOREPO_ROOT, ".data", "storage")
-  const computeProvider: ComputeProvider =
-    config.computeProvider ??
-    (process.env.COMPUTE_PROVIDER as ComputeProvider | undefined) ??
-    "docker"
-  const dockerImage = config.dockerImage ?? process.env.DOCKER_IMAGE
-
-  await mkdir(storageDirectory, { recursive: true })
-
-  const dbConfig = getDatabaseConfig(config)
   if (dbConfig.type === "sqlite") {
     await mkdir(dbConfig.dataDirectory, { recursive: true })
   }
 
+  const storageDirectory =
+    process.env.STORAGE_LOCAL_BASE_DIR ?? resolve(MONOREPO_ROOT, ".data", "storage")
+  const storage = isOffline
+    ? createStorage({ type: "memory" })
+    : createStorage({ type: "local", baseDir: storageDirectory })
+
   log.info("Initializing context", { computeProvider })
 
   const db = await createDatabase(dbConfig)
-  const storage = createStorage({ type: "local", baseDir: storageDirectory })
   const ai = createAIProviderFromEnv()
   const streams = createMemoryStreamStore({ ttlMs: 30 * 60 * 1000 }) // 30 minutes
 
-  // Local compute needs a host directory for workspaces
   const localWorkspacesDir =
-    config.localWorkspacesDir ??
-    process.env.WORKSPACES_DIR ??
-    resolve(MONOREPO_ROOT, ".data", "workspaces")
-  if (computeProvider === "local") {
-    await mkdir(localWorkspacesDir, { recursive: true })
-  }
+    process.env.WORKSPACES_DIR ?? resolve(MONOREPO_ROOT, ".data", "workspaces")
 
   const ifcProcessor = createThatOpenIFCProcessor()
 
@@ -101,7 +85,10 @@ export async function createAppContext(config: AppContextConfig = {}): Promise<C
     },
   })
 
-  await bootstrapSampleProject(ctx)
+  if (!isOffline) {
+    await bootstrapSampleProject(ctx)
+  }
+
   return ctx
 }
 
