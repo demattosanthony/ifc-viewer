@@ -233,6 +233,13 @@ export class ProjectFilesController {
         const models = await this.ctx.db.models.findByProjectId(projectId)
         const model = models.find((entry) => entry.filePath === normalizedPath)
         if (model) {
+          // Delete fragment file from storage if exists
+          if (model.fragmentPath) {
+            const fragmentStorageKey = buildStorageKey(projectId, model.fragmentPath)
+            await this.ctx.storage.delete(fragmentStorageKey)
+            log.debug("Fragment file deleted", { projectId, fragmentPath: model.fragmentPath })
+          }
+
           await this.ctx.db.models.delete(model.id)
           log.info("Model metadata deleted", { projectId, modelId: model.id, path: normalizedPath })
         }
