@@ -123,6 +123,8 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
   const currentStepRef = useRef<number>(0)
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map())
   const isActivelyStreamingRef = useRef(false)
+  const streamFinishedRef = useRef(false)
+  const streamTokenRef = useRef(0)
 
   const apiUrl = import.meta.env.VITE_API_URL || ""
 
@@ -149,6 +151,35 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
       callback(event)
     }
   }, [])
+
+  const markInFlightTools = useCallback((message: string) => {
+    setMessages((prev) => {
+      const lastIdx = prev.length - 1
+      const lastMsg = prev[lastIdx]
+      if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.parts) return prev
+
+      let updated = false
+      const parts = lastMsg.parts.map((part) => {
+        if (!isToolPart(part)) return part
+        if (part.state === "completed" || part.state === "error") return part
+        updated = true
+        return { ...part, state: "error" as const, error: message }
+      })
+
+      if (!updated) return prev
+      return [...prev.slice(0, lastIdx), { ...lastMsg, parts }]
+    })
+  }, [])
+
+  const handleStreamEnd = useCallback(
+    (streamToken: number, message: string) => {
+      if (streamToken !== streamTokenRef.current) return
+      if (streamFinishedRef.current) return
+      streamFinishedRef.current = true
+      markInFlightTools(message)
+    },
+    [markInFlightTools]
+  )
 
   const handleAIEvent = useCallback(
     (event: AIEvent) => {
@@ -342,6 +373,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           break
 
         case "finish":
+          streamFinishedRef.current = true
           setIsLoading(false)
           currentStepRef.current = 0
           streamingToolsRef.current.clear()
@@ -362,14 +394,16 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           break
 
         case "error":
+          streamFinishedRef.current = true
           setIsLoading(false)
           currentStepRef.current = 0
           streamingToolsRef.current.clear()
+          markInFlightTools(event.message)
           console.error("[Agent] Error:", event.message)
           break
       }
     },
-    [emitPresenceEvent]
+    [emitPresenceEvent, markInFlightTools]
   )
 
   // ============================================================================
@@ -425,12 +459,24 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           ])
           setIsLoading(true)
           abortControllerRef.current = controller
+          streamFinishedRef.current = false
+          const streamToken = ++streamTokenRef.current
 
           // Connect to events stream
           await fetchSSE<AIEvent>({
             url: `${apiUrl}/api/projects/${projectId}/conversations/${convId}/events`,
             method: "GET",
             onEvent: handleAIEvent,
+            onComplete: () => {
+              if (!cancelled) {
+                handleStreamEnd(streamToken, "Cancelled")
+              }
+            },
+            onError: (error) => {
+              if (!cancelled) {
+                handleStreamEnd(streamToken, error.message)
+              }
+            },
             signal: controller.signal,
             eventName: "message",
           })
@@ -458,7 +504,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
       cancelled = true
       controller.abort()
     }
-  }, [conversationId, projectId, handleAIEvent])
+  }, [conversationId, projectId, handleAIEvent, handleStreamEnd])
 
   // ============================================================================
   // Conversation Management
@@ -513,6 +559,8 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
   const sendMessage = useCallback(
     async (content: string) => {
       abortControllerRef.current?.abort()
+      markInFlightTools("Cancelled")
+      streamFinishedRef.current = true
       isActivelyStreamingRef.current = true
 
       const controller = new AbortController()
@@ -569,10 +617,18 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
         }
 
         // Connect to /events to receive generation events
+        streamFinishedRef.current = false
+        const streamToken = ++streamTokenRef.current
         await fetchSSE<AIEvent>({
           url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/events`,
           method: "GET",
           onEvent: handleAIEvent,
+          onComplete: () => {
+            handleStreamEnd(streamToken, "Cancelled")
+          },
+          onError: (error) => {
+            handleStreamEnd(streamToken, error.message)
+          },
           signal: controller.signal,
           eventName: "message",
         })
@@ -589,12 +645,22 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
         })
       }
     },
-    [projectId, conversationId, createConvMutation, handleAIEvent, queryClient]
+    [
+      projectId,
+      conversationId,
+      createConvMutation,
+      handleAIEvent,
+      handleStreamEnd,
+      markInFlightTools,
+      queryClient,
+    ]
   )
 
   const stop = useCallback(async () => {
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
+    markInFlightTools("Cancelled")
+    streamFinishedRef.current = true
     isActivelyStreamingRef.current = false
 
     if (conversationId) {
@@ -609,7 +675,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
 
     setIsLoading(false)
     streamingToolsRef.current.clear()
-  }, [stopMutation, projectId, conversationId])
+  }, [stopMutation, projectId, conversationId, markInFlightTools])
 
   const clearMessages = useCallback(async () => {
     if (conversationId) {

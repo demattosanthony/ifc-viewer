@@ -57,10 +57,13 @@ export function toStreamingMessages(messages: ApiMessage[]): StreamingMessage[] 
         return { ...p, stepIndex: 0 }
       }
       const { status, ...rest } = p
+      const state = status === "success" ? "completed" : "error"
+      const error = status === "aborted" ? (rest.error ?? "Cancelled") : rest.error
       return {
         ...rest,
-        state: status === "success" ? "completed" : status === "error" ? "error" : "pending",
+        state,
         stepIndex: 0,
+        ...(error ? { error } : {}),
       } as UIToolPart
     })
 
