@@ -183,7 +183,6 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     clearMessages,
     deselectConversation,
     selectConversation,
-    createNewConversation,
     deleteConversation,
   } = useAgent()
   const [inputValue, setInputValue] = useState("")
@@ -217,7 +216,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   }
 
   const handleNewConversation = () => {
-    createNewConversation()
+    deselectConversation()
   }
 
   const handleBackToList = () => {

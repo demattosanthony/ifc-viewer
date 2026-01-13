@@ -168,7 +168,7 @@ interface ToolbarContainerProps {
 function ToolbarContainer({ children }: ToolbarContainerProps) {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-      <div className="flex items-center gap-1 px-2 py-1.5 bg-background/80 backdrop-blur-lg rounded-xl border border-border/50 shadow-lg">
+      <div className="flex items-center gap-1 px-2 py-1.5 bg-background rounded-xl border border-border/50 shadow-lg">
         {children}
       </div>
     </div>

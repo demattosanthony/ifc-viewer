@@ -1,15 +1,16 @@
 import { formDataBodySerializer } from "@ifc-viewer/sdk"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useCallback, useState } from "react"
 import {
   confirmProjectUploadMutation,
   createProjectDirectoryMutation,
   deleteProjectFileMutation,
   getProjectPresignedUrlMutation,
+  listModelsQueryKey,
   uploadModelMutation,
   uploadProjectFileMutation,
   writeProjectFileMutation,
 } from "@ifc-viewer/sdk/hooks"
-import { useMutation } from "@tanstack/react-query"
-import { useCallback, useState } from "react"
 
 /** Check if a file is an IFC model based on extension */
 function isIfcFile(filename: string): boolean {
@@ -35,6 +36,7 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
     current: number
     total: number
   } | null>(null)
+  const queryClient = useQueryClient()
 
   // SDK mutations - use project-based endpoints
   const writeFile = useMutation({ ...writeProjectFileMutation() })
@@ -109,8 +111,12 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
           "Content-Type": null as unknown as string,
         },
       })
+
+      await queryClient.invalidateQueries({
+        queryKey: listModelsQueryKey({ path: { id: projectId } }),
+      })
     },
-    [projectId, uploadModel]
+    [projectId, queryClient, uploadModel]
   )
 
   /**
@@ -242,6 +248,12 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
 
         onTabClose?.()
 
+        if (isIfcFile(path) || path === "models" || path.startsWith("models/")) {
+          await queryClient.invalidateQueries({
+            queryKey: listModelsQueryKey({ path: { id: projectId } }),
+          })
+        }
+
         const parentPath = path.includes("/")
           ? path.substring(0, path.lastIndexOf("/")) || "."
           : "."
@@ -252,7 +264,7 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
         return false
       }
     },
-    [projectId, onRefresh, deleteFile]
+    [projectId, onRefresh, deleteFile, queryClient]
   )
 
   const initiateDelete = useCallback((path: string, isDirectory: boolean) => {

@@ -254,6 +254,13 @@ export const ViewerProvider = ({ children, config, workerUrl }: ViewerProviderPr
     []
   )
 
+  const selectElements = useCallback(
+    async (modelId: string, localIds: number[], clearPrevious = true) => {
+      await interactionRef.current?.selectElements(modelId, localIds, clearPrevious)
+    },
+    []
+  )
+
   // Camera control callbacks
   const setCameraMode = useCallback(
     (mode: CameraState["mode"]) => cameraManagerRef.current?.setMode(mode),
@@ -313,11 +320,13 @@ export const ViewerProvider = ({ children, config, workerUrl }: ViewerProviderPr
     loadModel,
     unloadModel,
     unloadAllModels,
+    selectElements,
     initialize,
     dispose,
     resize,
     camera,
     planViews,
+    backgroundColor: config?.backgroundColor ?? null,
   }
 
   return <ViewerContext.Provider value={value}>{children}</ViewerContext.Provider>

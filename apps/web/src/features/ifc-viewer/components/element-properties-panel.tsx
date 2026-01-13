@@ -1,11 +1,14 @@
 import { Button } from "@ifc-viewer/ui/components"
 import { cn } from "@ifc-viewer/ui/lib"
-import { Box, ChevronDown, ChevronRight, Info, Layers, X } from "lucide-react"
-import { useMemo, useState } from "react"
-
-// ============================================================================
-// Types
-// ============================================================================
+import { Box, ChevronDown, ChevronRight, GripHorizontal, Info, Layers, X } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { useDraggable } from "../hooks/use-draggable"
+import {
+  extractElementData,
+  formatValue,
+  type Material,
+  type PropertySet,
+} from "../utils/ifc-element"
 
 interface ElementPropertiesPanelProps {
   element: Record<string, unknown> | null
@@ -19,193 +22,50 @@ interface PropertySectionProps {
   defaultOpen?: boolean
 }
 
-interface PropertyRowProps {
-  label: string
-  value: unknown
-  indent?: number
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—"
-  if (typeof value === "boolean") return value ? "Yes" : "No"
-  if (typeof value === "number") {
-    // Format numbers nicely
-    if (Number.isInteger(value)) return value.toString()
-    return value.toFixed(4).replace(/\.?0+$/, "")
-  }
-  if (typeof value === "string") return value || "—"
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "—"
-    // For coordinate arrays like RefLatitude
-    if (value.every((v) => typeof v === "number")) {
-      return value.join(", ")
-    }
-  }
-  return JSON.stringify(value)
-}
-
-function extractMaterials(hasAssociations: unknown[]): { name: string; thickness?: number }[] {
-  const materials: { name: string; thickness?: number }[] = []
-
-  for (const assoc of hasAssociations) {
-    if (typeof assoc !== "object" || assoc === null) continue
-    const a = assoc as Record<string, unknown>
-
-    // Direct materials list
-    if (Array.isArray(a.Materials)) {
-      for (const mat of a.Materials) {
-        if (typeof mat === "object" && mat !== null && "Name" in mat) {
-          materials.push({ name: (mat as { Name: string }).Name })
-        }
-      }
-    }
-
-    // Material layers (for walls, slabs, etc.)
-    if (Array.isArray(a.ForLayerSet)) {
-      for (const layerSet of a.ForLayerSet) {
-        if (
-          typeof layerSet === "object" &&
-          layerSet !== null &&
-          Array.isArray((layerSet as Record<string, unknown>).MaterialLayers)
-        ) {
-          const layers = (layerSet as Record<string, unknown>).MaterialLayers as unknown[]
-          for (const layer of layers) {
-            if (typeof layer === "object" && layer !== null) {
-              const l = layer as Record<string, unknown>
-              const thickness = l.LayerThickness as number | undefined
-              if (Array.isArray(l.Material) && l.Material.length > 0) {
-                const mat = l.Material[0] as Record<string, unknown>
-                if (mat.Name) {
-                  materials.push({
-                    name: mat.Name as string,
-                    thickness: thickness ? thickness * 100 : undefined, // Convert to cm
-                  })
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return materials
-}
-
-function extractPropertySets(
-  isDefinedBy: unknown[]
-): { name: string; properties: { name: string; value: unknown }[] }[] {
-  const psets: {
-    name: string
-    properties: { name: string; value: unknown }[]
-  }[] = []
-
-  for (const def of isDefinedBy) {
-    if (typeof def !== "object" || def === null) continue
-    const d = def as Record<string, unknown>
-
-    if (d.Name && Array.isArray(d.HasProperties)) {
-      const props: { name: string; value: unknown }[] = []
-      for (const prop of d.HasProperties) {
-        if (typeof prop === "object" && prop !== null) {
-          const p = prop as Record<string, unknown>
-          if (p.Name && p.NominalValue !== undefined) {
-            props.push({
-              name: p.Name as string,
-              value: p.NominalValue,
-            })
-          }
-        }
-      }
-      if (props.length > 0) {
-        psets.push({
-          name: d.Name as string,
-          properties: props,
-        })
-      }
-    }
-  }
-
-  return psets
-}
-
-function extractLocation(
-  containedInStructure: unknown[]
-): { level: string; building: string } | null {
-  if (!Array.isArray(containedInStructure) || containedInStructure.length === 0) return null
-
-  const structure = containedInStructure[0] as Record<string, unknown>
-  if (!structure) return null
-
-  const level = (structure.Name as string) || (structure.LongName as string)
-  let building = ""
-
-  // Try to get building info from Decomposes hierarchy
-  const decomposes = structure.Decomposes
-  if (Array.isArray(decomposes) && decomposes.length > 0) {
-    const parent = decomposes[0] as Record<string, unknown> | undefined
-    if (parent?.Name) {
-      building = parent.Name as string
-    }
-  }
-
-  return { level: level || "Unknown", building }
-}
-
-// ============================================================================
-// Components
-// ============================================================================
-
 function PropertySection({ title, icon, children, defaultOpen = true }: PropertySectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
-    <div className="border-b border-[#3c3c3c] last:border-b-0">
+    <div className="border-b border-border last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-[#2a2d2e] transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-accent transition-colors"
       >
         {isOpen ? (
-          <ChevronDown className="size-4 text-[#858585]" />
+          <ChevronDown className="size-4 text-muted-foreground" />
         ) : (
-          <ChevronRight className="size-4 text-[#858585]" />
+          <ChevronRight className="size-4 text-muted-foreground" />
         )}
         {icon}
-        <span className="text-xs font-medium text-[#cccccc]">{title}</span>
+        <span className="text-xs font-medium text-foreground">{title}</span>
       </button>
       {isOpen && <div className="px-3 pb-2">{children}</div>}
     </div>
   )
 }
 
-function PropertyRow({ label, value, indent = 0 }: PropertyRowProps) {
+function PropertyRow({ label, value }: { label: string; value: unknown }) {
   const formattedValue = formatValue(value)
   if (formattedValue === "—") return null
 
   return (
-    <div
-      className={cn("flex justify-between items-start gap-3 py-1 text-xs", indent > 0 && "ml-3")}
-    >
-      <span className="text-[#858585] shrink-0">{label}</span>
-      <span className="text-right font-mono text-[#9cdcfe] break-all">{formattedValue}</span>
+    <div className="flex justify-between items-start gap-3 py-1 text-xs">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="text-right font-mono text-primary break-all">{formattedValue}</span>
     </div>
   )
 }
 
-function MaterialsList({ materials }: { materials: { name: string; thickness?: number }[] }) {
+function MaterialsList({ materials }: { materials: Material[] }) {
   if (materials.length === 0) return null
 
   return (
     <div className="space-y-0.5">
       {materials.map((mat) => (
         <div key={mat.name} className="flex justify-between items-center py-1 text-xs">
-          <span className="text-[#858585]">{mat.name}</span>
+          <span className="text-muted-foreground">{mat.name}</span>
           {mat.thickness && (
-            <span className="font-mono text-[#9cdcfe]">{mat.thickness.toFixed(1)} cm</span>
+            <span className="font-mono text-primary">{mat.thickness.toFixed(1)} cm</span>
           )}
         </div>
       ))}
@@ -213,18 +73,14 @@ function MaterialsList({ materials }: { materials: { name: string; thickness?: n
   )
 }
 
-function PropertySetsList({
-  psets,
-}: {
-  psets: { name: string; properties: { name: string; value: unknown }[] }[]
-}) {
+function PropertySetsList({ psets }: { psets: PropertySet[] }) {
   if (psets.length === 0) return null
 
   return (
     <div className="space-y-2">
       {psets.map((pset) => (
         <div key={pset.name}>
-          <div className="text-[10px] font-medium text-[#4ec9b0] mb-1">
+          <div className="text-[10px] font-medium text-primary mb-1">
             {pset.name.replace("Pset_", "")}
           </div>
           <div className="space-y-0">
@@ -238,73 +94,68 @@ function PropertySetsList({
   )
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
 export function ElementPropertiesPanel({ element, onClose }: ElementPropertiesPanelProps) {
-  // Extract data from element
-  const { materials, propertySets, location, basicInfo } = useMemo(() => {
-    if (!element) {
-      return {
-        materials: [],
-        propertySets: [],
-        location: null,
-        basicInfo: null,
-      }
-    }
+  const { position, isDragging, handleMouseDown, setPosition } = useDraggable({ x: 16, y: 16 })
 
-    const hasAssociations = element.HasAssociations as unknown[] | undefined
-    const isDefinedBy = element.IsDefinedBy as unknown[] | undefined
-    const containedInStructure = element.ContainedInStructure as unknown[] | undefined
-
-    return {
-      materials: hasAssociations ? extractMaterials(hasAssociations) : [],
-      propertySets: isDefinedBy ? extractPropertySets(isDefinedBy) : [],
-      location: containedInStructure ? extractLocation(containedInStructure) : null,
-      basicInfo: {
-        name: element.Name as string,
-        type: element.ObjectType as string,
-        tag: element.Tag as string,
-        predefinedType: element.PredefinedType as string | undefined,
-      },
+  useEffect(() => {
+    if (element) {
+      setPosition({ x: 16, y: 16 })
     }
-  }, [element])
+  }, [element, setPosition])
+
+  const { materials, propertySets, location, basicInfo } = useMemo(
+    () =>
+      element
+        ? extractElementData(element)
+        : { materials: [], propertySets: [], location: null, basicInfo: null },
+    [element]
+  )
 
   if (!element) return null
 
   return (
     <div
       className={cn(
-        "w-72 shrink-0",
-        "bg-background border-l border-border",
-        "flex flex-col overflow-hidden"
+        "absolute z-50 w-72",
+        "bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-xl",
+        "flex flex-col overflow-hidden",
+        isDragging && "cursor-grabbing select-none"
       )}
+      style={{ left: position.x, top: position.y, maxHeight: "calc(100% - 32px)" }}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 p-3 border-b border-border">
-        <div className="min-w-0">
-          <h2 className="font-medium text-sm text-[#cccccc] truncate">
+      {/* Drag Handle Header */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 border-b border-border",
+          "cursor-grab active:cursor-grabbing bg-muted/50"
+        )}
+      >
+        <GripHorizontal className="size-4 text-muted-foreground" />
+        <div className="flex-1 min-w-0">
+          <h2 className="font-medium text-sm text-foreground truncate">
             {basicInfo?.name?.split(":")[0] || "Element"}
           </h2>
           {basicInfo?.type && (
-            <p className="text-xs text-[#858585] truncate mt-0.5">{basicInfo.type.split(":")[0]}</p>
+            <p className="text-xs text-muted-foreground truncate">{basicInfo.type.split(":")[0]}</p>
           )}
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="size-7 shrink-0 text-[#858585] hover:text-[#cccccc] hover:bg-[#3c3c3c]"
+          className="size-6 shrink-0 text-muted-foreground hover:text-foreground"
           onClick={onClose}
         >
-          <X className="size-4" />
+          <X className="size-3.5" />
         </Button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Basic Info */}
-        <PropertySection title="Information" icon={<Info className="size-4 text-[#858585]" />}>
+      <div className="flex-1 overflow-y-auto max-h-[420px]">
+        <PropertySection
+          title="Information"
+          icon={<Info className="size-4 text-muted-foreground" />}
+        >
           <div className="space-y-0.5">
             {basicInfo?.tag && <PropertyRow label="ID" value={basicInfo.tag} />}
             {basicInfo?.predefinedType && (
@@ -314,28 +165,23 @@ export function ElementPropertiesPanel({ element, onClose }: ElementPropertiesPa
           </div>
         </PropertySection>
 
-        {/* Materials */}
         {materials.length > 0 && (
-          <PropertySection title="Materials" icon={<Layers className="size-4 text-[#858585]" />}>
+          <PropertySection
+            title="Materials"
+            icon={<Layers className="size-4 text-muted-foreground" />}
+          >
             <MaterialsList materials={materials} />
           </PropertySection>
         )}
 
-        {/* Property Sets */}
         {propertySets.length > 0 && (
           <PropertySection
             title="Properties"
-            icon={<Box className="size-4 text-[#858585]" />}
-            defaultOpen={true}
+            icon={<Box className="size-4 text-muted-foreground" />}
           >
             <PropertySetsList psets={propertySets} />
           </PropertySection>
         )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-3 py-2 border-t border-border">
-        <p className="text-[10px] text-[#858585] text-center">Click elsewhere to deselect</p>
       </div>
     </div>
   )

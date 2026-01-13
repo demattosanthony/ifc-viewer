@@ -33,6 +33,7 @@ export class DockerFileSystem implements FileSystem {
       AttachStdout: true,
       AttachStderr: true,
       Tty: false,
+      User: "bimuser",
     })
 
     const stream = await exec.start({ Tty: false })
@@ -88,10 +89,14 @@ export class DockerFileSystem implements FileSystem {
 
     const header = Buffer.alloc(headerSize)
 
+    // Use bimuser UID/GID (1000) instead of root for proper ownership
+    const uid = 1000
+    const gid = 1000
+
     header.write(basename, 0, Math.min(basename.length, 100))
     header.write("0000644\0", 100, 8)
-    header.write("0000000\0", 108, 8)
-    header.write("0000000\0", 116, 8)
+    header.write(`${uid.toString(8).padStart(7, "0")}\0`, 108, 8)
+    header.write(`${gid.toString(8).padStart(7, "0")}\0`, 116, 8)
     header.write(`${content.length.toString(8).padStart(11, "0")} `, 124, 12)
     header.write(
       `${Math.floor(Date.now() / 1000)
@@ -104,8 +109,8 @@ export class DockerFileSystem implements FileSystem {
     header.write("0", 156, 1)
     header.write("ustar\0", 257, 6)
     header.write("00", 263, 2)
-    header.write("root", 265, 32)
-    header.write("root", 297, 32)
+    header.write("bimuser", 265, 32)
+    header.write("bimuser", 297, 32)
 
     let checksum = 0
     for (let i = 0; i < headerSize; i++) {

@@ -68,6 +68,8 @@ export interface ViewerActions {
   unloadModel: (modelId: string) => Promise<void>
   unloadAllModels: () => Promise<void>
   getElement: (modelId: string, elementId: number) => Promise<ElementData | null>
+  /** Programmatically select and highlight elements in the viewer */
+  selectElements: (modelId: string, localIds: number[], clearPrevious?: boolean) => Promise<void>
   initialize: (container: HTMLElement) => Promise<void>
   dispose: () => void
   /** Manually trigger a resize of the viewer renderer */
@@ -80,6 +82,8 @@ export interface ViewerContextValue extends ViewerState, ViewerActions {
   interactionManager: InteractionManager | null
   camera: CameraControls | null
   planViews: PlanViewControls | null
+  /** Background color from config, used for container styling to prevent flash during resize */
+  backgroundColor: string | null
 }
 
 export interface ViewerProviderProps {
