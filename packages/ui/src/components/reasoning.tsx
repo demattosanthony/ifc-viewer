@@ -168,6 +168,7 @@ export type ReasoningBlockProps = {
 
 function ReasoningBlock({ content, isStreaming = false, className }: ReasoningBlockProps) {
   const { isOpen, onOpenChange } = useReasoningBlockState(isStreaming)
+  const { scrollRef, handleScroll } = useAutoScroll(isStreaming, content.length)
 
   return (
     <div className={cn("group", className)}>
@@ -187,7 +188,11 @@ function ReasoningBlock({ content, isStreaming = false, className }: ReasoningBl
       {/* Collapsible Content - blockquote style with left border */}
       <ReasoningCollapsibleContent isOpen={isOpen}>
         <div className="border-muted-foreground/25 mt-2 border-l-2 pl-3">
-          <div className="text-muted-foreground prose-sm max-h-48 overflow-y-auto text-[13px] leading-relaxed">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="text-muted-foreground prose-sm max-h-72 overflow-y-auto text-[13px] leading-relaxed"
+          >
             <Markdown>{content}</Markdown>
           </div>
         </div>
@@ -214,6 +219,56 @@ function useReasoningBlockState(isStreaming: boolean) {
   }, [isStreaming, wasAutoOpened])
 
   return { isOpen, onOpenChange: setIsOpen }
+}
+
+/** Hook for smart auto-scrolling that respects user interruption */
+function useAutoScroll(isStreaming: boolean, contentLength: number) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const shouldAutoScroll = useRef(true)
+  const lastScrollTop = useRef(0)
+  const prevContentLength = useRef(contentLength)
+
+  // Reset auto-scroll when streaming starts
+  useEffect(() => {
+    if (isStreaming) {
+      shouldAutoScroll.current = true
+    }
+  }, [isStreaming])
+
+  // Auto-scroll to bottom when content grows
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !isStreaming || !shouldAutoScroll.current) return
+
+    // Only scroll if content actually grew
+    if (contentLength > prevContentLength.current) {
+      el.scrollTop = el.scrollHeight
+    }
+    prevContentLength.current = contentLength
+  }, [contentLength, isStreaming])
+
+  // Detect user scroll interruption
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el || !isStreaming) return
+
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 20
+    const scrolledUp = el.scrollTop < lastScrollTop.current
+
+    // User scrolled up manually - stop auto-scrolling
+    if (scrolledUp && !isAtBottom) {
+      shouldAutoScroll.current = false
+    }
+
+    // User scrolled back to bottom - resume auto-scrolling
+    if (isAtBottom) {
+      shouldAutoScroll.current = true
+    }
+
+    lastScrollTop.current = el.scrollTop
+  }
+
+  return { scrollRef, handleScroll }
 }
 
 /** Internal collapsible content for ReasoningBlock */
