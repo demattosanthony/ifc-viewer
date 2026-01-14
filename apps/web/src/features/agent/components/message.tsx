@@ -1,4 +1,4 @@
-import { Markdown, Reasoning } from "@ifc-viewer/ui/components"
+import { Markdown, ReasoningBlock } from "@ifc-viewer/ui/components"
 import { memo } from "react"
 import type { StreamingMessage, UIMessagePart, UIReasoningPart, UIToolPart } from "../types"
 import { Tool, type ToolPart } from "./tool"
@@ -151,13 +151,7 @@ function ToolCard({ tool }: { tool: UIToolPart }) {
 }
 
 function ReasoningCard({ reasoning }: { reasoning: UIReasoningPart }) {
-  return (
-    <Reasoning
-      content={reasoning.text}
-      isStreaming={reasoning.state === "streaming"}
-      defaultOpen={reasoning.state === "streaming"}
-    />
-  )
+  return <ReasoningBlock content={reasoning.text} isStreaming={reasoning.state === "streaming"} />
 }
 
 function UserMessage({ content }: { content: string }) {

@@ -1,119 +1,259 @@
 "use client"
 
-import { ChevronDown, Sparkles } from "lucide-react"
-import { useState } from "react"
-import { cn } from "../lib/utils"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible"
+import { ChevronRightIcon } from "lucide-react"
+import type React from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { cn } from "../lib/utils.ts"
 import { Markdown } from "./markdown"
 
-export interface ReasoningProps {
-  /** The reasoning/thinking text content */
-  content: string
-  /** Whether the reasoning is still being streamed */
-  isStreaming?: boolean
-  /** Initial open/closed state */
-  defaultOpen?: boolean
-  /** Custom className for the container */
-  className?: string
+type ReasoningContextType = {
+  isOpen: boolean
+  isStreaming: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-/**
- * Reasoning component for displaying AI thinking/reasoning traces.
- *
- * Features:
- * - Collapsible content with smooth animation
- * - Visual indicator for streaming state
- * - Markdown rendering support
- * - Styled for extended thinking traces
- */
-export function Reasoning({
-  content,
-  isStreaming = false,
-  defaultOpen = false,
-  className,
-}: ReasoningProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen)
+const ReasoningContext = createContext<ReasoningContextType | undefined>(undefined)
 
-  // Don't render if no content and not streaming
-  if (!content && !isStreaming) {
-    return null
+function useReasoningContext() {
+  const context = useContext(ReasoningContext)
+  if (!context) {
+    throw new Error("useReasoningContext must be used within a Reasoning provider")
+  }
+  return context
+}
+
+export type ReasoningProps = {
+  children: React.ReactNode
+  className?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  isStreaming?: boolean
+}
+function Reasoning({
+  children,
+  className,
+  open,
+  onOpenChange,
+  isStreaming = false,
+}: ReasoningProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const [wasAutoOpened, setWasAutoOpened] = useState(false)
+
+  const isControlled = open !== undefined
+  const isOpen = isControlled ? open : internalOpen
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(newOpen)
+    }
+    onOpenChange?.(newOpen)
   }
 
+  useEffect(() => {
+    if (isStreaming && !wasAutoOpened) {
+      if (!isControlled) setInternalOpen(true)
+      setWasAutoOpened(true)
+    }
+
+    if (!isStreaming && wasAutoOpened) {
+      if (!isControlled) setInternalOpen(false)
+      setWasAutoOpened(false)
+    }
+  }, [isStreaming, wasAutoOpened, isControlled])
+
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn("w-full", className)}>
-      <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50">
-        <div className="flex items-center gap-2">
-          <Sparkles className={cn("h-4 w-4 text-purple-500", isStreaming && "animate-pulse")} />
-          <span className="font-medium text-muted-foreground">
-            {isStreaming ? "Thinking..." : "Thought process"}
-          </span>
-        </div>
-        <ChevronDown
-          className={cn(
-            "ml-auto h-4 w-4 text-muted-foreground transition-transform duration-200",
-            isOpen && "rotate-180"
-          )}
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-        <div className="mt-2 rounded-lg border border-border/30 bg-muted/20 px-4 py-3">
-          <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-muted-foreground prose-p:my-1.5 prose-headings:mt-3 prose-headings:mb-1.5 leading-relaxed">
-            {content ? (
-              <Markdown>{content}</Markdown>
-            ) : (
-              <span className="italic text-muted-foreground/70">Starting to think...</span>
-            )}
-            {isStreaming && (
-              <span className="ml-1 inline-block h-4 w-1.5 animate-pulse bg-purple-500/50 align-middle" />
-            )}
-          </div>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+    <ReasoningContext.Provider
+      value={{
+        isOpen,
+        isStreaming,
+        onOpenChange: handleOpenChange,
+      }}
+    >
+      <div className={className}>{children}</div>
+    </ReasoningContext.Provider>
   )
 }
 
-export interface ReasoningBlockProps {
-  /** The reasoning/thinking text content */
-  content: string
-  /** Whether the reasoning is still being streamed */
-  isStreaming?: boolean
-  /** Custom className for the container */
+export type ReasoningTriggerProps = {
+  children: React.ReactNode
   className?: string
+} & React.HTMLAttributes<HTMLButtonElement>
+
+function ReasoningTrigger({ children, className, ...props }: ReasoningTriggerProps) {
+  const { isOpen, onOpenChange } = useReasoningContext()
+
+  return (
+    <button
+      className={cn("flex cursor-pointer items-center gap-2", className)}
+      onClick={() => onOpenChange(!isOpen)}
+      {...props}
+    >
+      <span className="text-primary">{children}</span>
+      <div className={cn("transform transition-transform", isOpen ? "rotate-90" : "")}>
+        <ChevronRightIcon className="size-4" />
+      </div>
+    </button>
+  )
 }
 
-/**
- * Inline reasoning block - a simpler non-collapsible version
- * for displaying reasoning in a more prominent way.
- */
-export function ReasoningBlock({ content, isStreaming = false, className }: ReasoningBlockProps) {
-  if (!content && !isStreaming) {
-    return null
-  }
+export type ReasoningContentProps = {
+  children: React.ReactNode
+  className?: string
+  markdown?: boolean
+  contentClassName?: string
+} & React.HTMLAttributes<HTMLDivElement>
+
+function ReasoningContent({
+  children,
+  className,
+  contentClassName,
+  markdown = false,
+  ...props
+}: ReasoningContentProps) {
+  const contentRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
+  const { isOpen } = useReasoningContext()
+
+  useEffect(() => {
+    if (!contentRef.current || !innerRef.current) return
+
+    const observer = new ResizeObserver(() => {
+      if (contentRef.current && innerRef.current && isOpen) {
+        contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`
+      }
+    })
+
+    observer.observe(innerRef.current)
+
+    if (isOpen) {
+      contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`
+    }
+
+    return () => observer.disconnect()
+  }, [isOpen])
+
+  const content = markdown ? <Markdown>{children as string}</Markdown> : children
 
   return (
     <div
-      className={cn(
-        "rounded-lg border border-purple-500/20 bg-purple-50/50 px-4 py-3 dark:bg-purple-950/20",
-        className
-      )}
+      ref={contentRef}
+      className={cn("overflow-hidden transition-[max-height] duration-150 ease-out", className)}
+      style={{
+        maxHeight: isOpen ? contentRef.current?.scrollHeight : "0px",
+      }}
+      {...props}
     >
-      <div className="mb-2 flex items-center gap-2">
-        <Sparkles className={cn("h-4 w-4 text-purple-500", isStreaming && "animate-pulse")} />
-        <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
-          {isStreaming ? "Thinking..." : "Thought process"}
-        </span>
-      </div>
-      <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-muted-foreground prose-p:my-1.5 leading-relaxed">
-        {content ? (
-          <Markdown>{content}</Markdown>
-        ) : (
-          <span className="italic text-muted-foreground/70">Starting to think...</span>
-        )}
-        {isStreaming && (
-          <span className="ml-1 inline-block h-4 w-1.5 animate-pulse bg-purple-500/50 align-middle" />
-        )}
+      <div
+        ref={innerRef}
+        className={cn("text-muted-foreground prose prose-sm dark:prose-invert", contentClassName)}
+      >
+        {content}
       </div>
     </div>
   )
 }
+
+/**
+ * ReasoningBlock - A subtle, inline thinking indicator that doesn't interrupt content flow.
+ * Uses a left-border accent style similar to blockquotes.
+ */
+export type ReasoningBlockProps = {
+  /** The reasoning text content */
+  content: string
+  /** Whether the reasoning is currently streaming */
+  isStreaming?: boolean
+  /** Additional class name for the container */
+  className?: string
+}
+
+function ReasoningBlock({ content, isStreaming = false, className }: ReasoningBlockProps) {
+  const { isOpen, onOpenChange } = useReasoningBlockState(isStreaming)
+
+  return (
+    <div className={cn("group", className)}>
+      {/* Trigger - minimal, just text and chevron */}
+      <button
+        className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1.5 text-xs transition-colors"
+        onClick={() => onOpenChange(!isOpen)}
+      >
+        <ChevronRightIcon
+          className={cn("size-3 transition-transform duration-200", isOpen && "rotate-90")}
+        />
+        <span className={cn(isStreaming && "animate-pulse")}>
+          {isStreaming ? "Thinking…" : "Thought process"}
+        </span>
+      </button>
+
+      {/* Collapsible Content - blockquote style with left border */}
+      <ReasoningCollapsibleContent isOpen={isOpen}>
+        <div className="border-muted-foreground/25 mt-2 border-l-2 pl-3">
+          <div className="text-muted-foreground prose-sm max-h-48 overflow-y-auto text-[13px] leading-relaxed">
+            <Markdown>{content}</Markdown>
+          </div>
+        </div>
+      </ReasoningCollapsibleContent>
+    </div>
+  )
+}
+
+/** Internal hook for ReasoningBlock state management */
+function useReasoningBlockState(isStreaming: boolean) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [wasAutoOpened, setWasAutoOpened] = useState(false)
+
+  useEffect(() => {
+    if (isStreaming && !wasAutoOpened) {
+      setIsOpen(true)
+      setWasAutoOpened(true)
+    }
+
+    if (!isStreaming && wasAutoOpened) {
+      setIsOpen(false)
+      setWasAutoOpened(false)
+    }
+  }, [isStreaming, wasAutoOpened])
+
+  return { isOpen, onOpenChange: setIsOpen }
+}
+
+/** Internal collapsible content for ReasoningBlock */
+function ReasoningCollapsibleContent({
+  isOpen,
+  children,
+}: {
+  isOpen: boolean
+  children: React.ReactNode
+}) {
+  const contentRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!contentRef.current || !innerRef.current) return
+
+    const observer = new ResizeObserver(() => {
+      if (contentRef.current && innerRef.current && isOpen) {
+        contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`
+      }
+    })
+
+    observer.observe(innerRef.current)
+
+    if (isOpen) {
+      contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`
+    }
+
+    return () => observer.disconnect()
+  }, [isOpen])
+
+  return (
+    <div
+      ref={contentRef}
+      className="overflow-hidden transition-[max-height] duration-200 ease-out"
+      style={{ maxHeight: isOpen ? contentRef.current?.scrollHeight : "0px" }}
+    >
+      <div ref={innerRef}>{children}</div>
+    </div>
+  )
+}
+
+export { Reasoning, ReasoningTrigger, ReasoningContent, ReasoningBlock }
