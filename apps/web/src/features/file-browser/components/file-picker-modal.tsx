@@ -92,12 +92,12 @@ export function FilePickerModal({
   const rootFilesQuery = useQuery({
     queryKey: listProjectFilesQueryKey({
       path: { id: projectId },
-      query: { path: "." },
+      query: { path: ".", hideDotfiles: true },
     }),
     queryFn: async () => {
       const { data } = await listProjectFiles({
         path: { id: projectId },
-        query: { path: "." },
+        query: { path: ".", hideDotfiles: true },
       })
       return data!
     },
@@ -126,7 +126,7 @@ export function FilePickerModal({
       try {
         const { data } = await listProjectFiles({
           path: { id: projectId },
-          query: { path },
+          query: { path, hideDotfiles: true },
         })
         setFileTree((prev) => new Map(prev).set(path, data?.files ?? []))
       } catch (err) {

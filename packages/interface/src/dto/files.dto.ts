@@ -52,6 +52,11 @@ const OptionalPathParam = z
 /** List files query */
 export const ListFilesQuery = z.object({
   path: OptionalPathParam,
+  /** If true, hides files and folders starting with a dot */
+  hideDotfiles: z
+    .union([z.boolean(), z.literal("true"), z.literal("false")])
+    .optional()
+    .transform((val) => val === true || val === "true"),
 })
 export type ListFilesQuery = z.infer<typeof ListFilesQuery>
 

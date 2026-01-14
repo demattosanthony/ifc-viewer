@@ -249,6 +249,7 @@ export type ListProjectFilesData = {
   }
   query?: {
     path?: string | Array<string>
+    hideDotfiles?: boolean | "true" | "false"
   }
   url: "/api/projects/{id}/files/"
 }
@@ -937,6 +938,11 @@ export type GetConversationResponses = {
             status: "success" | "error" | "aborted"
             error?: string
           }
+        | {
+            type: "reasoning"
+            id: string
+            text: string
+          }
       >
       createdAt: string
     }>
@@ -993,6 +999,11 @@ export type SendMessageResponses = {
             output?: unknown
             status: "success" | "error" | "aborted"
             error?: string
+          }
+        | {
+            type: "reasoning"
+            id: string
+            text: string
           }
       >
       createdAt: string

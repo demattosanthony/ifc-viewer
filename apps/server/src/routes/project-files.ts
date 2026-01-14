@@ -30,7 +30,7 @@ export function projectFilesRoutes(ctx: Context) {
     .get(
       "/",
       async ({ params, query }) => {
-        const result = await controller.list(params.id, query.path)
+        const result = await controller.list(params.id, query.path, query.hideDotfiles)
         if (!result.success) {
           return { files: [], path: query.path ?? "." }
         }

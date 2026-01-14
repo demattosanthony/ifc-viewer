@@ -58,12 +58,12 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
   const rootFilesQuery = useQuery({
     queryKey: listProjectFilesQueryKey({
       path: { id: projectId },
-      query: { path: "." },
+      query: { path: ".", hideDotfiles: true },
     }),
     queryFn: async () => {
       const { data } = await listProjectFiles({
         path: { id: projectId },
-        query: { path: "." },
+        query: { path: ".", hideDotfiles: true },
       })
       return data!
     },
@@ -84,7 +84,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
       try {
         const { data } = await listProjectFiles({
           path: { id: projectId },
-          query: { path },
+          query: { path, hideDotfiles: true },
         })
         setFileTree((prev) => new Map(prev).set(path, data?.files ?? []))
       } catch (err) {
@@ -100,7 +100,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
       queryClient.invalidateQueries({
         queryKey: listProjectFilesQueryKey({
           path: { id: projectId },
-          query: { path },
+          query: { path, hideDotfiles: true },
         }),
       })
       // Also refetch directly
