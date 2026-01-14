@@ -40,6 +40,12 @@ export type Context = {
   touchCompute(projectId: string): void
   disposeCompute(projectId: string): Promise<void>
   dispose(): Promise<void>
+  /**
+   * Sync a file from storage to an existing compute instance.
+   * No-op if compute doesn't exist for the project.
+   * Called by controllers after storage operations.
+   */
+  syncFileToCompute(projectId: string, path: string, operation: "write" | "delete"): Promise<void>
 }
 
 export type ContextConfig = {
@@ -201,6 +207,58 @@ export function createContext(config: ContextConfig): Context {
       await config.streams.dispose()
       await config.db.dispose()
       await config.storage.dispose?.()
+    },
+
+    async syncFileToCompute(
+      projectId: string,
+      path: string,
+      operation: "write" | "delete"
+    ): Promise<void> {
+      const state = computes.get(projectId)
+      if (!state) {
+        // No compute running - files will sync when compute is created via copyProjectFiles
+        return
+      }
+
+      const normalizedPath = path.replace(/^\.\//, "").replace(/^\//, "")
+
+      try {
+        if (operation === "delete") {
+          await state.computer.files.delete(normalizedPath, { recursive: true }).catch(() => {})
+          log.debug("Synced delete to compute", { projectId, path: normalizedPath })
+        } else {
+          // Read from storage and write to compute
+          const storageKey = `projects/${projectId}/${normalizedPath}`
+          const obj = await config.storage.get(storageKey)
+          if (!obj) {
+            log.warn("File not found in storage for sync", { projectId, path: normalizedPath })
+            return
+          }
+
+          // Create parent directories if needed
+          const parentDir = normalizedPath.includes("/")
+            ? normalizedPath.slice(0, normalizedPath.lastIndexOf("/"))
+            : null
+          if (parentDir) {
+            await state.computer.files.mkdir(parentDir, { recursive: true }).catch(() => {})
+          }
+
+          await state.computer.files.write(normalizedPath, obj.data)
+          log.debug("Synced file to compute", {
+            projectId,
+            path: normalizedPath,
+            size: obj.data.byteLength,
+          })
+        }
+      } catch (error) {
+        // Log but don't throw - this is best-effort sync
+        log.error("Failed to sync to compute", {
+          projectId,
+          path: normalizedPath,
+          operation,
+          error,
+        })
+      }
     },
   }
 }
