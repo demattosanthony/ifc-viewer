@@ -9,7 +9,9 @@
     "start": "bun run src/server.ts",
     "generate-openapi": "bun run src/generate-openapi.ts",
     "build": "bun build src/server.ts --outdir dist --target bun",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "test:e2e": "bun test tests/e2e"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.2.0",
