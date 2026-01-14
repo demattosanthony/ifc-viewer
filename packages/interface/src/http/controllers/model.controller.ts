@@ -153,6 +153,9 @@ export class ModelController {
         hasFragment: !!model.fragmentPath,
       })
 
+      // Sync IFC file to compute if running
+      await this.ctx.syncFileToCompute(projectId, model.filePath, "write")
+
       return ok(model)
     } catch (error) {
       if (isDomainError(error)) {
@@ -205,9 +208,15 @@ export class ModelController {
         return notFound(`Model ${modelId} not found in project ${projectId}`)
       }
 
+      // Store file path before deletion for compute sync
+      const filePath = existing.filePath
+
       await deleteModel(this.ctx, modelId)
 
       log.info("Model deleted", { projectId, modelId })
+
+      // Sync delete to compute if running
+      await this.ctx.syncFileToCompute(projectId, filePath, "delete")
 
       return ok({ success: true })
     } catch (error) {

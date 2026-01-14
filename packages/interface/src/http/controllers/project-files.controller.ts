@@ -194,6 +194,9 @@ export class ProjectFilesController {
 
       log.debug("File written", { projectId, path: input.path, size: content.byteLength })
 
+      // Sync to compute if running
+      await this.ctx.syncFileToCompute(projectId, normalizeStoragePath(input.path), "write")
+
       return ok({ success: true, path: input.path })
     } catch (error) {
       log.error("Failed to write file", { projectId, path: input.path, error })
@@ -228,6 +231,9 @@ export class ProjectFilesController {
       await deleteStoragePrefix(this.ctx.storage, `${storageKey}/`)
 
       log.debug("Deleted from storage", { storageKey })
+
+      // Sync delete to compute if running
+      await this.ctx.syncFileToCompute(projectId, normalizedPath, "delete")
 
       if (isIfcFilePath(normalizedPath)) {
         const models = await this.ctx.db.models.findByProjectId(projectId)
@@ -291,6 +297,9 @@ export class ProjectFilesController {
 
       log.info("File uploaded", { projectId, path, size: data.byteLength })
 
+      // Sync to compute if running
+      await this.ctx.syncFileToCompute(projectId, normalizeStoragePath(path), "write")
+
       return ok({ success: true, path })
     } catch (error) {
       log.error("Upload failed", { projectId, path, error })
@@ -334,8 +343,7 @@ export class ProjectFilesController {
   }
 
   /**
-   * Confirm S3 upload - just validates the file exists in storage.
-   * No compute sync needed in the new architecture.
+   * Confirm S3 upload - validates the file exists in storage and syncs to compute.
    */
   async confirmUpload(
     projectId: string,
@@ -355,6 +363,9 @@ export class ProjectFilesController {
       }
 
       log.info("Upload confirmed", { projectId, path: input.path })
+
+      // Sync to compute if running
+      await this.ctx.syncFileToCompute(projectId, normalizeStoragePath(input.path), "write")
 
       return ok({ success: true, path: input.path })
     } catch (error) {
