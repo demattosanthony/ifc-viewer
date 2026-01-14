@@ -98,7 +98,6 @@ export interface ViewerContextValue extends ViewerState, ViewerActions {
 export interface ViewerProviderProps {
   children: React.ReactNode
   config?: ViewerConfig
-  workerUrl: string
 }
 
 export interface ViewerConfig {

@@ -22,7 +22,7 @@ export class ModelManager {
   private components: OBC.Components
   private world: OBC.World
   private camera: OBC.OrthoPerspectiveCamera
-  private workerUrl: string
+  private workerUrlPromise: Promise<string>
   private fragmentsInitialized = false
   private onModelLoaded?: ModelLoadedCallback
   private onModelUnloaded?: ModelUnloadedCallback
@@ -33,7 +33,7 @@ export class ModelManager {
     components: OBC.Components,
     world: OBC.World,
     camera: OBC.OrthoPerspectiveCamera,
-    workerUrl: string,
+    workerUrlPromise: Promise<string>,
     callbacks?: {
       onModelLoaded?: ModelLoadedCallback
       onModelUnloaded?: ModelUnloadedCallback
@@ -42,7 +42,7 @@ export class ModelManager {
     this.components = components
     this.world = world
     this.camera = camera
-    this.workerUrl = workerUrl
+    this.workerUrlPromise = workerUrlPromise
     this.onModelLoaded = callbacks?.onModelLoaded
     this.onModelUnloaded = callbacks?.onModelUnloaded
   }
@@ -83,11 +83,12 @@ export class ModelManager {
   /**
    * Initialize the fragments system if not already done.
    */
-  private initializeFragments(): void {
+  private async initializeFragments(): Promise<void> {
     if (this.fragmentsInitialized) return
 
+    const workerUrl = await this.workerUrlPromise
     const fragments = this.components.get(OBC.FragmentsManager)
-    fragments.init(this.workerUrl)
+    fragments.init(workerUrl)
     this.fragmentsInitialized = true
 
     // Update fragments when camera stops moving
@@ -110,7 +111,7 @@ export class ModelManager {
   async loadFragment(buffer: ArrayBuffer, name: string): Promise<void> {
     const fragments = this.components.get(OBC.FragmentsManager)
 
-    this.initializeFragments()
+    await this.initializeFragments()
 
     const handleModelLoaded = ({ value: model }: { value: FragmentsModel }) => {
       model.useCamera(this.camera.three)
@@ -176,7 +177,7 @@ export class ModelManager {
 
       ifcLoader.onIfcImporterInitialized.add(importerHandler)
 
-      this.initializeFragments()
+      await this.initializeFragments()
 
       fragments.list.onItemSet.add(handleModelLoaded)
 

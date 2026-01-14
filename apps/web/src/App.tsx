@@ -19,7 +19,6 @@ function AppContent() {
         {mode === "viewer" ? (
           <ViewerProvider
             key="viewer-mode"
-            workerUrl="/worker.mjs"
             config={{
               gridEnabled: false,
               statsEnabled: true,
@@ -31,7 +30,6 @@ function AppContent() {
         ) : (
           <ViewerProvider
             key="editor-mode"
-            workerUrl="/worker.mjs"
             config={{
               gridEnabled: false,
               statsEnabled: true,
