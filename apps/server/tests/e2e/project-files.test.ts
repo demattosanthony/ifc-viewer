@@ -31,11 +31,13 @@ describe("Project Files API", () => {
 
   describe("GET /api/projects/:id/files", () => {
     test("returns initial files for new project", async () => {
-      const res = await client.get<ListFilesResponse>(`/api/projects/${PROJECT_ID}/files?path=.`)
+      const res = await client.get<ListFilesResponse>(
+        `/api/projects/${PROJECT_ID}/files?path=.&hideDotfiles=true`
+      )
 
       expect(res.status).toBe(200)
       expect(res.data.path).toBe(".")
-      // Dotfiles are hidden from the API, so a new project appears empty
+      // With hideDotfiles=true, a new project appears empty (only has .gitkeep)
       expect(res.data.files).toEqual([])
     })
 
