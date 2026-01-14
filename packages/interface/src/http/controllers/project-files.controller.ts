@@ -100,6 +100,9 @@ export class ProjectFilesController {
         const isDirectory = slashIndex !== -1
         const name = isDirectory ? relativePath.slice(0, slashIndex) : relativePath
 
+        // Skip dotfiles and dotfolders
+        if (name.startsWith(".")) continue
+
         // Skip if we already have this entry
         if (entriesMap.has(name)) {
           // If it's a directory, update size (aggregate)

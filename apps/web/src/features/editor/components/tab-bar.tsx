@@ -1,8 +1,8 @@
-import { FileBox, FileType, Globe, X } from "lucide-react"
-import { FileIcon } from "@/features/file-browser/utils/file-icons"
-import { type Tab, useEditor } from "../context"
+import { Plus, X } from "lucide-react"
+import { FileIcon } from "@/shared/components/file-icons/file-icon"
+import { useEditor } from "../context"
 
-function SidebarIcon({ active }: { active: boolean }) {
+function LeftSidebarIcon({ active }: { active: boolean }) {
   return (
     <svg
       width="16"
@@ -53,17 +53,8 @@ function TerminalIcon({ active }: { active: boolean }) {
   )
 }
 
-function TabIcon({ type, name }: { type: Tab["type"]; name: string }) {
-  switch (type) {
-    case "ifc":
-      return <FileBox className="w-4 h-4 text-[#6b9f78] shrink-0" />
-    case "html":
-      return <Globe className="w-4 h-4 text-[#e34c26] shrink-0" />
-    case "pdf":
-      return <FileType className="w-4 h-4 text-[#b30b00] shrink-0" />
-    default:
-      return <FileIcon filename={name} className="w-4 h-4 shrink-0" />
-  }
+function TabIcon({ path }: { path: string }) {
+  return <FileIcon node={{ path, type: "file" }} className="shrink-0" />
 }
 
 interface TabBarProps {
@@ -73,6 +64,7 @@ interface TabBarProps {
   onToggleSidebar: () => void
   onToggleTerminal: () => void
   onToggleChat: () => void
+  onAddTab: () => void
 }
 
 export function TabBar({
@@ -82,12 +74,29 @@ export function TabBar({
   onToggleSidebar,
   onToggleTerminal,
   onToggleChat,
+  onAddTab,
 }: TabBarProps) {
   const { tabs, activeTabId, setActiveTab, closeTab } = useEditor()
 
+  // Check if Models tab is active (no activeTabId means Models view is shown)
+  const isModelsActive = activeTabId === null
+
   return (
     <div className="h-[35px] bg-secondary border-b border-border flex items-center">
-      {/* Tabs */}
+      {/* Pinned Models Tab */}
+      <div
+        onClick={() => setActiveTab(null)}
+        className={`flex items-center gap-2 h-full px-3 cursor-pointer border-r border-border shrink-0 ${
+          isModelsActive
+            ? "bg-background text-foreground"
+            : "bg-muted text-muted-foreground hover:bg-accent/50"
+        }`}
+      >
+        <FileIcon node={{ path: "models.ifc", type: "file" }} className="shrink-0" />
+        <span className="text-[13px] select-none">Models</span>
+      </div>
+
+      {/* Dynamic Tabs */}
       <div className="flex-1 flex items-center h-full overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId
@@ -102,7 +111,7 @@ export function TabBar({
                   : "bg-muted text-muted-foreground hover:bg-accent/50"
               }`}
             >
-              <TabIcon type={tab.type} name={tab.name} />
+              <TabIcon path={tab.path} />
               <span className="text-[13px] select-none whitespace-nowrap flex items-center gap-1">
                 {tab.name}
                 {tab.isDirty && (
@@ -128,14 +137,23 @@ export function TabBar({
         })}
       </div>
 
+      {/* Add Tab Button */}
+      <button
+        onClick={onAddTab}
+        className="p-1.5 mx-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        title="Open File"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+
       {/* Layout Controls */}
-      <div className="flex items-center gap-0.5 px-2">
+      <div className="flex items-center gap-0.5 px-2 border-l border-border">
         <button
           onClick={onToggleSidebar}
           className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title="Toggle Sidebar"
+          title="Toggle File Browser"
         >
-          <SidebarIcon active={showSidebar} />
+          <LeftSidebarIcon active={showSidebar} />
         </button>
         <button
           onClick={onToggleTerminal}

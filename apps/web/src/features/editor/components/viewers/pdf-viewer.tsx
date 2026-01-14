@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react"
-import { createViewerUrl } from "../../utils/url-utils"
+import { useBlobUrl } from "../../hooks/use-blob-url"
 
 export interface PdfViewerProps {
   content: string
@@ -8,38 +7,12 @@ export interface PdfViewerProps {
 }
 
 export function PdfViewer({ content, contentType, filename }: PdfViewerProps) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const urlRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    try {
-      // Revoke previous URL to prevent memory leaks
-      if (urlRef.current) {
-        URL.revokeObjectURL(urlRef.current)
-      }
-
-      const url = createViewerUrl(content, contentType, filename)
-      urlRef.current = url
-      setBlobUrl(url)
-      setError(null)
-    } catch (err) {
-      console.error("Failed to create PDF viewer:", err)
-      setError("Failed to load PDF")
-    }
-
-    // Cleanup on unmount
-    return () => {
-      if (urlRef.current) {
-        URL.revokeObjectURL(urlRef.current)
-      }
-    }
-  }, [content, contentType, filename])
+  const { blobUrl, error } = useBlobUrl(content, contentType, filename)
 
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#1e1e1e] text-red-400">
-        <p className="text-sm">{error}</p>
+        <p className="text-sm">Failed to load PDF</p>
       </div>
     )
   }

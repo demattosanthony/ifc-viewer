@@ -1,13 +1,15 @@
 import { createContext, type ReactNode, useCallback, useContext, useState } from "react"
-import { type FileContent, getViewerType, type ViewerType } from "./utils/viewer-registry"
+import type { FileContent, ViewerType } from "./utils/types"
+import { getViewerType } from "./utils/viewer-registry"
 
-export type { ViewerType, FileContent }
+export type { FileContent, ViewerType }
 
 export interface Tab {
   id: string
   path: string
   name: string
   type: ViewerType
+  activeViewer?: ViewerType // User-selected viewer override
   isDirty?: boolean
 }
 
@@ -17,11 +19,12 @@ interface EditorContextValue {
   fileContents: Map<string, FileContent>
   openFile: (path: string) => void
   closeTab: (tabId: string) => void
-  setActiveTab: (tabId: string) => void
+  setActiveTab: (tabId: string | null) => void
   getFileContent: (path: string) => FileContent | undefined
   setFileContent: (path: string, content: FileContent) => void
   setTabDirty: (tabId: string, isDirty: boolean) => void
   updateFileContent: (path: string, content: string) => void
+  setTabViewer: (tabId: string, viewerType: ViewerType) => void
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null)
@@ -101,7 +104,7 @@ export function EditorProvider({ children, initialFile }: EditorProviderProps) {
     [activeTabId]
   )
 
-  const setActiveTab = useCallback((tabId: string) => {
+  const setActiveTab = useCallback((tabId: string | null) => {
     setActiveTabId(tabId)
   }, [])
 
@@ -118,6 +121,12 @@ export function EditorProvider({ children, initialFile }: EditorProviderProps) {
 
   const setTabDirty = useCallback((tabId: string, isDirty: boolean) => {
     setTabs((prev) => prev.map((tab) => (tab.id === tabId ? { ...tab, isDirty } : tab)))
+  }, [])
+
+  const setTabViewer = useCallback((tabId: string, viewerType: ViewerType) => {
+    setTabs((prev) =>
+      prev.map((tab) => (tab.id === tabId ? { ...tab, activeViewer: viewerType } : tab))
+    )
   }, [])
 
   const updateFileContent = useCallback((path: string, content: string) => {
@@ -141,6 +150,7 @@ export function EditorProvider({ children, initialFile }: EditorProviderProps) {
         setFileContent,
         setTabDirty,
         updateFileContent,
+        setTabViewer,
       }}
     >
       {children}

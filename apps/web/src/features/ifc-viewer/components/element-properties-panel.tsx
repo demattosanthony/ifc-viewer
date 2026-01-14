@@ -51,7 +51,7 @@ function PropertyRow({ label, value }: { label: string; value: unknown }) {
   return (
     <div className="flex justify-between items-start gap-3 py-1 text-xs">
       <span className="text-muted-foreground shrink-0">{label}</span>
-      <span className="text-right font-mono text-primary break-all">{formattedValue}</span>
+      <span className="text-right font-mono text-foreground break-all">{formattedValue}</span>
     </div>
   )
 }
@@ -65,7 +65,7 @@ function MaterialsList({ materials }: { materials: Material[] }) {
         <div key={mat.name} className="flex justify-between items-center py-1 text-xs">
           <span className="text-muted-foreground">{mat.name}</span>
           {mat.thickness && (
-            <span className="font-mono text-primary">{mat.thickness.toFixed(1)} cm</span>
+            <span className="font-mono text-foreground">{mat.thickness.toFixed(1)} cm</span>
           )}
         </div>
       ))}
@@ -80,7 +80,7 @@ function PropertySetsList({ psets }: { psets: PropertySet[] }) {
     <div className="space-y-2">
       {psets.map((pset) => (
         <div key={pset.name}>
-          <div className="text-[10px] font-medium text-primary mb-1">
+          <div className="text-[10px] font-medium text-muted-foreground mb-1">
             {pset.name.replace("Pset_", "")}
           </div>
           <div className="space-y-0">

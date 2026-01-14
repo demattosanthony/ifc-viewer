@@ -5,7 +5,6 @@ import { FolderPlus, PanelLeft, Plus, Upload } from "lucide-react"
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { useEditor } from "@/features/editor/context"
 import { useResizable } from "@/features/editor/hooks/use-resizable"
-import { ModeSwitch } from "@/shared/components/mode-switch"
 import { useFileOperations } from "../hooks/use-file-operations"
 import { useUploadToast } from "../hooks/use-upload-toast.tsx"
 import { DeleteDialog } from "./delete-dialog"
@@ -270,7 +269,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
     <div className="relative flex" style={{ width }}>
       <div className="flex-1 bg-background border-r border-border flex flex-col min-w-0">
         <div className="flex items-center justify-between px-2 h-[41px] border-b border-border">
-          <ModeSwitch />
+          <span className="text-sm font-medium">Explorer</span>
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => handleStartNewItem("file", ".")}
@@ -321,7 +320,7 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
 
       <div
         onMouseDown={handleResizeStart}
-        className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary transition-colors"
+        className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary-foreground transition-colors"
       />
 
       <DeleteDialog target={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={cancelDelete} />

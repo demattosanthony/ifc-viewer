@@ -1,5 +1,5 @@
 import { writeProjectFileMutation } from "@ifc-viewer/sdk/hooks"
-import Editor, { type OnMount } from "@monaco-editor/react"
+import Editor, { loader, type OnMount } from "@monaco-editor/react"
 import { useMutation } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef } from "react"
 import { useEffectiveTheme } from "@/shared/hooks"
@@ -27,6 +27,51 @@ function getLanguage(filename: string): string {
   }
   return languageMap[ext || ""] || "plaintext"
 }
+
+// Define custom themes that match our globals.css color palette
+loader.init().then((monaco) => {
+  monaco.editor.defineTheme("ifc-light", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": "#f8f7f2",
+      "editor.foreground": "#3d3d3d",
+      "editorLineNumber.foreground": "#9a9a8f",
+      "editorLineNumber.activeForeground": "#5a5a52",
+      "editor.selectionBackground": "#d4d3c8",
+      "editor.lineHighlightBackground": "#f0efe8",
+      "editorCursor.foreground": "#3d3d3d",
+      "editorWhitespace.foreground": "#d4d3c8",
+      "editorIndentGuide.background": "#e8e7e0",
+      "editorIndentGuide.activeBackground": "#d4d3c8",
+      "editor.selectionHighlightBackground": "#e8e7d8",
+      "editorGutter.background": "#f8f7f2",
+      "minimap.background": "#f8f7f2",
+    },
+  })
+
+  monaco.editor.defineTheme("ifc-dark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": "#1a1a18",
+      "editor.foreground": "#e5e5e5",
+      "editorLineNumber.foreground": "#5a5a52",
+      "editorLineNumber.activeForeground": "#8f8f85",
+      "editor.selectionBackground": "#3a3a35",
+      "editor.lineHighlightBackground": "#222220",
+      "editorCursor.foreground": "#fafafa",
+      "editorWhitespace.foreground": "#3a3a35",
+      "editorIndentGuide.background": "#2a2a26",
+      "editorIndentGuide.activeBackground": "#3a3a35",
+      "editor.selectionHighlightBackground": "#2a2a26",
+      "editorGutter.background": "#1a1a18",
+      "minimap.background": "#1a1a18",
+    },
+  })
+})
 
 export interface CodeEditorProps {
   projectId: string
@@ -97,7 +142,7 @@ export function CodeEditor({ projectId, path, tabId, content, filename }: CodeEd
         height="100%"
         language={getLanguage(filename)}
         value={content}
-        theme={effectiveTheme === "dark" ? "vs-dark" : "light"}
+        theme={effectiveTheme === "dark" ? "ifc-dark" : "ifc-light"}
         onChange={handleChange}
         onMount={handleEditorMount}
         options={{

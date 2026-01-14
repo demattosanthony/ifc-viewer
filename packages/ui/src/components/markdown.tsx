@@ -26,14 +26,10 @@ function extractLanguage(className?: string): string {
 
 const INITIAL_COMPONENTS: Partial<Components> = {
   h1: ({ children }) => (
-    <h1 className="scroll-m-20 text-2xl font-extrabold tracking-tight lg:text-4xl my-1">
-      {children}
-    </h1>
+    <h1 className="scroll-m-20 text-2xl font-extrabold tracking-tight lg:text-4xl">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="scroll-m-20 border-b pb-2 text-xl font-semibold tracking-tight first:mt-0">
-      {children}
-    </h2>
+    <h2 className="scroll-m-20 border-b pb-2 text-xl font-semibold tracking-tight">{children}</h2>
   ),
   h3: ({ children }) => (
     <h3 className="scroll-m-20 text-lg font-semibold tracking-tight">{children}</h3>
@@ -41,14 +37,14 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   h4: ({ children }) => (
     <h4 className="scroll-m-20 text-base font-semibold tracking-tight">{children}</h4>
   ),
-  p: ({ children }) => <p className="leading-7 text-sm [&:not(:first-child)]">{children}</p>,
+  p: ({ children }) => <p className="leading-7 text-sm">{children}</p>,
   blockquote: ({ children, ...props }) => (
-    <blockquote className="mt-6 border-l-2 pl-6 italic text-sm" {...props}>
+    <blockquote className="border-l-2 pl-6 italic text-sm" {...props}>
       {children}
     </blockquote>
   ),
   table: ({ children, ...props }) => (
-    <div className="my-4 w-full overflow-x-auto" {...props}>
+    <div className="w-full overflow-x-auto" {...props}>
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   ),
@@ -60,13 +56,13 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   ),
   td: ({ children }) => <td className="border px-4 py-2 text-left text-sm">{children}</td>,
   ul: ({ children, ...props }) => (
-    <ul className="mb-2 ml-6 list-disc [&>li]:mt-2 text-sm marker:text-foreground" {...props}>
+    <ul className="ml-6 list-disc space-y-0.5 text-sm marker:text-foreground" {...props}>
       {children}
     </ul>
   ),
   ol: ({ children, ...props }) => (
     <ol
-      className="my-2 ml-6 list-decimal [&>li]:mt-2 text-sm marker:text-foreground"
+      className="ml-6 list-decimal space-y-0.5 text-sm marker:text-foreground"
       style={{ counterReset: "list-item" }}
       {...props}
     >
@@ -82,7 +78,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     if (isInline) {
       return (
         <span
-          className={cn("bg-primary-foreground rounded-sm px-1 font-mono text-xs", className)}
+          className={cn("bg-secondary rounded-sm px-1 font-mono text-xs", className)}
           {...props}
         >
           {children}
@@ -114,7 +110,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     </a>
   ),
   img: ({ ...props }) => <img className="max-w-full h-auto" {...props} />,
-  hr: ({ ...props }) => <hr className="my-4" {...props} />,
+  hr: ({ ...props }) => <hr {...props} />,
 }
 
 const MemoizedMarkdownBlock = memo(
@@ -149,7 +145,7 @@ function MarkdownComponent({
   const blocks = useMemo(() => parseMarkdownIntoBlocks(children), [children])
 
   return (
-    <div className={className}>
+    <div className={cn("space-y-2.5", className)}>
       {blocks.map((block, index) => (
         <MemoizedMarkdownBlock
           key={`${blockId}-${index}-${block.slice(0, 20)}`}

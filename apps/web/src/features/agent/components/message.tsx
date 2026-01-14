@@ -156,7 +156,7 @@ function ReasoningCard({ reasoning }: { reasoning: UIReasoningPart }) {
 
 function UserMessage({ content }: { content: string }) {
   return (
-    <div className="max-w-[80%] rounded-xl bg-secondary/80 px-4 py-3 text-sm text-foreground">
+    <div className="max-w-[80%] rounded-xl bg-card px-3 py-2 text-sm text-foreground border border-border">
       {content}
     </div>
   )
@@ -165,7 +165,7 @@ function UserMessage({ content }: { content: string }) {
 function AssistantText({ content }: { content: string }) {
   if (!content.trim()) return null
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 leading-relaxed">
+    <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed">
       <Markdown>{content}</Markdown>
     </div>
   )

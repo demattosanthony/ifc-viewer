@@ -35,8 +35,8 @@ describe("Project Files API", () => {
 
       expect(res.status).toBe(200)
       expect(res.data.path).toBe(".")
-      // Projects are initialized with a .gitkeep file
-      expect(res.data.files.some((f) => f.name === ".gitkeep")).toBe(true)
+      // Dotfiles are hidden from the API, so a new project appears empty
+      expect(res.data.files).toEqual([])
     })
 
     test("returns files after writing", async () => {

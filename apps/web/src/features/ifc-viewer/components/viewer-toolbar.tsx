@@ -2,6 +2,8 @@ import { Button, Popover, PopoverContent, PopoverTrigger } from "@ifc-viewer/ui/
 import { type CameraMode, useViewer } from "@ifc-viewer/viewer"
 import { Check, HandGrab, Layers, PersonStanding, Rotate3D, X } from "lucide-react"
 import { useState } from "react"
+import { HierarchyPopover } from "./hierarchy-popover"
+import { ModelsPopover } from "./models-popover"
 
 // ============================================================================
 // Constants
@@ -104,13 +106,15 @@ function PlanViewSelector({ plans, activePlanId, onPlanSelect }: PlanViewSelecto
             <span className="text-sm font-medium">Floor Plans</span>
           </div>
           {activePlanId && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => onPlanSelect(activePlanId)}
-              className="p-1 rounded-md hover:bg-muted transition-colors"
               title="Exit floor plan view"
+              className="size-6"
             >
-              <X className="size-3.5 text-muted-foreground" />
-            </button>
+              <X className="size-3.5" />
+            </Button>
           )}
         </div>
 
@@ -119,18 +123,11 @@ function PlanViewSelector({ plans, activePlanId, onPlanSelect }: PlanViewSelecto
           {plans.map((plan, index) => {
             const isActive = activePlanId === plan.id
             return (
-              <button
+              <Button
                 key={plan.id}
+                variant={isActive ? "secondary" : "ghost"}
                 onClick={() => handleSelect(plan.id)}
-                className={`
-                  w-full flex items-center gap-3 px-3 py-2 text-left
-                  transition-all duration-150 ease-out
-                  ${
-                    isActive
-                      ? "bg-secondary text-secondary-foreground"
-                      : "hover:bg-muted/50 text-foreground"
-                  }
-                `}
+                className="w-full justify-start gap-3 px-3 py-2 h-auto rounded-none font-normal"
               >
                 {/* Floor Level Indicator */}
                 <div
@@ -144,11 +141,11 @@ function PlanViewSelector({ plans, activePlanId, onPlanSelect }: PlanViewSelecto
                 </div>
 
                 {/* Plan Name */}
-                <span className="flex-1 text-sm truncate">{plan.name}</span>
+                <span className="flex-1 text-sm truncate text-left">{plan.name}</span>
 
                 {/* Active Check */}
-                {isActive && <Check className="size-4 text-foreground shrink-0" />}
-              </button>
+                {isActive && <Check className="size-4 shrink-0" />}
+              </Button>
             )
           })}
         </div>
@@ -187,7 +184,21 @@ function ToolbarDivider() {
 // Main ViewerToolBar Component
 // ============================================================================
 
-export function ViewerToolBar() {
+interface ViewerToolBarProps {
+  projectId?: string
+  onElementSelect?: (modelId: string, localId: number) => void
+  /** Show the models popover for loading/unloading models. Default: true */
+  showModelsPopover?: boolean
+  /** Show the hierarchy popover for spatial navigation. Default: true */
+  showHierarchy?: boolean
+}
+
+export function ViewerToolBar({
+  projectId,
+  onElementSelect,
+  showModelsPopover = true,
+  showHierarchy = true,
+}: ViewerToolBarProps) {
   const { camera, planViews } = useViewer()
 
   // Camera mode handler
@@ -204,8 +215,19 @@ export function ViewerToolBar() {
     }
   }
 
+  const showModelSection = (showModelsPopover && projectId) || (showHierarchy && onElementSelect)
+
   return (
     <ToolbarContainer>
+      {showModelSection && (
+        <>
+          {showModelsPopover && projectId && <ModelsPopover projectId={projectId} />}
+          {showHierarchy && onElementSelect && (
+            <HierarchyPopover onElementSelect={onElementSelect} />
+          )}
+          <ToolbarDivider />
+        </>
+      )}
       <CameraModeSelector currentMode={camera?.mode} onModeChange={handleCameraModeChange} />
 
       {planViews && planViews.plans.length > 0 && (
