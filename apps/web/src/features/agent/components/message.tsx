@@ -1,6 +1,6 @@
-import { Markdown } from "@ifc-viewer/ui/components"
+import { Markdown, ReasoningBlock } from "@ifc-viewer/ui/components"
 import { memo } from "react"
-import type { StreamingMessage, UIMessagePart, UIToolPart } from "../types"
+import type { StreamingMessage, UIMessagePart, UIReasoningPart, UIToolPart } from "../types"
 import { Tool, type ToolPart } from "./tool"
 import { CommandPreview } from "./tool-views/command-preview"
 import { FilePreview } from "./tool-views/file-preview"
@@ -150,6 +150,10 @@ function ToolCard({ tool }: { tool: UIToolPart }) {
   return <Tool toolPart={mapToToolPart(tool)} />
 }
 
+function ReasoningCard({ reasoning }: { reasoning: UIReasoningPart }) {
+  return <ReasoningBlock content={reasoning.text} isStreaming={reasoning.state === "streaming"} />
+}
+
 function UserMessage({ content }: { content: string }) {
   return (
     <div className="max-w-[80%] rounded-xl bg-secondary/80 px-4 py-3 text-sm text-foreground">
@@ -199,6 +203,10 @@ function renderMessagePart(part: UIMessagePart, index: number) {
 
   if (part.type === "tool-use") {
     return <ToolCard key={`tool-${part.id}`} tool={part} />
+  }
+
+  if (part.type === "reasoning") {
+    return <ReasoningCard key={`reasoning-${part.id}`} reasoning={part} />
   }
 
   return null

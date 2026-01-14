@@ -18,6 +18,14 @@ export interface AIProviderConfig {
   temperature?: number
 }
 
+/** Configuration for extended thinking/reasoning */
+export interface AIThinkingConfig {
+  /** Whether thinking is enabled */
+  type: "enabled" | "disabled"
+  /** Token budget for thinking (required when enabled) */
+  budgetTokens?: number
+}
+
 /** Options for a single chat request */
 export interface AIChatOptions {
   /** Message history */
@@ -179,6 +187,23 @@ export interface AIToolNeedsApprovalEvent {
   args: Record<string, unknown>
 }
 
+// Reasoning events (for extended thinking / chain-of-thought)
+export interface AIReasoningStartEvent {
+  type: "reasoning-start"
+  id: string
+}
+
+export interface AIReasoningDeltaEvent {
+  type: "reasoning-delta"
+  id: string
+  delta: string
+}
+
+export interface AIReasoningEndEvent {
+  type: "reasoning-end"
+  id: string
+}
+
 export type AIStreamEvent =
   | AIReadyEvent
   | AIStreamStartEvent
@@ -195,6 +220,9 @@ export type AIStreamEvent =
   | AIToolCallEvent
   | AIToolResultEvent
   | AIToolNeedsApprovalEvent
+  | AIReasoningStartEvent
+  | AIReasoningDeltaEvent
+  | AIReasoningEndEvent
 
 // AI Presence Events (emitted by tools for frontend updates)
 export interface AIEditorOpenEvent {

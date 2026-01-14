@@ -1,0 +1,1 @@
+ALTER TABLE "message_parts" ADD COLUMN "reasoning_id" text;

@@ -294,6 +294,9 @@ async function runGeneration(ctx: Context, params: GenerationParams): Promise<vo
   // Track parts for saving assistant message
   const parts: MessagePart[] = []
 
+  // Track in-progress reasoning blocks by id
+  const reasoningInProgress = new Map<string, { id: string; text: string }>()
+
   try {
     for await (const event of runAgentChat(ctx, {
       projectId,
@@ -330,6 +333,30 @@ async function runGeneration(ctx: Context, params: GenerationParams): Promise<vo
         }
       }
 
+      // Track reasoning events for persistence
+      if (event.type === "reasoning-start") {
+        reasoningInProgress.set(event.id, { id: event.id, text: "" })
+      }
+
+      if (event.type === "reasoning-delta") {
+        const reasoning = reasoningInProgress.get(event.id)
+        if (reasoning) {
+          reasoning.text += event.delta
+        }
+      }
+
+      if (event.type === "reasoning-end") {
+        const reasoning = reasoningInProgress.get(event.id)
+        if (reasoning) {
+          parts.push({
+            type: "reasoning",
+            id: reasoning.id,
+            text: reasoning.text,
+          })
+          reasoningInProgress.delete(event.id)
+        }
+      }
+
       await ctx.streams.append(streamId, event)
     }
 
@@ -339,6 +366,12 @@ async function runGeneration(ctx: Context, params: GenerationParams): Promise<vo
         if (part.type === "tool-use" && part.output === undefined) {
           part.status = "aborted"
           part.error = part.error ?? "Cancelled"
+        }
+      }
+      // Save any in-progress reasoning blocks
+      for (const reasoning of reasoningInProgress.values()) {
+        if (reasoning.text) {
+          parts.push({ type: "reasoning", id: reasoning.id, text: reasoning.text })
         }
       }
       // Save partial assistant message if any parts were generated
@@ -371,6 +404,12 @@ async function runGeneration(ctx: Context, params: GenerationParams): Promise<vo
         if (part.type === "tool-use" && part.output === undefined) {
           part.status = "aborted"
           part.error = part.error ?? "Cancelled"
+        }
+      }
+      // Save any in-progress reasoning blocks
+      for (const reasoning of reasoningInProgress.values()) {
+        if (reasoning.text) {
+          parts.push({ type: "reasoning", id: reasoning.id, text: reasoning.text })
         }
       }
       // Save partial assistant message if any parts were generated

@@ -14,6 +14,8 @@ export {
 export {
   type Message,
   type MessagePart,
+  type MessagePartReasoning,
+  MessagePartReasoningSchema,
   MessagePartSchema,
   type MessagePartText,
   MessagePartTextSchema,

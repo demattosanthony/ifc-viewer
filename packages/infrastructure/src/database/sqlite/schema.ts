@@ -35,7 +35,7 @@ export const messageParts = sqliteTable("message_parts", {
     .notNull()
     .references(() => messages.id, { onDelete: "cascade" }),
   position: integer("position").notNull(),
-  type: text("type", { enum: ["text", "tool-use"] }).notNull(),
+  type: text("type", { enum: ["text", "tool-use", "reasoning"] }).notNull(),
   // For type="text"
   text: text("text"),
   // For type="tool-use"
@@ -45,6 +45,8 @@ export const messageParts = sqliteTable("message_parts", {
   toolOutput: text("tool_output", { mode: "json" }),
   toolStatus: text("tool_status", { enum: ["success", "error", "aborted"] }),
   toolError: text("tool_error"),
+  // For type="reasoning"
+  reasoningId: text("reasoning_id"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 })
 

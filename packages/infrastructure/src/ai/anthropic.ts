@@ -2,10 +2,17 @@
  * Anthropic AI Provider
  *
  * Implements AIProvider using Vercel AI SDK with Anthropic.
+ * Supports extended thinking (reasoning) for models that support it.
  */
 
 import { createAnthropic } from "@ai-sdk/anthropic"
-import type { AIChatOptions, AIEvent, AIProvider, AIProviderConfig } from "@ifc-viewer/core"
+import type {
+  AIChatOptions,
+  AIEvent,
+  AIProvider,
+  AIProviderConfig,
+  AIThinkingConfig,
+} from "@ifc-viewer/core"
 import { ToolLoopAgent } from "ai"
 import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
 import { createFileTools } from "./tools/file-tools"
@@ -19,6 +26,8 @@ export interface AnthropicProviderConfig extends AIProviderConfig {
   apiKey?: string
   /** System prompt (defaults to BIM_IDE_SYSTEM_PROMPT) */
   systemPrompt?: string
+  /** Extended thinking configuration (enables reasoning traces) */
+  thinking?: AIThinkingConfig
 }
 
 /**
@@ -34,6 +43,7 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
 
   const model = config.model ?? "claude-sonnet-4-5"
   const systemPrompt = config.systemPrompt ?? BIM_IDE_SYSTEM_PROMPT
+  const thinking = config.thinking
 
   return {
     id: "anthropic",
@@ -75,10 +85,24 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
           }),
         }
 
+        // Build provider options for extended thinking
+        const providerOptions =
+          thinking?.type === "enabled"
+            ? {
+                anthropic: {
+                  thinking: {
+                    type: "enabled" as const,
+                    budgetTokens: thinking.budgetTokens ?? 10000,
+                  },
+                },
+              }
+            : undefined
+
         const agent = new ToolLoopAgent({
           model: anthropic(model),
           instructions: systemPrompt,
           tools,
+          providerOptions,
         })
 
         const result = await agent.stream({
@@ -165,6 +189,32 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
               }
               // Yield any events emitted during tool execution
               yield* yieldQueuedEvents()
+              break
+            }
+
+            // Reasoning events (extended thinking)
+            case "reasoning-start": {
+              yield {
+                type: "reasoning-start",
+                id: part.id,
+              }
+              break
+            }
+
+            case "reasoning-delta": {
+              yield {
+                type: "reasoning-delta",
+                id: part.id,
+                delta: part.text,
+              }
+              break
+            }
+
+            case "reasoning-end": {
+              yield {
+                type: "reasoning-end",
+                id: part.id,
+              }
               break
             }
           }

@@ -22,6 +22,13 @@
       "when": 1768269244811,
       "tag": "0002_narrow_doomsday",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1768353361929,
+      "tag": "0003_right_namorita",
+      "breakpoints": true
     }
   ]
 }
