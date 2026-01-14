@@ -21,6 +21,7 @@ export type {
   ViewerContextValue,
   ViewerEventHandlers,
   ViewerProps,
+  ViewerProviderProps,
   ViewerState,
 } from "./react/types"
 export { Viewer } from "./react/viewer"

@@ -10,6 +10,7 @@ import {
   type SelectionEvent,
   setupFeatures,
 } from "../core/scene"
+import { createWorkerBlobUrl } from "../worker"
 import type {
   CameraControls,
   PlanViewControls,
@@ -28,7 +29,7 @@ ViewerContext.displayName = "ViewerContext"
  * React wrapper around core functionality
  * Manages React state and lifecycle
  */
-export const ViewerProvider = ({ children, config, workerUrl }: ViewerProviderProps) => {
+export const ViewerProvider = ({ children, config }: ViewerProviderProps) => {
   // Core instances (refs because we don't want to re-create them on every render)
   const sceneRef = useRef<Awaited<ReturnType<typeof createScene>> | null>(null)
   const worldRef = useRef<OBC.World | null>(null)
@@ -145,7 +146,7 @@ export const ViewerProvider = ({ children, config, workerUrl }: ViewerProviderPr
           scene.components,
           scene.world,
           scene.camera,
-          workerUrl,
+          createWorkerBlobUrl(),
           {
             onModelLoaded: (model) => {
               setState((prev) => {
@@ -180,7 +181,7 @@ export const ViewerProvider = ({ children, config, workerUrl }: ViewerProviderPr
         }))
       }
     },
-    [config, workerUrl]
+    [config]
   )
 
   const dispose = useCallback(() => {
