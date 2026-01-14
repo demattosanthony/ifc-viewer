@@ -119,13 +119,37 @@ async function bootstrapSampleProject(ctx: Context): Promise<void> {
   // Upload sample IFC model via Models API
   try {
     const ifcData = new Uint8Array(await readFile(SAMPLE_IFC_PATH))
+    const fileName = "sample.ifc"
+
+    // Convert IFC to fragments for instant rendering
+    let fragmentData: Uint8Array | undefined
+    let fragmentPath: string | undefined
+    let fragmentVersion: string | undefined
+
+    try {
+      fragmentData = await ctx.ifcProcessor.convert(ifcData)
+      fragmentPath = ctx.ifcProcessor.getFragmentPath(`models/${fileName}`)
+      fragmentVersion = ctx.ifcProcessor.version
+      log.debug("Sample model fragment conversion succeeded", {
+        fragmentSize: fragmentData.byteLength,
+      })
+    } catch (conversionError) {
+      // Log but don't fail - client can still convert on-the-fly
+      log.warn("Sample model fragment conversion failed, client will convert on-the-fly", {
+        error: conversionError,
+      })
+    }
+
     await uploadModel(ctx, {
       projectId: SAMPLE_PROJECT_ID,
       name: "Sample Model",
-      fileName: "sample.ifc",
+      fileName,
       data: ifcData,
+      fragmentData,
+      fragmentPath,
+      fragmentVersion,
     })
-    log.info("Uploaded sample model")
+    log.info("Uploaded sample model", { hasFragment: !!fragmentPath })
   } catch (err) {
     log.warn("Could not upload sample model", { error: err })
   }
