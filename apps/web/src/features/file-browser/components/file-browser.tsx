@@ -7,6 +7,7 @@ import { useEditor } from "@/features/editor/context"
 import { useResizable } from "@/features/editor/hooks/use-resizable"
 import { ModeSwitch } from "@/shared/components/mode-switch"
 import { useFileOperations } from "../hooks/use-file-operations"
+import { useUploadToast } from "../hooks/use-upload-toast.tsx"
 import { DeleteDialog } from "./delete-dialog"
 import { FileTreeItem } from "./file-tree-item"
 import { NewItemInput } from "./new-item-input"
@@ -35,7 +36,6 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
   const { openFile, closeTab, tabs } = useEditor()
   const [fileTree, setFileTree] = useState<Map<string, FileEntry[]>>(new Map())
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["."]))
-  const [loadingPaths, setLoadingPaths] = useState<Set<string>>(new Set())
   const [newItemType, setNewItemType] = useState<"file" | "folder" | null>(null)
   const [newItemParent, setNewItemParent] = useState<string>(".")
   const [newItemName, setNewItemName] = useState("")
@@ -82,7 +82,6 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
     async (path: string, force = false) => {
       if (fileTree.has(path) && !force) return
 
-      setLoadingPaths((prev) => new Set(prev).add(path))
       try {
         const { data } = await listProjectFiles({
           path: { id: projectId },
@@ -91,12 +90,6 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
         setFileTree((prev) => new Map(prev).set(path, data?.files ?? []))
       } catch (err) {
         console.error("Error fetching files:", err)
-      } finally {
-        setLoadingPaths((prev) => {
-          const next = new Set(prev)
-          next.delete(path)
-          return next
-        })
       }
     },
     [projectId, fileTree]
@@ -132,11 +125,24 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
     [refreshFolder]
   )
 
-  const { deleteTarget, uploadFiles, createItem, initiateDelete, confirmDelete, cancelDelete } =
-    useFileOperations({
-      projectId,
-      onRefresh: refreshFolder,
-    })
+  const {
+    deleteTarget,
+    uploadFiles,
+    createItem,
+    initiateDelete,
+    confirmDelete,
+    cancelDelete,
+    isUploading,
+    uploadProgress,
+    lastUploadResult,
+    clearUploadResult,
+  } = useFileOperations({
+    projectId,
+    onRefresh: refreshFolder,
+  })
+
+  // Show toast notifications for upload progress
+  useUploadToast(isUploading, uploadProgress, lastUploadResult, clearUploadResult)
 
   const toggleFolder = (path: string) => {
     setExpanded((prev) => {
@@ -220,7 +226,6 @@ export const FileBrowser = forwardRef<FileBrowserHandle, FileBrowserProps>(funct
             file={file}
             depth={depth}
             isExpanded={expanded.has(file.path)}
-            isLoading={loadingPaths.has(file.path)}
             onToggle={() => toggleFolder(file.path)}
             onClick={() => openFile(file.path)}
             onNewFile={(p) => handleStartNewItem("file", p)}

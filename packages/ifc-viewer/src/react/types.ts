@@ -60,11 +60,20 @@ export interface PlanViewControls {
 }
 
 export interface ViewerActions {
+  /**
+   * Load an IFC file (converts to fragments on-the-fly).
+   * Use loadFragment() if pre-converted fragments are available.
+   */
   loadModel: (
     buffer: ArrayBuffer,
     name: string,
     onProgress?: (progress: number) => void
   ) => Promise<void>
+  /**
+   * Load a pre-converted fragment file directly.
+   * This is faster than loadModel as it skips the conversion step.
+   */
+  loadFragment: (buffer: ArrayBuffer, name: string) => Promise<void>
   unloadModel: (modelId: string) => Promise<void>
   unloadAllModels: () => Promise<void>
   getElement: (modelId: string, elementId: number) => Promise<ElementData | null>

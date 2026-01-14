@@ -1,4 +1,4 @@
-import { getModelFile, listModels, readProjectFile } from "@ifc-viewer/sdk"
+import { getModelFile, getModelFragment, listModels, readProjectFile } from "@ifc-viewer/sdk"
 import { listModelsQueryKey } from "@ifc-viewer/sdk/hooks"
 import { useViewer } from "@ifc-viewer/viewer"
 import { useQuery } from "@tanstack/react-query"
@@ -10,7 +10,7 @@ export interface IFCViewerProps {
 }
 
 export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
-  const { loadModel, unloadAllModels, isInitialized } = useViewer()
+  const { loadModel, loadFragment, unloadAllModels, isInitialized } = useViewer()
   const loadedPathRef = useRef<string | null>(null)
   const loadingRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +73,28 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
       try {
         await unloadAllModels()
 
+        const filename = filePath.split("/").pop() || "model.ifc"
+
+        // Try loading pre-converted fragment if available (faster)
+        if (model?.fragmentPath) {
+          try {
+            const fragmentResponse = await getModelFragment({
+              path: { id: projectId, modelId: model.id },
+              parseAs: "blob",
+            })
+            if (fragmentResponse.data) {
+              const fragmentBuffer = await (fragmentResponse.data as Blob).arrayBuffer()
+              await loadFragment(fragmentBuffer, filename)
+              loadedPathRef.current = filePath
+              return
+            }
+          } catch (fragmentError) {
+            // Fragment loading failed, fall back to IFC
+            console.warn("Fragment loading failed, falling back to IFC:", fragmentError)
+          }
+        }
+
+        // Fall back to loading IFC directly
         const result = contentQuery.data
         let buffer: ArrayBuffer
 
@@ -90,7 +112,6 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
           buffer = encoder.encode(result.data?.content ?? "").buffer
         }
 
-        const filename = filePath.split("/").pop() || "model.ifc"
         await loadModel(buffer, filename)
         loadedPathRef.current = filePath
       } catch (err) {
@@ -103,7 +124,16 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
     }
 
     load()
-  }, [isInitialized, filePath, contentQuery.data, loadModel, unloadAllModels])
+  }, [
+    isInitialized,
+    filePath,
+    contentQuery.data,
+    loadModel,
+    loadFragment,
+    unloadAllModels,
+    model,
+    projectId,
+  ])
 
   // Handle query errors
   useEffect(() => {

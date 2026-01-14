@@ -8,6 +8,16 @@ import type {
   ProgressCallback,
 } from "../../types"
 
+const ELEMENT_LOOKUP_CONFIG = {
+  attributesDefault: true,
+  relations: {
+    ContainedInStructure: { attributes: true, relations: true },
+    HasAssociations: { attributes: true, relations: true },
+    IsDefinedBy: { attributes: true, relations: true },
+    IsTypedBy: { attributes: true, relations: true },
+  },
+} as const
+
 export class ModelManager {
   private components: OBC.Components
   private world: OBC.World
@@ -16,6 +26,8 @@ export class ModelManager {
   private fragmentsInitialized = false
   private onModelLoaded?: ModelLoadedCallback
   private onModelUnloaded?: ModelUnloadedCallback
+  private elementCache = new Map<string, ElementData | null>()
+  private pendingRequests = new Map<string, Promise<ElementData | null>>()
 
   constructor(
     components: OBC.Components,
@@ -49,16 +61,86 @@ export class ModelManager {
     const model = this.getModel(modelId)
     if (!model) return null
 
+    const key = `${modelId}:${elementId}`
+
+    if (this.elementCache.has(key)) return this.elementCache.get(key) ?? null
+    if (this.pendingRequests.has(key)) return this.pendingRequests.get(key)!
+
+    const request = model
+      .getItemsData([elementId], ELEMENT_LOOKUP_CONFIG)
+      .then(([data]) => {
+        const result = data ?? null
+        this.elementCache.set(key, result)
+        return result
+      })
+      .catch(() => null)
+      .finally(() => this.pendingRequests.delete(key))
+
+    this.pendingRequests.set(key, request)
+    return request
+  }
+
+  /**
+   * Initialize the fragments system if not already done.
+   */
+  private initializeFragments(): void {
+    if (this.fragmentsInitialized) return
+
+    const fragments = this.components.get(OBC.FragmentsManager)
+    fragments.init(this.workerUrl)
+    this.fragmentsInitialized = true
+
+    // Update fragments when camera stops moving
+    this.world.camera?.controls?.addEventListener("rest", () => fragments.core.update(true))
+
+    // Update models to use new camera when Views switches cameras
+    this.world.onCameraChanged.add((camera) => {
+      for (const [, model] of fragments.list) {
+        // biome-ignore lint/correctness/useHookAtTopLevel: useCamera is a method, not a React hook
+        model.useCamera(camera.three)
+      }
+      fragments.core.update(true)
+    })
+  }
+
+  /**
+   * Load a pre-converted fragment file directly.
+   * This is faster than loading IFC as it skips the conversion step.
+   */
+  async loadFragment(buffer: ArrayBuffer, name: string): Promise<void> {
+    const fragments = this.components.get(OBC.FragmentsManager)
+
+    this.initializeFragments()
+
+    const handleModelLoaded = ({ value: model }: { value: FragmentsModel }) => {
+      model.useCamera(this.camera.three)
+      this.world.scene.three.add(model.object)
+      fragments.core.update(true)
+
+      this.onModelLoaded?.({ id: model.modelId, name })
+    }
+
     try {
-      const item = model.getItem(elementId)
-      const data = await item.getData()
-      return data || null
-    } catch (error) {
-      console.error(`Failed to get element ${elementId} from model ${modelId}:`, error)
-      return null
+      fragments.list.onItemSet.add(handleModelLoaded)
+
+      // Load the pre-converted fragment directly via FragmentsModels.load()
+      // Generate a unique model ID for this fragment
+      const modelId = `frag-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      await fragments.core.load(buffer, {
+        modelId,
+        camera: this.camera.three,
+      })
+
+      this.camera.fitToItems()
+    } finally {
+      fragments.list.onItemSet.remove(handleModelLoaded)
     }
   }
 
+  /**
+   * Load an IFC file (converts to fragments on-the-fly).
+   * Use loadFragment() if pre-converted fragments are available.
+   */
   async loadModel(buffer: ArrayBuffer, name: string, onProgress?: ProgressCallback): Promise<void> {
     const ifcLoader = this.components.get(OBC.IfcLoader)
     const fragments = this.components.get(OBC.FragmentsManager)
@@ -94,22 +176,7 @@ export class ModelManager {
 
       ifcLoader.onIfcImporterInitialized.add(importerHandler)
 
-      if (!this.fragmentsInitialized) {
-        fragments.init(this.workerUrl)
-        this.fragmentsInitialized = true
-
-        // Update fragments when camera stops moving
-        this.world.camera?.controls?.addEventListener("rest", () => fragments.core.update(true))
-
-        // Update models to use new camera when Views switches cameras
-        this.world.onCameraChanged.add((camera) => {
-          for (const [, model] of fragments.list) {
-            // biome-ignore lint/correctness/useHookAtTopLevel: useCamera is a method, not a React hook
-            model.useCamera(camera.three)
-          }
-          fragments.core.update(true)
-        })
-      }
+      this.initializeFragments()
 
       fragments.list.onItemSet.add(handleModelLoaded)
 
@@ -138,6 +205,7 @@ export class ModelManager {
       this.world.scene.three.remove(model.object)
       model.dispose()
       fragments.list.delete(modelId)
+      this.clearModelCache(modelId)
 
       if (this.fragmentsInitialized) {
         fragments.core.update(true)
@@ -171,6 +239,18 @@ export class ModelManager {
     }
 
     fragments.list.clear()
+    this.elementCache.clear()
+    this.pendingRequests.clear()
     this.fragmentsInitialized = false
+  }
+
+  private clearModelCache(modelId: string): void {
+    const prefix = `${modelId}:`
+    for (const key of this.elementCache.keys()) {
+      if (key.startsWith(prefix)) this.elementCache.delete(key)
+    }
+    for (const key of this.pendingRequests.keys()) {
+      if (key.startsWith(prefix)) this.pendingRequests.delete(key)
+    }
   }
 }

@@ -130,7 +130,8 @@ export {
 
 // Skeleton
 export { Skeleton } from "./skeleton"
-
+// Toaster (sonner)
+export { Toaster, toast } from "./sonner"
 // Textarea
 export { Textarea } from "./textarea"
 

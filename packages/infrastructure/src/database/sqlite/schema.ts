@@ -59,6 +59,12 @@ export const models = sqliteTable("models", {
     .default("other"),
   filePath: text("file_path").notNull(),
   fileSize: integer("file_size").notNull(),
+  /** Path to pre-converted fragment file in storage */
+  fragmentPath: text("fragment_path"),
+  /** Fragment file size in bytes */
+  fragmentSize: integer("fragment_size"),
+  /** Fragment format version for invalidation */
+  fragmentVersion: text("fragment_version"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 })

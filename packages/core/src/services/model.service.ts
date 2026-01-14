@@ -22,6 +22,12 @@ export type UploadModelInput = {
   discipline?: ModelDiscipline
   fileName: string
   data: Uint8Array
+  /** Pre-converted fragment data (optional) */
+  fragmentData?: Uint8Array
+  /** Fragment file path relative to project */
+  fragmentPath?: string
+  /** Fragment format version */
+  fragmentVersion?: string
 }
 
 export type UpdateModelInput = {
@@ -34,6 +40,7 @@ export type UpdateModelInput = {
  *
  * - Validates the project exists
  * - Stores IFC file in models/ directory
+ * - Stores fragment file if provided
  * - Creates model metadata in database
  */
 export async function uploadModel(ctx: Context, input: UploadModelInput): Promise<Model> {
@@ -53,6 +60,22 @@ export async function uploadModel(ctx: Context, input: UploadModelInput): Promis
     contentType: "application/x-step",
   })
 
+  // Store fragment file if provided
+  let fragmentPath: string | null = null
+  let fragmentSize: number | null = null
+  let fragmentVersion: string | null = null
+
+  if (input.fragmentData && input.fragmentPath) {
+    fragmentPath = input.fragmentPath
+    fragmentSize = input.fragmentData.byteLength
+    fragmentVersion = input.fragmentVersion ?? null
+
+    const fragmentStorageKey = getModelStorageKey(input.projectId, fragmentPath)
+    await ctx.storage.put(fragmentStorageKey, input.fragmentData, {
+      contentType: "application/octet-stream",
+    })
+  }
+
   // Create model metadata in database
   const model = await ctx.db.models.create({
     projectId: input.projectId,
@@ -60,6 +83,9 @@ export async function uploadModel(ctx: Context, input: UploadModelInput): Promis
     discipline,
     filePath,
     fileSize: input.data.byteLength,
+    fragmentPath,
+    fragmentSize,
+    fragmentVersion,
   })
 
   return model
@@ -76,6 +102,23 @@ export async function getModelWithData(
   if (!model) return null
 
   const storageKey = getModelStorageKey(model.projectId, model.filePath)
+  const obj = await ctx.storage.get(storageKey)
+  if (!obj) return null
+
+  return { model, data: obj.data }
+}
+
+/**
+ * Get a model's fragment data.
+ */
+export async function getModelFragmentData(
+  ctx: Context,
+  modelId: string
+): Promise<{ model: Model; data: Uint8Array } | null> {
+  const model = await ctx.db.models.findById(modelId)
+  if (!model || !model.fragmentPath) return null
+
+  const storageKey = getModelStorageKey(model.projectId, model.fragmentPath)
   const obj = await ctx.storage.get(storageKey)
   if (!obj) return null
 
@@ -108,14 +151,21 @@ export async function updateModel(
  *
  * - Removes model metadata from database
  * - Deletes IFC file from storage
+ * - Deletes fragment file from storage if exists
  */
 export async function deleteModel(ctx: Context, modelId: string): Promise<void> {
   const model = await ctx.db.models.findById(modelId)
   if (!model) throw new NotFoundError("Model", modelId)
 
-  // Delete from storage first
+  // Delete IFC file from storage
   const storageKey = getModelStorageKey(model.projectId, model.filePath)
   await ctx.storage.delete(storageKey)
+
+  // Delete fragment file if exists
+  if (model.fragmentPath) {
+    const fragmentStorageKey = getModelStorageKey(model.projectId, model.fragmentPath)
+    await ctx.storage.delete(fragmentStorageKey)
+  }
 
   // Delete from database
   await ctx.db.models.delete(modelId)
@@ -131,6 +181,12 @@ export async function deleteProjectModels(ctx: Context, projectId: string): Prom
   for (const model of models) {
     const storageKey = getModelStorageKey(model.projectId, model.filePath)
     await ctx.storage.delete(storageKey)
+
+    // Delete fragment file if exists
+    if (model.fragmentPath) {
+      const fragmentStorageKey = getModelStorageKey(model.projectId, model.fragmentPath)
+      await ctx.storage.delete(fragmentStorageKey)
+    }
   }
 
   // Delete all model metadata from database

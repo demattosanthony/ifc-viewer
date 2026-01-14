@@ -994,6 +994,9 @@
                       },
                       "filePath": { "type": "string" },
                       "fileSize": { "type": "number" },
+                      "fragmentPath": { "type": "string", "nullable": true },
+                      "fragmentSize": { "type": "number", "nullable": true },
+                      "fragmentVersion": { "type": "string", "nullable": true },
                       "createdAt": { "type": "string", "format": "date-time" },
                       "updatedAt": { "type": "string", "format": "date-time" }
                     },
@@ -1004,6 +1007,9 @@
                       "discipline",
                       "filePath",
                       "fileSize",
+                      "fragmentPath",
+                      "fragmentSize",
+                      "fragmentVersion",
                       "createdAt",
                       "updatedAt"
                     ],
@@ -1102,6 +1108,9 @@
                     },
                     "filePath": { "type": "string" },
                     "fileSize": { "type": "number" },
+                    "fragmentPath": { "type": "string", "nullable": true },
+                    "fragmentSize": { "type": "number", "nullable": true },
+                    "fragmentVersion": { "type": "string", "nullable": true },
                     "createdAt": { "type": "string", "format": "date-time" },
                     "updatedAt": { "type": "string", "format": "date-time" }
                   },
@@ -1112,6 +1121,9 @@
                     "discipline",
                     "filePath",
                     "fileSize",
+                    "fragmentPath",
+                    "fragmentSize",
+                    "fragmentVersion",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -1175,6 +1187,9 @@
                     },
                     "filePath": { "type": "string" },
                     "fileSize": { "type": "number" },
+                    "fragmentPath": { "type": "string", "nullable": true },
+                    "fragmentSize": { "type": "number", "nullable": true },
+                    "fragmentVersion": { "type": "string", "nullable": true },
                     "createdAt": { "type": "string", "format": "date-time" },
                     "updatedAt": { "type": "string", "format": "date-time" }
                   },
@@ -1185,6 +1200,9 @@
                     "discipline",
                     "filePath",
                     "fileSize",
+                    "fragmentPath",
+                    "fragmentSize",
+                    "fragmentVersion",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -1277,6 +1295,9 @@
                     },
                     "filePath": { "type": "string" },
                     "fileSize": { "type": "number" },
+                    "fragmentPath": { "type": "string", "nullable": true },
+                    "fragmentSize": { "type": "number", "nullable": true },
+                    "fragmentVersion": { "type": "string", "nullable": true },
                     "createdAt": { "type": "string", "format": "date-time" },
                     "updatedAt": { "type": "string", "format": "date-time" }
                   },
@@ -1287,6 +1308,9 @@
                     "discipline",
                     "filePath",
                     "fileSize",
+                    "fragmentPath",
+                    "fragmentSize",
+                    "fragmentVersion",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -1353,6 +1377,17 @@
         "summary": "Download model IFC file",
         "tags": ["Models"],
         "operationId": "getModelFile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ]
+      }
+    },
+    "/api/projects/{id}/models/{modelId}/fragment": {
+      "get": {
+        "summary": "Download pre-converted fragment file",
+        "tags": ["Models"],
+        "operationId": "getModelFragment",
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
           { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }

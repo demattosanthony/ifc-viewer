@@ -1,11 +1,17 @@
-import { getModelFile, listModels } from "@ifc-viewer/sdk"
+import { getModelFile, getModelFragment, listModels } from "@ifc-viewer/sdk"
 import { listModelsQueryKey } from "@ifc-viewer/sdk/hooks"
 import { useViewer } from "@ifc-viewer/viewer"
 import { useQuery } from "@tanstack/react-query"
 import { useCallback, useState } from "react"
 
 export function useProjectModels(projectId: string) {
-  const { loadModel: viewerLoadModel, unloadModel, loadedModels, isInitialized } = useViewer()
+  const {
+    loadModel: viewerLoadModel,
+    loadFragment: viewerLoadFragment,
+    unloadModel,
+    loadedModels,
+    isInitialized,
+  } = useViewer()
   const [loadingModelId, setLoadingModelId] = useState<string | null>(null)
   const [loadProgress, setLoadProgress] = useState<number>(0)
 
@@ -25,27 +31,40 @@ export function useProjectModels(projectId: string) {
       setLoadProgress(0)
 
       try {
-        // Fetch the model file using SDK with blob parsing
-        const response = await getModelFile({
-          path: { id: projectId, modelId },
-          parseAs: "blob",
-        })
-
-        if (!response.data) {
-          throw new Error("Failed to fetch model file: No data received")
-        }
-
-        // Convert Blob to ArrayBuffer
-        const buffer = await (response.data as Blob).arrayBuffer()
-
-        // Get model name from the models list
+        // Get model info to check if fragments are available
         const modelInfo = modelsQuery.data?.find((m) => m.id === modelId)
         const name = modelInfo?.name ?? `Model ${modelId.slice(0, 8)}`
+        const hasFragment = modelInfo?.fragmentPath != null
 
-        // Load into viewer
-        await viewerLoadModel(buffer, name, (progress) => {
-          setLoadProgress(progress)
-        })
+        if (hasFragment) {
+          // Load pre-converted fragment (faster, no progress callback needed)
+          const response = await getModelFragment({
+            path: { id: projectId, modelId },
+            parseAs: "blob",
+          })
+
+          if (!response.data) {
+            throw new Error("Failed to fetch fragment file: No data received")
+          }
+
+          const buffer = await (response.data as Blob).arrayBuffer()
+          await viewerLoadFragment(buffer, name)
+        } else {
+          // Fallback: Load IFC and convert on-the-fly
+          const response = await getModelFile({
+            path: { id: projectId, modelId },
+            parseAs: "blob",
+          })
+
+          if (!response.data) {
+            throw new Error("Failed to fetch model file: No data received")
+          }
+
+          const buffer = await (response.data as Blob).arrayBuffer()
+          await viewerLoadModel(buffer, name, (progress) => {
+            setLoadProgress(progress)
+          })
+        }
       } catch (error) {
         console.error("Failed to load model:", error)
       } finally {
@@ -53,7 +72,14 @@ export function useProjectModels(projectId: string) {
         setLoadProgress(0)
       }
     },
-    [projectId, viewerLoadModel, modelsQuery.data, loadingModelId, isInitialized]
+    [
+      projectId,
+      viewerLoadModel,
+      viewerLoadFragment,
+      modelsQuery.data,
+      loadingModelId,
+      isInitialized,
+    ]
   )
 
   const isModelLoaded = useCallback(

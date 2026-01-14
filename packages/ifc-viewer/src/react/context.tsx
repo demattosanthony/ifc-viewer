@@ -244,6 +244,12 @@ export const ViewerProvider = ({ children, config, workerUrl }: ViewerProviderPr
     []
   )
 
+  const loadFragment = useCallback(
+    (buffer: ArrayBuffer, name: string) =>
+      modelManagerRef.current?.loadFragment(buffer, name) ?? Promise.resolve(),
+    []
+  )
+
   const unloadModel = useCallback(
     (modelId: string) => modelManagerRef.current?.unloadModel(modelId) ?? Promise.resolve(),
     []
@@ -318,6 +324,7 @@ export const ViewerProvider = ({ children, config, workerUrl }: ViewerProviderPr
     interactionManager: interactionRef.current,
     getElement,
     loadModel,
+    loadFragment,
     unloadModel,
     unloadAllModels,
     selectElements,

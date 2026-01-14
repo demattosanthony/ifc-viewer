@@ -20,10 +20,12 @@ export {
   createChangeTracker,
   type FileChange,
   type FileSnapshot,
+  type OnFileSyncCallback,
 } from "./change-tracker"
 export {
   deleteModel,
   deleteProjectModels,
+  getModelFragmentData,
   getModelWithData,
   listProjectModels,
   type UpdateModelInput,

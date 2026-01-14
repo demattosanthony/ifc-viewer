@@ -15,6 +15,13 @@
       "when": 1768092639383,
       "tag": "0001_graceful_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768269244811,
+      "tag": "0002_narrow_doomsday",
+      "breakpoints": true
     }
   ]
 }

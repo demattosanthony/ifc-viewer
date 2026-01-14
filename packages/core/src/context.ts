@@ -7,8 +7,9 @@
  */
 
 import { createLogger } from "@ifc-viewer/logger"
-import type { AIProvider, Computer, Database, Storage, StreamStore } from "./ports"
+import type { AIProvider, Computer, Database, IFCProcessor, Storage, StreamStore } from "./ports"
 import { type ChangeTracker, createChangeTracker } from "./services/change-tracker"
+import { createIFCSyncHandler } from "./services/ifc-sync.service"
 
 const log = createLogger("context")
 
@@ -32,6 +33,7 @@ export type Context = {
   storage: Storage
   ai: AIProvider
   streams: StreamStore
+  ifcProcessor: IFCProcessor
   getCompute(projectId: string): Computer | undefined
   getTracker(projectId: string): ChangeTracker | undefined
   getOrCreateCompute(projectId: string): Promise<{ computer: Computer; tracker: ChangeTracker }>
@@ -45,6 +47,7 @@ export type ContextConfig = {
   storage: Storage
   ai: AIProvider
   streams: StreamStore
+  ifcProcessor: IFCProcessor
   computeFactory: ComputeFactory
 }
 
@@ -58,6 +61,13 @@ export function createContext(config: ContextConfig): Context {
     string,
     Promise<{ computer: Computer; tracker: ChangeTracker }>
   >()
+
+  // Create IFC sync handler for automatic fragment regeneration
+  const onFileSync = createIFCSyncHandler({
+    db: config.db,
+    storage: config.storage,
+    ifcProcessor: config.ifcProcessor,
+  })
 
   const scheduleIdle = (projectId: string): Timer => {
     return setTimeout(async () => {
@@ -119,6 +129,7 @@ export function createContext(config: ContextConfig): Context {
     storage: config.storage,
     ai: config.ai,
     streams: config.streams,
+    ifcProcessor: config.ifcProcessor,
 
     getCompute(projectId: string): Computer | undefined {
       return computes.get(projectId)?.computer
@@ -153,6 +164,7 @@ export function createContext(config: ContextConfig): Context {
             computer,
             storage: config.storage,
             projectId,
+            onFileSync,
           })
           computes.set(projectId, { computer, tracker, idleTimer: scheduleIdle(projectId) })
           log.debug("Compute ready", { projectId })

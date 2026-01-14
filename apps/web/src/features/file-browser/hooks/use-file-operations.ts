@@ -36,6 +36,10 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
     current: number
     total: number
   } | null>(null)
+  const [lastUploadResult, setLastUploadResult] = useState<{
+    success: number
+    failed: number
+  } | null>(null)
   const queryClient = useQueryClient()
 
   // SDK mutations - use project-based endpoints
@@ -193,13 +197,17 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
 
       setUploadProgress(null)
 
+      // Store result for toast notification
+      const result = { success: successCount, failed: failedCount }
+      setLastUploadResult(result)
+
       // Refresh target directory and models/ if IFC files were uploaded
       onRefresh(targetPath)
       if (hasIfcFiles && targetPath !== "models") {
         onRefresh("models")
       }
 
-      return { success: successCount, failed: failedCount }
+      return result
     },
     [uploadFile, onRefresh]
   )
@@ -284,6 +292,10 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
     setDeleteTarget(null)
   }, [])
 
+  const clearUploadResult = useCallback(() => {
+    setLastUploadResult(null)
+  }, [])
+
   return {
     deleteTarget,
     uploadFiles,
@@ -293,6 +305,8 @@ export function useFileOperations({ projectId, onRefresh }: UseFileOperationsOpt
     cancelDelete,
     isUploading: uploadProgress !== null || uploadFileDirect.isPending || uploadModel.isPending,
     uploadProgress,
+    lastUploadResult,
+    clearUploadResult,
     isCreating: writeFile.isPending || createDirectory.isPending,
     isDeleting: deleteFile.isPending,
   }

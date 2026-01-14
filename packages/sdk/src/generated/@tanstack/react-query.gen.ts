@@ -16,6 +16,7 @@ import {
   getConversation,
   getModel,
   getModelFile,
+  getModelFragment,
   getProject,
   getProjectPresignedUrl,
   healthCheck,
@@ -64,6 +65,7 @@ import type {
   GetConversationData,
   GetModelData,
   GetModelFileData,
+  GetModelFragmentData,
   GetProjectData,
   GetProjectPresignedUrlData,
   GetProjectPresignedUrlError,
@@ -681,6 +683,24 @@ export const getModelFileOptions = (options: Options<GetModelFileData>) => {
       return data
     },
     queryKey: getModelFileQueryKey(options),
+  })
+}
+
+export const getModelFragmentQueryKey = (options: Options<GetModelFragmentData>) =>
+  createQueryKey("getModelFragment", options)
+
+export const getModelFragmentOptions = (options: Options<GetModelFragmentData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getModelFragment({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: getModelFragmentQueryKey(options),
   })
 }
 

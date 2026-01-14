@@ -100,14 +100,22 @@ function normalizePath(path: string): string {
 // Implementation
 // ============================================================================
 
+/** Callback called after a file is synced to storage */
+export type OnFileSyncCallback = (
+  projectId: string,
+  change: Omit<FileChange, "timestamp">
+) => Promise<void>
+
 export interface CreateChangeTrackerOptions {
   computer: Computer
   storage: Storage
   projectId: string
+  /** Optional callback called after each file sync */
+  onFileSync?: OnFileSyncCallback
 }
 
 export function createChangeTracker(options: CreateChangeTrackerOptions): ChangeTracker {
-  const { computer, storage, projectId } = options
+  const { computer, storage, projectId, onFileSync } = options
   const pending = new Map<string, FileChange>()
 
   const buildStorageKey = (path: string): string => {
@@ -178,6 +186,13 @@ export function createChangeTracker(options: CreateChangeTrackerOptions): Change
         }
         break
       }
+    }
+
+    // Call the onFileSync callback if provided (fire-and-forget, don't block sync)
+    if (onFileSync) {
+      onFileSync(projectId, change).catch((err) => {
+        console.error(`onFileSync callback failed for ${path}:`, err)
+      })
     }
   }
 

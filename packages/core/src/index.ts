@@ -137,6 +137,8 @@ export type {
   FileReadOptions,
   FileStat,
   FileSystem,
+  // IFC Processor
+  IFCProcessor,
   MessagePartRepository,
   MessageRepository,
   ModelRepository,
@@ -181,8 +183,10 @@ export {
   deleteProjectModels,
   type FileChange,
   type FileSnapshot,
+  getModelFragmentData,
   getModelWithData,
   listProjectModels,
+  type OnFileSyncCallback,
   // Agent
   runAgentChat,
   type UpdateModelInput,
