@@ -2,7 +2,7 @@
 import ifcopenshell
 
 # Open the IFC file
-ifc_file = ifcopenshell.open("sample.ifc")
+ifc_file = ifcopenshell.open("../models/sample.ifc")
 
 # Print basic file information
 print("=" * 60)

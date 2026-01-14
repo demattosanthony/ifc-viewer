@@ -7,7 +7,7 @@
     "dev:web": "bun --env-file=.env --filter=@ifc-viewer/web run dev",
     "build": "bun --filter=@ifc-viewer/server run build && bun --filter=@ifc-viewer/web run build",
     "typecheck": "bun --filter=* run typecheck",
-    "generate:sdk": "bun --filter=@ifc-viewer/sdk run generate",
+    "generate:sdk": "bun --filter=@ifc-viewer/sdk run generate && bun run check:fix",
     "fetch:openapi": "bun --filter=@ifc-viewer/sdk run fetch-spec",
     "ui:add": "bunx shadcn@latest add --cwd apps/web",
     "db:start": "docker compose up -d postgres",

@@ -11,8 +11,8 @@
     "./hooks": "./src/hooks.ts"
   },
   "scripts": {
-    "generate": "openapi-ts",
-    "fetch-spec": "curl -s http://localhost:3000/swagger/json > openapi.json",
+    "generate": "bun run fetch-spec && openapi-ts",
+    "fetch-spec": "bun --filter=@ifc-viewer/server run generate-openapi",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -6,10 +6,22 @@
     "version": "2.0.0"
   },
   "tags": [
-    { "name": "Projects", "description": "Project management" },
-    { "name": "Models", "description": "IFC model management" },
-    { "name": "Project Files", "description": "Project file operations" },
-    { "name": "Conversations", "description": "AI conversations and chat" }
+    {
+      "name": "Projects",
+      "description": "Project management"
+    },
+    {
+      "name": "Models",
+      "description": "IFC model management"
+    },
+    {
+      "name": "Project Files",
+      "description": "Project file operations"
+    },
+    {
+      "name": "Conversations",
+      "description": "AI conversations and chat"
+    }
   ],
   "paths": {
     "/": {
@@ -25,9 +37,15 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "version": { "type": "string" },
-                    "docs": { "type": "string" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "docs": {
+                      "type": "string"
+                    }
                   },
                   "required": ["message", "version", "docs"],
                   "additionalProperties": false
@@ -51,8 +69,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string", "enum": ["ok"] },
-                    "timestamp": { "type": "string" }
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
                   },
                   "required": ["status", "timestamp"],
                   "additionalProperties": false
@@ -75,8 +98,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string", "minLength": 1, "maxLength": 100 },
-                  "description": { "type": "string" }
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 },
                 "required": ["id"],
                 "additionalProperties": false
@@ -86,8 +115,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string", "minLength": 1, "maxLength": 100 },
-                  "description": { "type": "string" }
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 },
                 "required": ["id"],
                 "additionalProperties": false
@@ -97,8 +132,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string", "minLength": 1, "maxLength": 100 },
-                  "description": { "type": "string" }
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 },
                 "required": ["id"],
                 "additionalProperties": false
@@ -120,9 +161,18 @@
                       "maxLength": 100,
                       "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
                     },
-                    "description": { "type": "string", "nullable": true },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   },
                   "required": ["id", "description", "createdAt", "updatedAt"],
                   "additionalProperties": false
@@ -136,7 +186,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -165,9 +219,18 @@
                         "maxLength": 100,
                         "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
                       },
-                      "description": { "type": "string", "nullable": true },
-                      "createdAt": { "type": "string", "format": "date-time" },
-                      "updatedAt": { "type": "string", "format": "date-time" }
+                      "description": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
                     },
                     "required": ["id", "description", "createdAt", "updatedAt"],
                     "additionalProperties": false
@@ -185,7 +248,14 @@
         "tags": ["Projects"],
         "operationId": "getProject",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -201,9 +271,18 @@
                       "maxLength": 100,
                       "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
                     },
-                    "description": { "type": "string", "nullable": true },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   },
                   "required": ["id", "description", "createdAt", "updatedAt"],
                   "additionalProperties": false
@@ -217,7 +296,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -231,7 +314,14 @@
         "tags": ["Projects"],
         "operationId": "updateProject",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -239,21 +329,33 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": { "description": { "type": "string" } },
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  }
+                },
                 "additionalProperties": false
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "properties": { "description": { "type": "string" } },
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  }
+                },
                 "additionalProperties": false
               }
             },
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "properties": { "description": { "type": "string" } },
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  }
+                },
                 "additionalProperties": false
               }
             }
@@ -273,9 +375,18 @@
                       "maxLength": 100,
                       "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
                     },
-                    "description": { "type": "string", "nullable": true },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   },
                   "required": ["id", "description", "createdAt", "updatedAt"],
                   "additionalProperties": false
@@ -289,7 +400,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -303,7 +418,14 @@
         "tags": ["Projects"],
         "operationId": "deleteProject",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -312,7 +434,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
                   "required": ["success"],
                   "additionalProperties": false
                 }
@@ -325,7 +451,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -341,13 +471,30 @@
         "tags": ["Project Files"],
         "operationId": "listProjectFiles",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "path",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
             }
           }
         ],
@@ -364,17 +511,30 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "name": { "type": "string" },
-                          "path": { "type": "string" },
-                          "type": { "type": "string", "enum": ["file", "directory", "symlink"] },
-                          "size": { "type": "number" },
-                          "modifiedAt": { "type": "number" }
+                          "name": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": ["file", "directory", "symlink"]
+                          },
+                          "size": {
+                            "type": "number"
+                          },
+                          "modifiedAt": {
+                            "type": "number"
+                          }
                         },
                         "required": ["name", "path", "type", "size", "modifiedAt"],
                         "additionalProperties": false
                       }
                     },
-                    "path": { "type": "string" }
+                    "path": {
+                      "type": "string"
+                    }
                   },
                   "required": ["files", "path"],
                   "additionalProperties": false
@@ -389,13 +549,30 @@
         "tags": ["Project Files"],
         "operationId": "deleteProjectFile",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "path",
             "in": "query",
             "required": true,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
             }
           }
         ],
@@ -406,7 +583,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["success", "path"],
                   "additionalProperties": false
                 }
@@ -419,7 +603,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -432,7 +620,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -445,7 +637,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -461,13 +657,30 @@
         "tags": ["Project Files"],
         "operationId": "readProjectFile",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "path",
             "in": "query",
             "required": true,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
             }
           }
         ],
@@ -479,9 +692,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "path": { "type": "string" },
-                    "type": { "type": "string", "enum": ["text", "binary"] },
-                    "content": { "type": "string" }
+                    "path": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["text", "binary"]
+                    },
+                    "content": {
+                      "type": "string"
+                    }
                   },
                   "required": ["path", "type", "content"],
                   "additionalProperties": false
@@ -495,7 +715,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -508,7 +732,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -522,7 +750,14 @@
         "tags": ["Project Files"],
         "operationId": "writeProjectFile",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -531,9 +766,15 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "content": { "type": "string" },
-                  "isBinary": { "type": "boolean" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "isBinary": {
+                    "type": "boolean"
+                  }
                 },
                 "required": ["path", "content"],
                 "additionalProperties": false
@@ -543,9 +784,15 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "content": { "type": "string" },
-                  "isBinary": { "type": "boolean" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "isBinary": {
+                    "type": "boolean"
+                  }
                 },
                 "required": ["path", "content"],
                 "additionalProperties": false
@@ -555,9 +802,15 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "content": { "type": "string" },
-                  "isBinary": { "type": "boolean" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "isBinary": {
+                    "type": "boolean"
+                  }
                 },
                 "required": ["path", "content"],
                 "additionalProperties": false
@@ -572,7 +825,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["success", "path"],
                   "additionalProperties": false
                 }
@@ -585,7 +845,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -598,7 +862,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -614,7 +882,14 @@
         "tags": ["Project Files"],
         "operationId": "createProjectDirectory",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -622,7 +897,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -630,7 +909,11 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -638,7 +921,11 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -652,7 +939,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["success", "path"],
                   "additionalProperties": false
                 }
@@ -665,7 +959,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -678,7 +976,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -695,7 +997,14 @@
         "tags": ["Project Files"],
         "operationId": "uploadProjectFile",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -705,8 +1014,14 @@
                 "type": "object",
                 "required": ["file", "path"],
                 "properties": {
-                  "file": { "default": "File", "type": "string", "format": "binary" },
-                  "path": { "type": "string" }
+                  "file": {
+                    "default": "File",
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -715,8 +1030,14 @@
                 "type": "object",
                 "required": ["file", "path"],
                 "properties": {
-                  "file": { "default": "File", "type": "string", "format": "binary" },
-                  "path": { "type": "string" }
+                  "file": {
+                    "default": "File",
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -725,8 +1046,14 @@
                 "type": "object",
                 "required": ["file", "path"],
                 "properties": {
-                  "file": { "default": "File", "type": "string", "format": "binary" },
-                  "path": { "type": "string" }
+                  "file": {
+                    "default": "File",
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -739,7 +1066,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["success", "path"],
                   "additionalProperties": false
                 }
@@ -752,7 +1086,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -765,7 +1103,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -778,7 +1120,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -795,7 +1141,14 @@
         "tags": ["Project Files"],
         "operationId": "getProjectPresignedUrl",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -803,7 +1156,14 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" }, "contentType": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "contentType": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -811,7 +1171,14 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" }, "contentType": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "contentType": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -819,7 +1186,14 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" }, "contentType": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "contentType": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -834,9 +1208,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "url": { "type": "string" },
-                    "method": { "type": "string", "enum": ["PUT", "POST"] },
-                    "headers": { "type": "object", "additionalProperties": { "type": "string" } }
+                    "url": {
+                      "type": "string"
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": ["PUT", "POST"]
+                    },
+                    "headers": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
                   },
                   "required": ["url", "method"],
                   "additionalProperties": false
@@ -850,7 +1234,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -863,7 +1251,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -876,7 +1268,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -893,7 +1289,14 @@
         "tags": ["Project Files"],
         "operationId": "confirmProjectUpload",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -901,7 +1304,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -909,7 +1316,11 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -917,7 +1328,11 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "properties": { "path": { "type": "string" } },
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
                 "required": ["path"],
                 "additionalProperties": false
               }
@@ -931,7 +1346,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["success", "path"],
                   "additionalProperties": false
                 }
@@ -944,7 +1366,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -957,7 +1383,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -973,7 +1403,14 @@
         "tags": ["Models"],
         "operationId": "listModels",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -985,20 +1422,46 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "id": { "type": "string", "format": "uuid" },
-                      "projectId": { "type": "string" },
-                      "name": { "type": "string" },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "projectId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
                       "discipline": {
                         "type": "string",
                         "enum": ["architecture", "structure", "mep", "site", "other"]
                       },
-                      "filePath": { "type": "string" },
-                      "fileSize": { "type": "number" },
-                      "fragmentPath": { "type": "string", "nullable": true },
-                      "fragmentSize": { "type": "number", "nullable": true },
-                      "fragmentVersion": { "type": "string", "nullable": true },
-                      "createdAt": { "type": "string", "format": "date-time" },
-                      "updatedAt": { "type": "string", "format": "date-time" }
+                      "filePath": {
+                        "type": "string"
+                      },
+                      "fileSize": {
+                        "type": "number"
+                      },
+                      "fragmentPath": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "fragmentSize": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "fragmentVersion": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
                     },
                     "required": [
                       "id",
@@ -1025,7 +1488,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1039,7 +1506,14 @@
         "tags": ["Models"],
         "operationId": "uploadModel",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1049,7 +1523,9 @@
                 "type": "object",
                 "properties": {
                   "file": {},
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "discipline": {
                     "type": "string",
                     "enum": ["architecture", "structure", "mep", "site", "other"]
@@ -1064,7 +1540,9 @@
                 "type": "object",
                 "properties": {
                   "file": {},
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "discipline": {
                     "type": "string",
                     "enum": ["architecture", "structure", "mep", "site", "other"]
@@ -1079,7 +1557,9 @@
                 "type": "object",
                 "properties": {
                   "file": {},
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "discipline": {
                     "type": "string",
                     "enum": ["architecture", "structure", "mep", "site", "other"]
@@ -1099,20 +1579,46 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": { "type": "string", "format": "uuid" },
-                    "projectId": { "type": "string" },
-                    "name": { "type": "string" },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
                     "discipline": {
                       "type": "string",
                       "enum": ["architecture", "structure", "mep", "site", "other"]
                     },
-                    "filePath": { "type": "string" },
-                    "fileSize": { "type": "number" },
-                    "fragmentPath": { "type": "string", "nullable": true },
-                    "fragmentSize": { "type": "number", "nullable": true },
-                    "fragmentVersion": { "type": "string", "nullable": true },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "filePath": {
+                      "type": "string"
+                    },
+                    "fileSize": {
+                      "type": "number"
+                    },
+                    "fragmentPath": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "fragmentSize": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "fragmentVersion": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   },
                   "required": [
                     "id",
@@ -1138,7 +1644,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1151,7 +1661,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1167,8 +1681,22 @@
         "tags": ["Models"],
         "operationId": "getModel",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "modelId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1178,20 +1706,46 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": { "type": "string", "format": "uuid" },
-                    "projectId": { "type": "string" },
-                    "name": { "type": "string" },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
                     "discipline": {
                       "type": "string",
                       "enum": ["architecture", "structure", "mep", "site", "other"]
                     },
-                    "filePath": { "type": "string" },
-                    "fileSize": { "type": "number" },
-                    "fragmentPath": { "type": "string", "nullable": true },
-                    "fragmentSize": { "type": "number", "nullable": true },
-                    "fragmentVersion": { "type": "string", "nullable": true },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "filePath": {
+                      "type": "string"
+                    },
+                    "fileSize": {
+                      "type": "number"
+                    },
+                    "fragmentPath": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "fragmentSize": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "fragmentVersion": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   },
                   "required": [
                     "id",
@@ -1217,7 +1771,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1231,8 +1789,22 @@
         "tags": ["Models"],
         "operationId": "updateModel",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "modelId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1241,7 +1813,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
                   "discipline": {
                     "type": "string",
                     "enum": ["architecture", "structure", "mep", "site", "other"]
@@ -1254,7 +1830,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
                   "discipline": {
                     "type": "string",
                     "enum": ["architecture", "structure", "mep", "site", "other"]
@@ -1267,7 +1847,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
                   "discipline": {
                     "type": "string",
                     "enum": ["architecture", "structure", "mep", "site", "other"]
@@ -1286,20 +1870,46 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": { "type": "string", "format": "uuid" },
-                    "projectId": { "type": "string" },
-                    "name": { "type": "string" },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
                     "discipline": {
                       "type": "string",
                       "enum": ["architecture", "structure", "mep", "site", "other"]
                     },
-                    "filePath": { "type": "string" },
-                    "fileSize": { "type": "number" },
-                    "fragmentPath": { "type": "string", "nullable": true },
-                    "fragmentSize": { "type": "number", "nullable": true },
-                    "fragmentVersion": { "type": "string", "nullable": true },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "filePath": {
+                      "type": "string"
+                    },
+                    "fileSize": {
+                      "type": "number"
+                    },
+                    "fragmentPath": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "fragmentSize": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "fragmentVersion": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   },
                   "required": [
                     "id",
@@ -1325,7 +1935,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1339,8 +1953,22 @@
         "tags": ["Models"],
         "operationId": "deleteModel",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "modelId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1349,7 +1977,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
                   "required": ["success"],
                   "additionalProperties": false
                 }
@@ -1362,7 +1994,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1378,8 +2014,22 @@
         "tags": ["Models"],
         "operationId": "getModelFile",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "modelId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ]
       }
     },
@@ -1389,8 +2039,22 @@
         "tags": ["Models"],
         "operationId": "getModelFragment",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "modelId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "modelId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ]
       }
     },
@@ -1400,7 +2064,14 @@
         "tags": ["Conversations"],
         "operationId": "createConversation",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1408,21 +2079,33 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": { "title": { "type": "string" } },
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  }
+                },
                 "additionalProperties": false
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "properties": { "title": { "type": "string" } },
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  }
+                },
                 "additionalProperties": false
               }
             },
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "properties": { "title": { "type": "string" } },
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  }
+                },
                 "additionalProperties": false
               }
             }
@@ -1436,15 +2119,29 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": { "type": "string", "format": "uuid" },
-                    "projectId": { "type": "string" },
-                    "title": { "type": "string", "nullable": true },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "status": {
                       "type": "string",
                       "enum": ["active", "streaming", "completed", "aborted"]
                     },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   },
                   "required": ["id", "projectId", "title", "status", "createdAt", "updatedAt"],
                   "additionalProperties": false
@@ -1458,7 +2155,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1472,7 +2173,14 @@
         "tags": ["Conversations"],
         "operationId": "listConversations",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1484,15 +2192,29 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "id": { "type": "string", "format": "uuid" },
-                      "projectId": { "type": "string" },
-                      "title": { "type": "string", "nullable": true },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "projectId": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string",
+                        "nullable": true
+                      },
                       "status": {
                         "type": "string",
                         "enum": ["active", "streaming", "completed", "aborted"]
                       },
-                      "createdAt": { "type": "string", "format": "date-time" },
-                      "updatedAt": { "type": "string", "format": "date-time" }
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
                     },
                     "required": ["id", "projectId", "title", "status", "createdAt", "updatedAt"],
                     "additionalProperties": false
@@ -1507,7 +2229,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1521,7 +2247,14 @@
         "tags": ["Conversations"],
         "operationId": "clearConversations",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1530,7 +2263,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
                   "required": ["success"],
                   "additionalProperties": false
                 }
@@ -1546,12 +2283,22 @@
         "tags": ["Conversations"],
         "operationId": "getConversation",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "conversationId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "format": "uuid" }
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -1562,23 +2309,46 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": { "type": "string", "format": "uuid" },
-                    "projectId": { "type": "string" },
-                    "title": { "type": "string", "nullable": true },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "status": {
                       "type": "string",
                       "enum": ["active", "streaming", "completed", "aborted"]
                     },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
                     "messages": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "id": { "type": "string", "format": "uuid" },
-                          "conversationId": { "type": "string", "format": "uuid" },
-                          "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "conversationId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": ["user", "assistant", "system"]
+                          },
                           "parts": {
                             "type": "array",
                             "items": {
@@ -1586,8 +2356,13 @@
                                 {
                                   "type": "object",
                                   "properties": {
-                                    "type": { "type": "string", "enum": ["text"] },
-                                    "text": { "type": "string" }
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["text"]
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    }
                                   },
                                   "required": ["type", "text"],
                                   "additionalProperties": false
@@ -1595,16 +2370,28 @@
                                 {
                                   "type": "object",
                                   "properties": {
-                                    "type": { "type": "string", "enum": ["tool-use"] },
-                                    "id": { "type": "string" },
-                                    "name": { "type": "string" },
-                                    "input": { "type": "object", "additionalProperties": {} },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["tool-use"]
+                                    },
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "input": {
+                                      "type": "object",
+                                      "additionalProperties": {}
+                                    },
                                     "output": {},
                                     "status": {
                                       "type": "string",
                                       "enum": ["success", "error", "aborted"]
                                     },
-                                    "error": { "type": "string" }
+                                    "error": {
+                                      "type": "string"
+                                    }
                                   },
                                   "required": ["type", "id", "name", "input", "status"],
                                   "additionalProperties": false
@@ -1612,13 +2399,18 @@
                               ]
                             }
                           },
-                          "createdAt": { "type": "string", "format": "date-time" }
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
                         },
                         "required": ["id", "conversationId", "role", "parts", "createdAt"],
                         "additionalProperties": false
                       }
                     },
-                    "isGenerating": { "type": "boolean" }
+                    "isGenerating": {
+                      "type": "boolean"
+                    }
                   },
                   "required": [
                     "id",
@@ -1641,7 +2433,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1655,12 +2451,22 @@
         "tags": ["Conversations"],
         "operationId": "deleteConversation",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "conversationId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "format": "uuid" }
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -1670,7 +2476,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
                   "required": ["success"],
                   "additionalProperties": false
                 }
@@ -1686,12 +2496,22 @@
         "tags": ["Conversations"],
         "operationId": "sendMessage",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "conversationId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "format": "uuid" }
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
@@ -1700,7 +2520,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": { "content": { "type": "string" } },
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                },
                 "required": ["content"],
                 "additionalProperties": false
               }
@@ -1708,7 +2532,11 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "properties": { "content": { "type": "string" } },
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                },
                 "required": ["content"],
                 "additionalProperties": false
               }
@@ -1716,7 +2544,11 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "properties": { "content": { "type": "string" } },
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                },
                 "required": ["content"],
                 "additionalProperties": false
               }
@@ -1734,9 +2566,18 @@
                     "message": {
                       "type": "object",
                       "properties": {
-                        "id": { "type": "string", "format": "uuid" },
-                        "conversationId": { "type": "string", "format": "uuid" },
-                        "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "conversationId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["user", "assistant", "system"]
+                        },
                         "parts": {
                           "type": "array",
                           "items": {
@@ -1744,8 +2585,13 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "type": { "type": "string", "enum": ["text"] },
-                                  "text": { "type": "string" }
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["text"]
+                                  },
+                                  "text": {
+                                    "type": "string"
+                                  }
                                 },
                                 "required": ["type", "text"],
                                 "additionalProperties": false
@@ -1753,16 +2599,28 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "type": { "type": "string", "enum": ["tool-use"] },
-                                  "id": { "type": "string" },
-                                  "name": { "type": "string" },
-                                  "input": { "type": "object", "additionalProperties": {} },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["tool-use"]
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "input": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                  },
                                   "output": {},
                                   "status": {
                                     "type": "string",
                                     "enum": ["success", "error", "aborted"]
                                   },
-                                  "error": { "type": "string" }
+                                  "error": {
+                                    "type": "string"
+                                  }
                                 },
                                 "required": ["type", "id", "name", "input", "status"],
                                 "additionalProperties": false
@@ -1770,7 +2628,10 @@
                             ]
                           }
                         },
-                        "createdAt": { "type": "string", "format": "date-time" }
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
                       },
                       "required": ["id", "conversationId", "role", "parts", "createdAt"],
                       "additionalProperties": false
@@ -1788,7 +2649,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1804,12 +2669,22 @@
         "tags": ["Conversations"],
         "operationId": "streamEvents",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "conversationId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "format": "uuid" }
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ]
       }
@@ -1820,12 +2695,22 @@
         "tags": ["Conversations"],
         "operationId": "stopGeneration",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "conversationId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "format": "uuid" }
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -1835,7 +2720,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "success": { "type": "boolean" } },
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
                   "required": ["success"],
                   "additionalProperties": false
                 }
@@ -1848,7 +2737,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "error": { "type": "string" } },
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
                   "required": ["error"],
                   "additionalProperties": false
                 }
@@ -1861,11 +2754,20 @@
     "/ws/terminal": {
       "ws": {
         "parameters": [
-          { "name": "projectId", "in": "query", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "operationId": "wsWsTerminal"
       }
     }
   },
-  "components": { "schemas": {} }
+  "components": {
+    "schemas": {}
+  }
 }
