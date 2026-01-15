@@ -1,6 +1,8 @@
 import { Markdown, ReasoningBlock } from "@ifc-viewer/ui/components"
 import { memo } from "react"
 import type { StreamingMessage, UIMessagePart, UIReasoningPart, UIToolPart } from "../types"
+import { ReasoningStepItem, ToolStepItem } from "./step-item"
+import { StepsBlock } from "./steps-block"
 import { Tool, type ToolPart } from "./tool"
 import { CommandPreview } from "./tool-views/command-preview"
 import { FilePreview } from "./tool-views/file-preview"
@@ -196,6 +198,49 @@ function mergeConsecutiveTextParts(parts: UIMessagePart[]): UIMessagePart[] {
   return merged
 }
 
+/**
+ * Group consecutive non-text parts (tools and reasoning) together.
+ * Text parts break the groups and are returned as-is.
+ */
+function groupParts(parts: UIMessagePart[]): Array<UIMessagePart | UIMessagePart[]> {
+  const result: Array<UIMessagePart | UIMessagePart[]> = []
+  let currentGroup: UIMessagePart[] = []
+
+  for (const part of parts) {
+    if (part.type === "text") {
+      // Flush any accumulated group
+      if (currentGroup.length > 0) {
+        result.push(currentGroup.length === 1 ? currentGroup[0]! : [...currentGroup])
+        currentGroup = []
+      }
+      result.push(part)
+    } else {
+      // Accumulate tool-use and reasoning parts
+      currentGroup.push(part)
+    }
+  }
+
+  // Flush remaining group
+  if (currentGroup.length > 0) {
+    result.push(currentGroup.length === 1 ? currentGroup[0]! : [...currentGroup])
+  }
+
+  return result
+}
+
+/**
+ * Render a step part inside the StepsBlock timeline.
+ */
+function renderStepPart(part: UIMessagePart, _index: number) {
+  if (part.type === "tool-use") {
+    return <ToolStepItem key={part.id} tool={part} />
+  }
+  if (part.type === "reasoning") {
+    return <ReasoningStepItem key={part.id} reasoning={part} />
+  }
+  return null
+}
+
 function renderMessagePart(part: UIMessagePart, index: number) {
   if (part.type === "text") {
     return <AssistantText key={`text-${index}`} content={part.text} />
@@ -234,11 +279,45 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
   // Assistant message - flowing text with inline tools
   // Merge consecutive text parts to prevent visual breaks between steps
   const partsToRender = hasParts ? mergeConsecutiveTextParts(message.parts!) : []
+  const groupedParts = groupParts(partsToRender)
+
+  // Check if any non-text part is streaming
+  const isAnyPartStreaming = partsToRender.some(
+    (p) =>
+      (p.type === "tool-use" && (p.state === "streaming" || p.state === "running")) ||
+      (p.type === "reasoning" && p.state === "streaming")
+  )
 
   return (
     <div className="w-full space-y-3">
       {hasParts
-        ? partsToRender.map((part, index) => renderMessagePart(part, index))
+        ? groupedParts.map((item, index) => {
+            // Single text part
+            if (!Array.isArray(item) && item.type === "text") {
+              return <AssistantText key={`text-${index}`} content={item.text} />
+            }
+
+            // Single tool/reasoning (don't group if only one)
+            if (!Array.isArray(item)) {
+              return renderMessagePart(item, index)
+            }
+
+            // Group of 2+ tools/reasoning → StepsBlock
+            // Check if there's text content after this group
+            const hasTextAfter = groupedParts
+              .slice(index + 1)
+              .some((p) => !Array.isArray(p) && p.type === "text")
+
+            return (
+              <StepsBlock
+                key={`steps-${index}`}
+                parts={item}
+                isStreaming={isAnyPartStreaming}
+                hasTextAfter={hasTextAfter}
+                renderPart={renderStepPart}
+              />
+            )
+          })
         : hasContent && <AssistantText content={message.content} />}
     </div>
   )
