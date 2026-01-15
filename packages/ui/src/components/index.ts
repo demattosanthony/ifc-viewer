@@ -57,10 +57,8 @@ export { Label } from "./label"
 
 // Loader
 export { Loader, PulseDotLoader } from "./loader"
-
 // Markdown
 export { Markdown } from "./markdown"
-
 // Message
 export {
   Message,
@@ -69,13 +67,10 @@ export {
   MessageAvatar,
   MessageContent,
 } from "./message"
-
 // Popover
 export { Popover, PopoverContent, PopoverTrigger } from "./popover"
-
 // Progress
 export { Progress } from "./progress"
-
 // Prompt Input
 export {
   PromptInput,
@@ -84,7 +79,6 @@ export {
   type PromptInputProps,
   PromptInputTextarea,
 } from "./prompt-input"
-
 // Reasoning
 export {
   Reasoning,
@@ -96,10 +90,8 @@ export {
   ReasoningTrigger,
   type ReasoningTriggerProps,
 } from "./reasoning"
-
 // Separator
 export { Separator } from "./separator"
-
 // Sheet
 export {
   Sheet,
@@ -111,7 +103,6 @@ export {
   SheetTitle,
   SheetTrigger,
 } from "./sheet"
-
 // Sidebar
 export {
   Sidebar,
@@ -139,11 +130,12 @@ export {
   SidebarTrigger,
   useSidebar,
 } from "./sidebar"
-
 // Skeleton
 export { Skeleton } from "./skeleton"
 // Toaster (sonner)
 export { Toaster, toast } from "./sonner"
+// Text Shimmer
+export { TextShimmer } from "./text-shimmer"
 // Textarea
 export { Textarea } from "./textarea"
 
