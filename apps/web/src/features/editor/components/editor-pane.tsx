@@ -3,9 +3,12 @@ import { readProjectFileQueryKey } from "@ifc-viewer/sdk/hooks"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { useEditor } from "../context"
+import { getAvailableViewers } from "../utils/viewer-registry"
+import { ViewerSwitcher } from "./viewer-switcher"
 import { CodeEditor } from "./viewers/code-editor"
 import { HtmlViewer } from "./viewers/html-viewer"
 import { IFCViewer } from "./viewers/ifc-viewer"
+import { MarkdownViewer } from "./viewers/markdown-viewer"
 import { PdfViewer } from "./viewers/pdf-viewer"
 import { UnsupportedViewer } from "./viewers/unsupported-viewer"
 
@@ -34,7 +37,7 @@ function LoadingState() {
 }
 
 export function EditorPane({ projectId }: EditorPaneProps) {
-  const { tabs, activeTabId, getFileContent, setFileContent } = useEditor()
+  const { tabs, activeTabId, getFileContent, setFileContent, setTabViewer } = useEditor()
 
   const activeTab = tabs.find((t) => t.id === activeTabId)
   const shouldFetchContent =
@@ -73,8 +76,11 @@ export function EditorPane({ projectId }: EditorPaneProps) {
     return <EmptyState />
   }
 
+  // Determine effective viewer (user override or default)
+  const effectiveViewer = activeTab.activeViewer ?? activeTab.type
+
   // IFC has its own loading mechanism
-  if (activeTab.type === "ifc") {
+  if (effectiveViewer === "ifc") {
     return <IFCViewer projectId={projectId} filePath={activeTab.path} />
   }
 
@@ -84,34 +90,66 @@ export function EditorPane({ projectId }: EditorPaneProps) {
     return <LoadingState />
   }
 
-  // Render appropriate viewer based on tab type
-  switch (activeTab.type) {
-    case "html":
-      return (
-        <HtmlViewer
-          content={content.content}
-          contentType={content.type}
-          filename={activeTab.name}
-        />
-      )
+  // Render viewer with optional switcher
+  const renderViewer = () => {
+    switch (effectiveViewer) {
+      case "markdown":
+        return (
+          <MarkdownViewer
+            content={content.content}
+            contentType={content.type}
+            filename={activeTab.name}
+          />
+        )
 
-    case "pdf":
-      return (
-        <PdfViewer content={content.content} contentType={content.type} filename={activeTab.name} />
-      )
+      case "html":
+        return (
+          <HtmlViewer
+            content={content.content}
+            contentType={content.type}
+            filename={activeTab.name}
+          />
+        )
 
-    case "unsupported":
-      return <UnsupportedViewer filename={activeTab.name} />
+      case "pdf":
+        return (
+          <PdfViewer
+            content={content.content}
+            contentType={content.type}
+            filename={activeTab.name}
+          />
+        )
 
-    default:
-      return (
-        <CodeEditor
-          projectId={projectId}
-          path={activeTab.path}
-          tabId={activeTab.id}
-          content={content.content}
-          filename={activeTab.name}
-        />
-      )
+      case "unsupported":
+        return <UnsupportedViewer filename={activeTab.name} />
+
+      default:
+        return (
+          <CodeEditor
+            projectId={projectId}
+            path={activeTab.path}
+            tabId={activeTab.id}
+            content={content.content}
+            filename={activeTab.name}
+          />
+        )
+    }
   }
+
+  const hasMultipleViewers = getAvailableViewers(activeTab.type).length > 1
+
+  return (
+    <div className="h-full relative flex flex-col">
+      <div className="flex-1 min-h-0">{renderViewer()}</div>
+      {hasMultipleViewers && (
+        <div className="flex justify-center py-2 border-t bg-background">
+          <ViewerSwitcher
+            currentViewer={effectiveViewer}
+            defaultViewer={activeTab.type}
+            onViewerChange={(viewer) => setTabViewer(activeTab.id, viewer)}
+          />
+        </div>
+      )}
+    </div>
+  )
 }

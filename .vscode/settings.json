@@ -18,5 +18,8 @@
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
+  "[css]": {
+    "editor.defaultFormatter": "vscode.css-language-features"
+  },
   "typescript.preferences.importModuleSpecifierEnding": "js"
 }

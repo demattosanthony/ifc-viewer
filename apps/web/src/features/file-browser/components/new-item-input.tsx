@@ -1,4 +1,4 @@
-import { File, Folder } from "lucide-react"
+import { FileIcon } from "@/shared/components/file-icons/file-icon"
 
 interface NewItemInputProps {
   type: "file" | "folder"
@@ -22,11 +22,13 @@ export function NewItemInput({
   return (
     <div className="flex items-center h-[22px] bg-accent/50" style={{ paddingLeft: indent + 4 }}>
       <span className="w-4 shrink-0" />
-      {type === "folder" ? (
-        <Folder className="w-4 h-4 text-amber-500 shrink-0 ml-0.5" />
-      ) : (
-        <File className="w-4 h-4 text-muted-foreground shrink-0 ml-0.5" />
-      )}
+      <FileIcon
+        node={{
+          path: value || (type === "folder" ? "folder" : "file"),
+          type: type === "folder" ? "directory" : "file",
+        }}
+        className="ml-0.5"
+      />
       <input
         type="text"
         value={value}

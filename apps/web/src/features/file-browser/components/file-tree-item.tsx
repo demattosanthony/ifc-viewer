@@ -1,15 +1,7 @@
 import type { ListProjectFilesResponse } from "@ifc-viewer/sdk"
-import {
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  FolderOpen,
-  FolderPlus,
-  Plus,
-  Trash2,
-} from "lucide-react"
+import { ChevronDown, ChevronRight, FolderPlus, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
-import { FileIcon } from "../utils/file-icons"
+import { FileIcon } from "@/shared/components/file-icons/file-icon"
 
 type FileEntry = ListProjectFilesResponse["files"][number]
 
@@ -64,18 +56,16 @@ export function FileTreeItem({
             ) : (
               <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             )}
-            {isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-amber-500 shrink-0 ml-0.5" />
-            ) : (
-              <Folder className="w-4 h-4 text-amber-500 shrink-0 ml-0.5" />
-            )}
+            <FileIcon
+              node={{ path: file.path, type: "directory" }}
+              expanded={isExpanded}
+              className="ml-0.5"
+            />
           </>
         ) : (
           <>
             <span className="w-4 shrink-0" />
-            <span className="ml-0.5">
-              <FileIcon filename={file.name} className="w-4 h-4" />
-            </span>
+            <FileIcon node={{ path: file.path, type: "file" }} className="ml-0.5" />
           </>
         )}
         <span className="truncate select-none ml-1.5 text-[13px] flex-1">{file.name}</span>

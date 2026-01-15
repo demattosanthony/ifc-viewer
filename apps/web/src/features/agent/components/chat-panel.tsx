@@ -117,6 +117,7 @@ function EmptyStateView({
           <PromptInputTextarea
             placeholder="Ask anything..."
             className="min-h-[80px] resize-none text-sm"
+            autoFocus
           />
           <PromptInputActions className="justify-end px-3 pb-3">
             {isLoading ? (

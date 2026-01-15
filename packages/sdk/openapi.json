@@ -496,6 +496,26 @@
                 }
               ]
             }
+          },
+          {
+            "name": "hideDotfiles",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": ["true"]
+                },
+                {
+                  "type": "string",
+                  "enum": ["false"]
+                }
+              ]
+            }
           }
         ],
         "responses": {
@@ -2395,6 +2415,23 @@
                                   },
                                   "required": ["type", "id", "name", "input", "status"],
                                   "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["reasoning"]
+                                    },
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["type", "id", "text"],
+                                  "additionalProperties": false
                                 }
                               ]
                             }
@@ -2623,6 +2660,23 @@
                                   }
                                 },
                                 "required": ["type", "id", "name", "input", "status"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["reasoning"]
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "text": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["type", "id", "text"],
                                 "additionalProperties": false
                               }
                             ]

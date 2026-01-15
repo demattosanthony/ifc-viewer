@@ -66,8 +66,16 @@ export class ProjectFilesController {
   /**
    * List files in a project directory.
    * Reads directly from storage - no compute needed.
+   *
+   * @param projectId - The project ID
+   * @param path - The directory path to list (default ".")
+   * @param hideDotfiles - If true, skips files/folders starting with "."
    */
-  async list(projectId: string, path = "."): Promise<HttpResult<ListFilesResponse>> {
+  async list(
+    projectId: string,
+    path = ".",
+    hideDotfiles = false
+  ): Promise<HttpResult<ListFilesResponse>> {
     const project = await this.getProject(projectId)
     if (!project) {
       return notFound(`Project ${projectId} not found`)
@@ -99,6 +107,9 @@ export class ProjectFilesController {
         const slashIndex = relativePath.indexOf("/")
         const isDirectory = slashIndex !== -1
         const name = isDirectory ? relativePath.slice(0, slashIndex) : relativePath
+
+        // Skip dotfiles and dotfolders if hideDotfiles is enabled
+        if (hideDotfiles && name.startsWith(".")) continue
 
         // Skip if we already have this entry
         if (entriesMap.has(name)) {

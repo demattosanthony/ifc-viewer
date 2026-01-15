@@ -1,7 +1,5 @@
 import type { ViewerType } from "./types"
 
-export type { FileContent, ViewerType } from "./types"
-
 // Text/code file extensions that should use the Monaco editor
 const textExtensions = new Set([
   // JavaScript/TypeScript
@@ -38,8 +36,6 @@ const textExtensions = new Set([
   "npmrc",
   "nvmrc",
   // Documentation
-  "md",
-  "mdx",
   "txt",
   "rst",
   "asciidoc",
@@ -128,6 +124,8 @@ const specialExtensions = new Map<string, ViewerType>([
   ["html", "html"],
   ["htm", "html"],
   ["pdf", "pdf"],
+  ["md", "markdown"],
+  ["mdx", "markdown"],
 ])
 
 export function getViewerType(filename: string): ViewerType {
@@ -171,4 +169,15 @@ export function getViewerType(filename: string): ViewerType {
 
   // Unknown file type - show unsupported viewer
   return "unsupported"
+}
+
+export function getAvailableViewers(viewerType: ViewerType): ViewerType[] {
+  switch (viewerType) {
+    case "markdown":
+      return ["markdown", "code"]
+    case "html":
+      return ["html", "code"]
+    default:
+      return [viewerType]
+  }
 }
