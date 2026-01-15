@@ -36,7 +36,9 @@ export type Context = {
   ifcProcessor: IFCProcessor
   getCompute(projectId: string): Computer | undefined
   getTracker(projectId: string): ChangeTracker | undefined
-  getOrCreateCompute(projectId: string): Promise<{ computer: Computer; tracker: ChangeTracker }>
+  getOrCreateCompute(
+    projectId: string
+  ): Promise<{ computer: Computer; tracker: ChangeTracker; isNew: boolean }>
   touchCompute(projectId: string): void
   disposeCompute(projectId: string): Promise<void>
   dispose(): Promise<void>
@@ -65,7 +67,7 @@ export function createContext(config: ContextConfig): Context {
   const computes = new Map<string, ComputeState>()
   const pendingCreations = new Map<
     string,
-    Promise<{ computer: Computer; tracker: ChangeTracker }>
+    Promise<{ computer: Computer; tracker: ChangeTracker; isNew: boolean }>
   >()
 
   // Create IFC sync handler for automatic fragment regeneration
@@ -147,12 +149,12 @@ export function createContext(config: ContextConfig): Context {
 
     async getOrCreateCompute(
       projectId: string
-    ): Promise<{ computer: Computer; tracker: ChangeTracker }> {
+    ): Promise<{ computer: Computer; tracker: ChangeTracker; isNew: boolean }> {
       const existing = computes.get(projectId)
       if (existing) {
         clearTimeout(existing.idleTimer)
         existing.idleTimer = scheduleIdle(projectId)
-        return { computer: existing.computer, tracker: existing.tracker }
+        return { computer: existing.computer, tracker: existing.tracker, isNew: false }
       }
 
       const pending = pendingCreations.get(projectId)
@@ -174,7 +176,7 @@ export function createContext(config: ContextConfig): Context {
           })
           computes.set(projectId, { computer, tracker, idleTimer: scheduleIdle(projectId) })
           log.debug("Compute ready", { projectId })
-          return { computer, tracker }
+          return { computer, tracker, isNew: true }
         } finally {
           pendingCreations.delete(projectId)
         }

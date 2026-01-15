@@ -42,6 +42,18 @@ function generateTitle(content: string): string {
 }
 
 /**
+ * Check if conversation history contains executePython tool calls.
+ * Used to detect if Python REPL state needs to be restored.
+ */
+function hasPythonReplHistory(messages: Message[]): boolean {
+  return messages.some((msg) =>
+    msg.parts.some((part) => part.type === "tool-use" && part.name === "executePython")
+  )
+}
+
+const PYTHON_REPL_RESET_MESSAGE = `Note: The Python REPL session has been reset due to inactivity. Variables, imports, and state from previous Python executions in this conversation are no longer available. If you need to reference data from earlier operations, you will need to re-run the relevant code (e.g., re-open IFC files, re-import modules, recreate variables).`
+
+/**
  * Convert persisted messages to AI SDK format.
  * Handles multi-part messages with tool calls and results.
  *
@@ -170,7 +182,15 @@ export async function* runAgentChat(
   await ctx.db.conversations.update(conversationId, updates)
 
   // 5. Get or create compute for this project (on-demand)
-  const { computer, tracker } = await ctx.getOrCreateCompute(projectId)
+  const { computer, tracker, isNew } = await ctx.getOrCreateCompute(projectId)
+
+  // 6. If compute is newly created and there's Python REPL history, inject reset notice
+  if (isNew && hasPythonReplHistory(messages)) {
+    messageHistory.push({
+      role: "user",
+      content: PYTHON_REPL_RESET_MESSAGE,
+    })
+  }
 
   let assistantText = ""
   let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
