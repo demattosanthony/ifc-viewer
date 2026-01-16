@@ -10,6 +10,9 @@ const log = createLogger("docker")
 const DEFAULT_IMAGE = "bim-ide:latest"
 const DEFAULT_WORK_DIR = "/workspace"
 
+/** Paths accessible to the filesystem */
+const ALLOWED_PATHS = ["/workspace", "/opt/skills"]
+
 /**
  * Docker-specific compute configuration
  */
@@ -128,8 +131,8 @@ export class DockerComputer implements Computer {
     // Start container
     await this.container.start()
 
-    // Initialize adapters
-    this._files = new DockerFileSystem(this.container, this.containerWorkDir)
+    // Initialize adapters with allowed paths
+    this._files = new DockerFileSystem(this.container, ALLOWED_PATHS)
     this._shell = new DockerShell(this.container, this.containerWorkDir, this.config.environment)
   }
 

@@ -3,6 +3,9 @@ import type { ComputeConfig, Computer, FileSystem, Shell, TerminalSession } from
 import { LocalFileSystem } from "./filesystem"
 import { LocalShell } from "./shell"
 
+/** Paths accessible to the filesystem (matches Docker config) */
+const ALLOWED_PATHS_SUFFIX = ["/opt/skills"]
+
 export class LocalComputer implements Computer {
   readonly id: string
   readonly workingDirectory: string
@@ -20,7 +23,8 @@ export class LocalComputer implements Computer {
     this.workingDirectory = config.workingDirectory
     this.cleanup = config.cleanup ?? false
 
-    this._files = new LocalFileSystem(config.workingDirectory)
+    // Allow workspace + system paths (like /opt/skills)
+    this._files = new LocalFileSystem([config.workingDirectory, ...ALLOWED_PATHS_SUFFIX])
     this._shell = new LocalShell(config.workingDirectory, config.environment)
   }
 

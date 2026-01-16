@@ -19,7 +19,7 @@ describe("LocalFileSystem", () => {
     // Create a unique temp directory for each test
     baseDir = join(tmpdir(), `fs-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
     await mkdir(baseDir, { recursive: true })
-    fs = new LocalFileSystem(baseDir)
+    fs = new LocalFileSystem([baseDir])
   })
 
   afterEach(async () => {

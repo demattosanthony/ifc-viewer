@@ -8,20 +8,56 @@ import type {
 } from "@ifc-viewer/core"
 import type { Container } from "dockerode"
 
+/**
+ * Docker filesystem with path allowlist.
+ *
+ * Paths are resolved as follows:
+ * - Absolute paths starting with an allowed prefix are used as-is
+ * - Relative paths are resolved against the primary base directory
+ * - All other paths are rejected
+ */
 export class DockerFileSystem implements FileSystem {
+  private readonly primaryBase: string
+
   constructor(
     private container: Container,
-    private baseDir: string
-  ) {}
+    private allowedPaths: string[] = ["/workspace"]
+  ) {
+    if (allowedPaths.length === 0) {
+      throw new Error("At least one allowed path is required")
+    }
+    this.primaryBase = allowedPaths[0]!
+  }
 
+  /**
+   * Resolve and validate a path against the allowlist.
+   * - Absolute paths matching an allowed prefix are used as-is
+   * - Other absolute paths are treated as relative (leading / stripped)
+   * - Relative paths are resolved against the primary base directory
+   */
   private resolvePath(path: string): string {
-    const resolved = resolve(this.baseDir, path.startsWith("/") ? path.slice(1) : path)
-
-    if (!resolved.startsWith(this.baseDir)) {
-      throw new Error(`Path escapes sandbox: ${path}`)
+    // Check if it's an absolute path matching an allowed prefix
+    if (path.startsWith("/")) {
+      for (const allowed of this.allowedPaths) {
+        if (path === allowed || path.startsWith(`${allowed}/`)) {
+          return path
+        }
+      }
+      // Absolute path not in allowlist - treat as relative by stripping leading /
+      path = path.slice(1)
     }
 
-    return resolved
+    // Relative path - resolve against primary base
+    const resolved = resolve(this.primaryBase, path)
+
+    // Verify it still falls within an allowed path
+    for (const allowed of this.allowedPaths) {
+      if (resolved === allowed || resolved.startsWith(`${allowed}/`)) {
+        return resolved
+      }
+    }
+
+    throw new Error(`Path escapes sandbox: ${path}`)
   }
 
   private async exec(
@@ -149,14 +185,14 @@ export class DockerFileSystem implements FileSystem {
     const fullPath = this.resolvePath(path)
 
     const parentDir = fullPath.substring(0, fullPath.lastIndexOf("/"))
-    if (parentDir && parentDir !== this.baseDir) {
+    if (parentDir && parentDir !== this.primaryBase) {
       await this.exec(["mkdir", "-p", parentDir]).catch(() => {})
     }
 
     const data = typeof content === "string" ? Buffer.from(content) : Buffer.from(content)
     const filename = fullPath.split("/").pop() || "file"
     const tarBuffer = this.createTarArchive(filename, data)
-    await this.container.putArchive(tarBuffer, { path: parentDir || this.baseDir })
+    await this.container.putArchive(tarBuffer, { path: parentDir || this.primaryBase })
   }
 
   async list(path: string): Promise<FileEntry[]> {
@@ -189,9 +225,9 @@ export class DockerFileSystem implements FileSystem {
       if (!type || !name) continue
 
       const entryPath =
-        fullPath === this.baseDir
+        fullPath === this.primaryBase
           ? `/${name}`
-          : `/${fullPath.slice(this.baseDir.length + 1)}/${name}`
+          : `/${fullPath.slice(this.primaryBase.length + 1)}/${name}`
 
       entries.push({
         name,
@@ -265,7 +301,7 @@ export class DockerFileSystem implements FileSystem {
     const destPath = this.resolvePath(dest)
 
     const parentDir = destPath.substring(0, destPath.lastIndexOf("/"))
-    if (parentDir && parentDir !== this.baseDir) {
+    if (parentDir && parentDir !== this.primaryBase) {
       await this.exec(["mkdir", "-p", parentDir]).catch(() => {})
     }
 
@@ -277,7 +313,7 @@ export class DockerFileSystem implements FileSystem {
     const destPath = this.resolvePath(dest)
 
     const parentDir = destPath.substring(0, destPath.lastIndexOf("/"))
-    if (parentDir && parentDir !== this.baseDir) {
+    if (parentDir && parentDir !== this.primaryBase) {
       await this.exec(["mkdir", "-p", parentDir]).catch(() => {})
     }
 

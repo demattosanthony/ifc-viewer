@@ -9,6 +9,10 @@ scipy
 # PDF & Reporting
 reportlab
 fpdf2
+pymupdf>=1.24.0          # PyMuPDF - PDF reading and manipulation
+pypdf>=4.0.0             # PDF manipulation (merge, split, rotate, encrypt)
+pdfplumber>=0.10.0       # Text and table extraction from PDFs
+pdf2image>=1.16.0        # Convert PDF pages to images
 
 # Excel/Spreadsheet
 openpyxl

@@ -7,7 +7,15 @@
  */
 
 import { createLogger } from "@ifc-viewer/logger"
-import type { AIProvider, Computer, Database, IFCProcessor, Storage, StreamStore } from "./ports"
+import type {
+  AIProvider,
+  Computer,
+  Database,
+  IFCProcessor,
+  SkillsProvider,
+  Storage,
+  StreamStore,
+} from "./ports"
 import { type ChangeTracker, createChangeTracker } from "./services/change-tracker"
 import { createIFCSyncHandler } from "./services/ifc-sync.service"
 
@@ -34,6 +42,7 @@ export type Context = {
   ai: AIProvider
   streams: StreamStore
   ifcProcessor: IFCProcessor
+  skills: SkillsProvider
   getCompute(projectId: string): Computer | undefined
   getTracker(projectId: string): ChangeTracker | undefined
   getOrCreateCompute(
@@ -56,6 +65,7 @@ export type ContextConfig = {
   ai: AIProvider
   streams: StreamStore
   ifcProcessor: IFCProcessor
+  skills: SkillsProvider
   computeFactory: ComputeFactory
 }
 
@@ -138,6 +148,7 @@ export function createContext(config: ContextConfig): Context {
     ai: config.ai,
     streams: config.streams,
     ifcProcessor: config.ifcProcessor,
+    skills: config.skills,
 
     getCompute(projectId: string): Computer | undefined {
       return computes.get(projectId)?.computer
