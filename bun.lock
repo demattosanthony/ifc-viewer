@@ -78,12 +78,12 @@
       "name": "@ifc-viewer/viewer",
       "version": "0.0.1",
       "dependencies": {
-        "@thatopen/components": "^3.2.6",
-        "@thatopen/components-front": "^3.2.16",
-        "@thatopen/fragments": "^3.2.13",
+        "@ademattos/components": "^3.2.6",
+        "@ademattos/components-front": "^3.2.16",
+        "@ademattos/fragments": "^3.2.13",
+        "@ademattos/web-ifc": "^0.0.75",
         "stats.js": "^0.17.0",
         "three": "0.175.0",
-        "web-ifc": "^0.0.74",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -99,16 +99,16 @@
       "name": "@ifc-viewer/infrastructure",
       "version": "0.1.0",
       "dependencies": {
+        "@ademattos/fragments": "^3.2.13",
+        "@ademattos/web-ifc": "^0.0.75",
         "@ai-sdk/anthropic": "beta",
         "@ifc-viewer/core": "workspace:*",
         "@ifc-viewer/logger": "workspace:*",
-        "@thatopen/fragments": "^3.2.13",
         "@types/dockerode": "^3.3.47",
         "ai": "beta",
         "dockerode": "^4.0.9",
         "drizzle-orm": "^0.45.1",
         "three": "0.175.0",
-        "web-ifc": "^0.0.74",
         "zod": "^3.23.0",
       },
       "devDependencies": {
@@ -208,6 +208,14 @@
     },
   },
   "packages": {
+    "@ademattos/components": ["@ademattos/components@3.2.6", "", { "dependencies": { "camera-controls": "^2.9.0", "fast-xml-parser": "4.4.1", "jszip": "3.10.1", "three-mesh-bvh": "0.7.0" }, "peerDependencies": { "@ademattos/fragments": "~3.2.0", "@ademattos/web-ifc": ">=0.0.75", "three": ">=0.175.0" } }, "sha512-mMY/UTUu0IfS7jDIiteMNFoWzaoCSx+cp1o57o9ZT73IfcDN66wXwE/BN79j1snABVN/CQInxje+8uXNpL2T/A=="],
+
+    "@ademattos/components-front": ["@ademattos/components-front@3.2.16", "", { "dependencies": { "@ademattos/components": "~3.2.0", "earcut": "^3.0.1" }, "peerDependencies": { "@ademattos/fragments": "~3.2.0", "@ademattos/web-ifc": ">=0.0.75", "three": ">=0.175.0" } }, "sha512-kLsHV2bR/7WzsDPLxbtfaNkUFf6byv6YIBdet0Sux66BKc7HTGwJFwiqYB1CdGQiF6McS/rnhywpMeqNntlqOg=="],
+
+    "@ademattos/fragments": ["@ademattos/fragments@3.2.13", "", { "dependencies": { "earcut": "^3.0.1", "flatbuffers": "25.2.10", "lru-cache": "11.1.0", "pako": "2.1.0" }, "peerDependencies": { "three": ">=0.175", "web-ifc": ">=0.0.72" } }, "sha512-I7vXFm5qgel4eSMZ1Y5MHIuaqFIN/Vv/gndrIali9qU5EpxqQmwkzUzzoZBWQNIOL+MkJv17I7DEDQ02txcCyQ=="],
+
+    "@ademattos/web-ifc": ["@ademattos/web-ifc@0.0.75", "", {}, "sha512-bQXlxUmt7nvVXMB+bf956BtWVPwnGx19Qp/bRvLx4ndFrJI9bA4+fUckbVr8xQE6+xb7fcKStruKu+hz1rcQgg=="],
+
     "@ai-sdk/anthropic": ["@ai-sdk/anthropic@3.0.0-beta.98", "", { "dependencies": { "@ai-sdk/provider": "3.0.0-beta.32", "@ai-sdk/provider-utils": "4.0.0-beta.59" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-XMWhml/fplgixqitIvOYFO+A9EsXiU2Kh6+b+F5AH7ILhVuJiQ3yPzaZ9ca4WcY/7NPnlLYmoUd2XcaF2qOopQ=="],
 
     "@ai-sdk/gateway": ["@ai-sdk/gateway@2.0.0-beta.93", "", { "dependencies": { "@ai-sdk/provider": "3.0.0-beta.32", "@ai-sdk/provider-utils": "4.0.0-beta.59", "@vercel/oidc": "3.0.5" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-yN0QzF4esw2XePXk/wCpGm+9SU45kYAGCiYLheDlS3iL6D+91rtb8RXL/5+iFENYFwqWyxEIj4Qiktm9djPFAg=="],
@@ -589,12 +597,6 @@
     "@tanstack/query-core": ["@tanstack/query-core@5.90.16", "", {}, "sha512-MvtWckSVufs/ja463/K4PyJeqT+HMlJWtw6PrCpywznd2NSgO3m4KwO9RqbFqGg6iDE8vVMFWMeQI4Io3eEYww=="],
 
     "@tanstack/react-query": ["@tanstack/react-query@5.90.16", "", { "dependencies": { "@tanstack/query-core": "5.90.16" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-bpMGOmV4OPmif7TNMteU/Ehf/hoC0Kf98PDc0F4BZkFrEapRMEqI/V6YS0lyzwSV6PQpY1y4xxArUIfBW5LVxQ=="],
-
-    "@thatopen/components": ["@thatopen/components@3.2.6", "", { "dependencies": { "camera-controls": "^2.9.0", "fast-xml-parser": "4.4.1", "jszip": "3.10.1", "three-mesh-bvh": "0.7.0" }, "peerDependencies": { "@thatopen/fragments": "~3.2.0", "three": ">=0.175.0", "web-ifc": ">=0.0.72" } }, "sha512-R4XHjLzaXS2crNf8/ofJnff1KywkfZPhaBXOZGPRb0Za8kuS4Q2HZ3Z3R/UxIdUU50NWhL7IZPgHdgu3EKPCXA=="],
-
-    "@thatopen/components-front": ["@thatopen/components-front@3.2.16", "", { "dependencies": { "@thatopen/components": "~3.2.0", "earcut": "^3.0.1" }, "peerDependencies": { "@thatopen/fragments": "~3.2.0", "three": ">=0.175.0", "web-ifc": ">=0.0.72" } }, "sha512-eFvvT3h+8jdMxYs1OdSwsognE4l0FvqKpeQBACipz4R1Cfdi+KzBGiWtA+zLObLcrwkm/j3zXJCCGKwR/pjedQ=="],
-
-    "@thatopen/fragments": ["@thatopen/fragments@3.2.13", "", { "dependencies": { "earcut": "^3.0.1", "flatbuffers": "25.2.10", "lru-cache": "11.1.0", "pako": "2.1.0" }, "peerDependencies": { "three": ">=0.175", "web-ifc": ">=0.0.72" } }, "sha512-i/Mn6TmI92f1jmfiFbM9u2seGjduTIE7+H18pxyBycv3ES/TRGNuj8/tl/hmmHxvCWX4gCtShxt5+FBXUTq5Hw=="],
 
     "@tokenizer/inflate": ["@tokenizer/inflate@0.4.1", "", { "dependencies": { "debug": "^4.4.3", "token-types": "^6.1.1" } }, "sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA=="],
 

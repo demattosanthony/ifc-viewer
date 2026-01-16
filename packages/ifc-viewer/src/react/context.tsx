@@ -1,4 +1,4 @@
-import * as OBC from "@thatopen/components"
+import * as OBC from "@ademattos/components"
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { CameraManager, type CameraState, PlanViewManager, type PlanViewState } from "../core"
