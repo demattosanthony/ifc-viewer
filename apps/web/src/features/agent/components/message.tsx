@@ -281,13 +281,6 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
   const partsToRender = hasParts ? mergeConsecutiveTextParts(message.parts!) : []
   const groupedParts = groupParts(partsToRender)
 
-  // Check if any non-text part is streaming
-  const isAnyPartStreaming = partsToRender.some(
-    (p) =>
-      (p.type === "tool-use" && (p.state === "streaming" || p.state === "running")) ||
-      (p.type === "reasoning" && p.state === "streaming")
-  )
-
   return (
     <div className="w-full space-y-3">
       {hasParts
@@ -308,11 +301,18 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
               .slice(index + 1)
               .some((p) => !Array.isArray(p) && p.type === "text")
 
+            // Calculate streaming status for THIS specific group only
+            const isGroupStreaming = item.some(
+              (p) =>
+                (p.type === "tool-use" && (p.state === "streaming" || p.state === "running")) ||
+                (p.type === "reasoning" && p.state === "streaming")
+            )
+
             return (
               <StepsBlock
                 key={`steps-${index}`}
                 parts={item}
-                isStreaming={isAnyPartStreaming}
+                isStreaming={isGroupStreaming}
                 hasTextAfter={hasTextAfter}
                 renderPart={renderStepPart}
               />
