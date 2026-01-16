@@ -103,6 +103,16 @@ export {
 } from "./database"
 // IFC Processor
 export { createThatOpenIFCProcessor } from "./ifc-processor"
+// Skills
+export {
+  createFileSystemSkillsProvider,
+  createSkillsProvider,
+  FileSystemSkillsProvider,
+  SKILL_FILENAME,
+  SKILLS_PATH,
+  type SkillsConfig,
+  type SkillsProviderType,
+} from "./skills"
 // Storage
 export {
   // Utilities

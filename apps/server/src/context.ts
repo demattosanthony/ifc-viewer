@@ -8,6 +8,7 @@ import {
   createDockerComputer,
   createLocalComputer,
   createMemoryStreamStore,
+  createSkillsProvider,
   createStorage,
   createThatOpenIFCProcessor,
   type DatabaseConfig,
@@ -24,6 +25,14 @@ const SAMPLE_PROJECT_ID = "sample-project"
 const SAMPLE_IFC_PATH = resolve(__dirname, "..", "assets", "sample.ifc")
 const SAMPLE_PY_SCRIPT_PATH = resolve(__dirname, "..", "assets", "print_info.py")
 const DEFAULT_DOCKER_IMAGE = "bim-ide:latest"
+const BUNDLED_SKILLS_PATH = resolve(
+  MONOREPO_ROOT,
+  "packages",
+  "infrastructure",
+  "src",
+  "skills",
+  "bundled"
+)
 
 export type ComputeProvider = "local" | "docker"
 export type AppContextMode = "server" | "offline"
@@ -66,6 +75,10 @@ export async function createAppContext(mode: AppContextMode = "server"): Promise
     process.env.WORKSPACES_DIR ?? resolve(MONOREPO_ROOT, ".data", "workspaces")
 
   const ifcProcessor = createThatOpenIFCProcessor()
+  const skills = createSkillsProvider({
+    type: "filesystem",
+    bundledSkillsPath: BUNDLED_SKILLS_PATH,
+  })
 
   const ctx = createContext({
     db,
@@ -73,6 +86,7 @@ export async function createAppContext(mode: AppContextMode = "server"): Promise
     ai,
     streams,
     ifcProcessor,
+    skills,
 
     async computeFactory(projectId: string): Promise<Computer> {
       if (computeProvider === "docker") {

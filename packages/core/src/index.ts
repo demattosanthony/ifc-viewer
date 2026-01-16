@@ -151,6 +151,10 @@ export type {
   ProjectRepository,
   PythonTerminalOptions,
   Shell,
+  // Skills
+  SkillMetadata,
+  SkillsProvider,
+  SkillsProviderConfig,
   // Storage
   Storage,
   StorageEntry,

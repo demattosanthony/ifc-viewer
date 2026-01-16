@@ -14,7 +14,7 @@ import type {
   AIThinkingConfig,
 } from "@ifc-viewer/core"
 import { ToolLoopAgent } from "ai"
-import { BIM_IDE_SYSTEM_PROMPT } from "./prompts/system-prompt"
+import { BIM_IDE_SYSTEM_PROMPT, buildSystemPrompt } from "./prompts/system-prompt.ts"
 import { createFileTools } from "./tools/file-tools"
 import { createPythonTools } from "./tools/python-tools"
 import { createShellTools } from "./tools/shell-tools"
@@ -42,13 +42,18 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
   })
 
   const model = config.model ?? "claude-sonnet-4-5"
-  const systemPrompt = config.systemPrompt ?? BIM_IDE_SYSTEM_PROMPT
+  const baseSystemPrompt = config.systemPrompt ?? BIM_IDE_SYSTEM_PROMPT
   const thinking = config.thinking
 
   return {
     id: "anthropic",
 
     async *streamChat(options: AIChatOptions): AsyncGenerator<AIEvent> {
+      // Build system prompt with skills
+      const systemPrompt = buildSystemPrompt({
+        basePrompt: baseSystemPrompt,
+        skills: options.skills,
+      })
       // Queue for tool-emitted events (editor-open, terminal-focus, etc.)
       // These events are emitted by tools during execution and need to be
       // interleaved with the stream events

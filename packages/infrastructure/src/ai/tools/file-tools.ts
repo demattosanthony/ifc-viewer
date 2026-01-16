@@ -8,12 +8,18 @@
 import type { AIEvent, ChangeTracker, Computer } from "@ifc-viewer/core"
 import { tool } from "ai"
 import { z } from "zod"
+import { SKILLS_PATH } from "../../skills/constants.ts"
 import { getErrorMessage } from "../utils"
 
 export interface FileToolsOptions {
   computer: Computer
   changeTracker: ChangeTracker
   emit: (event: AIEvent) => void
+}
+
+/** Check if path is a skills directory (internal, not user files) */
+export function isSkillsPath(path: string): boolean {
+  return path.startsWith(`${SKILLS_PATH}/`) || path === SKILLS_PATH
 }
 
 export function createFileTools(options: FileToolsOptions) {
@@ -27,7 +33,10 @@ export function createFileTools(options: FileToolsOptions) {
       }),
       execute: async ({ path }: { path: string }) => {
         try {
-          emit({ type: "editor-open", path })
+          // Don't open skills files in editor - they're internal reference files
+          if (!isSkillsPath(path)) {
+            emit({ type: "editor-open", path })
+          }
 
           const result = await computer.files.read(path)
           if (result.type === "binary") {
@@ -58,8 +67,11 @@ export function createFileTools(options: FileToolsOptions) {
       }),
       execute: async ({ path, content }: { path: string; content: string }) => {
         try {
-          emit({ type: "editor-open", path })
-          emit({ type: "editor-replace", path, content })
+          // Don't open skills files in editor - they're internal reference files
+          if (!isSkillsPath(path)) {
+            emit({ type: "editor-open", path })
+            emit({ type: "editor-replace", path, content })
+          }
 
           // Check if file exists to determine create vs update
           let exists = false

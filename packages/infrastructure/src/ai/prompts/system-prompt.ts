@@ -4,6 +4,9 @@
  * Default system prompts for AI agents.
  */
 
+import type { SkillMetadata } from "@ifc-viewer/core"
+import { formatSkillsForPrompt } from "../utils/skill-formatter.ts"
+
 export const BIM_IDE_SYSTEM_PROMPT = `You are an AI assistant integrated into a BIM (Building Information Modeling) IDE. You help users analyze IFC files, extract building data, and automate BIM workflows. Be accurate, safe, and efficient.
 
 ## Environment
@@ -73,3 +76,22 @@ element = ifc.by_guid("2O2Fr$t4X7Zf8NOew3FLIE")
 - Use minimal emojis; only if the user’s tone calls for them.
 
 You can handle tasks ranging from quick IFC queries to complex automation workflows.`
+
+/** Options for building the system prompt */
+export interface BuildSystemPromptOptions {
+  basePrompt?: string
+  skills?: SkillMetadata[]
+}
+
+/** Build complete system prompt with optional skills */
+export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): string {
+  const base = options.basePrompt ?? BIM_IDE_SYSTEM_PROMPT
+  const skills = options.skills ?? []
+
+  if (skills.length === 0) {
+    return base
+  }
+
+  const skillsSection = formatSkillsForPrompt(skills)
+  return `${base}\n\n${skillsSection}`
+}

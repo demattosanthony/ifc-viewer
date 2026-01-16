@@ -184,7 +184,15 @@ export async function* runAgentChat(
   // 5. Get or create compute for this project (on-demand)
   const { computer, tracker, isNew } = await ctx.getOrCreateCompute(projectId)
 
-  // 6. If compute is newly created and there's Python REPL history, inject reset notice
+  // 6. Ensure bundled skills are copied to compute
+  if (isNew) {
+    await ctx.skills.copyBundledSkillsToCompute(computer, "/opt/skills")
+  }
+
+  // 7. Discover available skills (metadata only - full content read by model on-demand)
+  const skills = await ctx.skills.discoverSkills()
+
+  // 8. If compute is newly created and there's Python REPL history, inject reset notice
   if (isNew && hasPythonReplHistory(messages)) {
     messageHistory.push({
       role: "user",
@@ -202,6 +210,7 @@ export async function* runAgentChat(
       computer,
       changeTracker: tracker,
       getTerminal: () => computer.getOrCreateAgentTerminal(),
+      skills,
     })) {
       // Keep compute alive during long AI sessions
       if (event.type === "step-start" || event.type === "tool-call") {

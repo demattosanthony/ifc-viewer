@@ -8,17 +8,50 @@ import type {
   FileSystem,
 } from "@ifc-viewer/core"
 
+/**
+ * Local filesystem with path allowlist.
+ *
+ * Paths are resolved as follows:
+ * - Absolute paths starting with an allowed prefix are used as-is
+ * - Relative paths are resolved against the primary base directory
+ * - All other paths are rejected
+ */
 export class LocalFileSystem implements FileSystem {
-  constructor(private baseDir: string) {}
+  private readonly primaryBase: string
 
+  constructor(private allowedPaths: string[]) {
+    if (allowedPaths.length === 0) {
+      throw new Error("At least one allowed path is required")
+    }
+    this.primaryBase = allowedPaths[0]!
+  }
+
+  /**
+   * Resolve and validate a path against the allowlist.
+   */
   private resolvePath(path: string): string {
-    const resolved = resolve(this.baseDir, path.startsWith("/") ? path.slice(1) : path)
-
-    if (!resolved.startsWith(this.baseDir)) {
-      throw new Error(`Path escapes sandbox: ${path}`)
+    // Check if it's an absolute path matching an allowed prefix
+    if (path.startsWith("/")) {
+      for (const allowed of this.allowedPaths) {
+        if (path === allowed || path.startsWith(`${allowed}/`)) {
+          return path
+        }
+      }
+      // Absolute path not in allowlist - treat as relative by stripping leading /
+      path = path.slice(1)
     }
 
-    return resolved
+    // Relative path - resolve against primary base
+    const resolved = resolve(this.primaryBase, path)
+
+    // Verify it still falls within an allowed path
+    for (const allowed of this.allowedPaths) {
+      if (resolved === allowed || resolved.startsWith(`${allowed}/`)) {
+        return resolved
+      }
+    }
+
+    throw new Error(`Path escapes sandbox: ${path}`)
   }
 
   async read(path: string, options?: FileReadOptions): Promise<FileContent> {
@@ -59,7 +92,7 @@ export class LocalFileSystem implements FileSystem {
       if (stats) {
         results.push({
           name: entry.name,
-          path: `/${relative(this.baseDir, entryPath)}`,
+          path: `/${relative(this.primaryBase, entryPath)}`,
           type: entry.isDirectory() ? "directory" : entry.isSymbolicLink() ? "symlink" : "file",
           size: stats.size,
           modifiedAt: stats.mtimeMs,

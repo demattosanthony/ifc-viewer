@@ -78,6 +78,8 @@ export type {
 } from "./database.port"
 // IFC Processor
 export type { IFCProcessor } from "./ifc-processor.port"
+// Skills
+export type { SkillMetadata, SkillsProvider, SkillsProviderConfig } from "./skills.port"
 // Storage
 export type {
   Storage,

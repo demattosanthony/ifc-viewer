@@ -23,6 +23,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Useful CLI tools
     jq \
     unzip \
+    # PDF tools (pdftotext, pdftoppm, pdfinfo, etc.)
+    poppler-utils \
+    # LibreOffice Calc (for Excel formula recalculation)
+    libreoffice-calc \
     # For entrypoint user switching
     gosu \
     && rm -rf /var/lib/apt/lists/*
@@ -55,6 +59,10 @@ RUN echo 'PS1="\[\033[36m\]\w\[\033[0m\] $ "' >> /etc/bash.bashrc \
 
 # Set up workspace directory with correct ownership for non-root user
 RUN mkdir -p /workspace && chown ${USER_ID}:${GROUP_ID} /workspace
+
+# Set up skills directory (bundled skills are copied here at runtime)
+RUN mkdir -p /opt/skills && chown ${USER_ID}:${GROUP_ID} /opt/skills
+
 WORKDIR /workspace
 
 # Configure bimuser's bashrc

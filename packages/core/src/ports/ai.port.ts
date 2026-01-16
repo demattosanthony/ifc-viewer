@@ -7,6 +7,7 @@
 
 import type { ChangeTracker } from "../services/change-tracker"
 import type { Computer, TerminalSession } from "./compute.port"
+import type { SkillMetadata } from "./skills.port"
 
 /** Configuration for AI provider */
 export interface AIProviderConfig {
@@ -38,6 +39,8 @@ export interface AIChatOptions {
   getTerminal: () => Promise<TerminalSession>
   /** Change tracker for recording file changes (persisted later) */
   changeTracker: ChangeTracker
+  /** Available skills metadata to include in the system prompt */
+  skills?: SkillMetadata[]
   /** Callback for events (allows tools to emit UI events) */
   onEvent?: (event: AIEvent) => void
 }
