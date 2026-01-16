@@ -1,6 +1,6 @@
-import * as OBC from "@thatopen/components"
-import type { FragmentsModel, IfcImporter } from "@thatopen/fragments"
-import * as WEBIFC from "web-ifc"
+import * as OBC from "@ademattos/components"
+import type { FragmentsModel, IfcImporter } from "@ademattos/fragments"
+import * as WEBIFC from "@ademattos/web-ifc"
 import type {
   ElementData,
   ModelLoadedCallback,

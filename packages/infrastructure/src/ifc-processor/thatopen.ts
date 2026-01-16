@@ -8,8 +8,8 @@
 import { createRequire } from "node:module"
 import path from "node:path"
 import type { IFCProcessor } from "@ifc-viewer/core"
-import { IfcImporter } from "@thatopen/fragments"
-import * as WEBIFC from "web-ifc"
+import { IfcImporter } from "@ademattos/fragments"
+import * as WEBIFC from "@ademattos/web-ifc"
 
 /** Current fragment format version - update when fragment library changes */
 const FRAGMENT_VERSION = "1.0.0"

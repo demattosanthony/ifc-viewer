@@ -1,4 +1,4 @@
-import type * as OBC from "@thatopen/components"
+import type * as OBC from "@ademattos/components"
 import type { CameraMode, CameraProjection } from "../../types"
 
 export type CameraCursor = "default" | "crosshair" | "grab"

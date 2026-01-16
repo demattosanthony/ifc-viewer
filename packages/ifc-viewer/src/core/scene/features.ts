@@ -1,4 +1,4 @@
-import * as OBC from "@thatopen/components"
+import * as OBC from "@ademattos/components"
 import Stats from "stats.js"
 import { OrientationGizmo } from "../../components"
 import type { FeaturesConfig } from "../../types"

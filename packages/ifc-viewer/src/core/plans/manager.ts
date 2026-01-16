@@ -1,4 +1,4 @@
-import * as OBC from "@thatopen/components"
+import * as OBC from "@ademattos/components"
 import * as THREE from "three"
 import type { CameraMode, FloorPlan } from "../../types"
 import type { CameraManager } from "../camera/manager"

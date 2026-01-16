@@ -1,4 +1,4 @@
-import type * as OBC from "@thatopen/components"
+import type * as OBC from "@ademattos/components"
 import type { CameraCursor } from "../core/camera/manager"
 import type { InteractionManager } from "../core/scene/interactions"
 import type {

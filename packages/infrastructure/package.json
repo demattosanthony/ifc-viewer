@@ -29,13 +29,13 @@
     "@ai-sdk/anthropic": "beta",
     "@ifc-viewer/core": "workspace:*",
     "@ifc-viewer/logger": "workspace:*",
-    "@thatopen/fragments": "^3.2.13",
+    "@ademattos/fragments": "^3.2.13",
     "@types/dockerode": "^3.3.47",
     "ai": "beta",
     "dockerode": "^4.0.9",
     "drizzle-orm": "^0.45.1",
     "three": "0.175.0",
-    "web-ifc": "^0.0.74",
+    "@ademattos/web-ifc": "^0.0.75",
     "zod": "^3.23.0"
   },
   "devDependencies": {
