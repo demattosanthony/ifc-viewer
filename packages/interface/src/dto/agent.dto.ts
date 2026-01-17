@@ -137,3 +137,15 @@ export interface TerminalResizeMessage {
 
 /** Client -> Server terminal messages */
 export type TerminalClientMessage = TerminalInputMessage | TerminalResizeMessage
+
+// ============================================================================
+// Viewer Tool Types
+// ============================================================================
+
+/** Viewer tool result request */
+export const ViewerResultRequest = z.object({
+  callbackToken: z.string(),
+  result: z.unknown(),
+})
+
+export type ViewerResultRequest = z.infer<typeof ViewerResultRequest>

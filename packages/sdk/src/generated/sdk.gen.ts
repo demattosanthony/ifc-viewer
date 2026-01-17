@@ -56,6 +56,9 @@ import type {
   ListProjectFilesResponse,
   ListProjectsData,
   ListProjectsResponse,
+  ProvideViewerResultData,
+  ProvideViewerResultError,
+  ProvideViewerResultResponse,
   ReadProjectFileData,
   ReadProjectFileError,
   ReadProjectFileResponse,
@@ -584,5 +587,25 @@ export const stopGeneration = <ThrowOnError extends boolean = false>(
   >({
     url: "/api/projects/{id}/conversations/{conversationId}/stop",
     ...options,
+  })
+}
+
+/**
+ * Provide viewer tool result
+ */
+export const provideViewerResult = <ThrowOnError extends boolean = false>(
+  options: Options<ProvideViewerResultData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).post<
+    ProvideViewerResultResponse,
+    ProvideViewerResultError,
+    ThrowOnError
+  >({
+    url: "/api/projects/{id}/conversations/{conversationId}/viewer-result",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
   })
 }

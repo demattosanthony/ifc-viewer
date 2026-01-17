@@ -78,7 +78,11 @@ export interface ViewerActions {
   unloadAllModels: () => Promise<void>
   getElement: (modelId: string, elementId: number) => Promise<ElementData | null>
   /** Programmatically select and highlight elements in the viewer */
-  selectElements: (modelId: string, localIds: number[], clearPrevious?: boolean) => Promise<void>
+  selectElements: (
+    modelId: string,
+    localIds: number[],
+    options?: { clearPrevious?: boolean; fitToView?: boolean }
+  ) => Promise<void>
   initialize: (container: HTMLElement) => Promise<void>
   dispose: () => void
   /** Manually trigger a resize of the viewer renderer */

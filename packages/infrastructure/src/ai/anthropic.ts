@@ -18,7 +18,23 @@ import { BIM_IDE_SYSTEM_PROMPT, buildSystemPrompt } from "./prompts/system-promp
 import { createFileTools } from "./tools/file-tools"
 import { createPythonTools } from "./tools/python-tools"
 import { createShellTools } from "./tools/shell-tools"
+import { createViewerTools } from "./tools/viewer-tools"
 import { formatUsageStats, getErrorMessage, toModelMessages } from "./utils"
+
+// Pending viewer results - maps callbackToken to resolver
+const pendingViewerResults = new Map<
+  string,
+  { resolve: (result: unknown) => void; reject: (error: Error) => void }
+>()
+
+/** Called by HTTP endpoint when frontend sends viewer result */
+export function provideViewerResult(token: string, result: unknown): boolean {
+  const pending = pendingViewerResults.get(token)
+  if (!pending) return false
+  pending.resolve(result)
+  pendingViewerResults.delete(token)
+  return true
+}
 
 /** Anthropic-specific provider configuration */
 export interface AnthropicProviderConfig extends AIProviderConfig {
@@ -87,6 +103,27 @@ export function createAnthropicProvider(config: AnthropicProviderConfig = {}): A
             getPythonSession: () => options.computer.getOrCreateAgentPythonSession(),
             changeTracker: options.changeTracker,
             emit: emitToolEvent,
+          }),
+          ...createViewerTools({
+            emit: emitToolEvent,
+            waitForResult: (token, timeout = 30000) =>
+              new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                  pendingViewerResults.delete(token)
+                  reject(new Error("Viewer execution timed out"))
+                }, timeout)
+
+                pendingViewerResults.set(token, {
+                  resolve: (result) => {
+                    clearTimeout(timer)
+                    resolve(result)
+                  },
+                  reject: (error) => {
+                    clearTimeout(timer)
+                    reject(error)
+                  },
+                })
+              }),
           }),
         }
 

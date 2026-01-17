@@ -262,8 +262,12 @@ export const ViewerProvider = ({ children, config }: ViewerProviderProps) => {
   )
 
   const selectElements = useCallback(
-    async (modelId: string, localIds: number[], clearPrevious = true) => {
-      await interactionRef.current?.selectElements(modelId, localIds, clearPrevious)
+    async (
+      modelId: string,
+      localIds: number[],
+      options: { clearPrevious?: boolean; fitToView?: boolean } = {}
+    ) => {
+      await interactionRef.current?.selectElements(modelId, localIds, options)
     },
     []
   )

@@ -1,8 +1,14 @@
-import { Button } from "@ifc-viewer/ui/components"
+import {
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@ifc-viewer/ui/components"
 import { cn } from "@ifc-viewer/ui/lib"
 import { Box, ChevronDown, ChevronRight, GripHorizontal, Info, Layers, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useDraggable } from "../hooks/use-draggable"
+import type { SelectedElement } from "../hooks/use-element-selection"
 import {
   extractElementData,
   formatValue,
@@ -11,7 +17,7 @@ import {
 } from "../utils/ifc-element"
 
 interface ElementPropertiesPanelProps {
-  element: Record<string, unknown> | null
+  elements: SelectedElement[]
   onClose: () => void
 }
 
@@ -26,18 +32,18 @@ function PropertySection({ title, icon, children, defaultOpen = true }: Property
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
-    <div className="border-b border-border last:border-b-0">
+    <div className="border-b border-border/50 last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-accent transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-accent/50 transition-colors"
       >
         {isOpen ? (
-          <ChevronDown className="size-4 text-muted-foreground" />
+          <ChevronDown className="size-3.5 text-muted-foreground" />
         ) : (
-          <ChevronRight className="size-4 text-muted-foreground" />
+          <ChevronRight className="size-3.5 text-muted-foreground" />
         )}
         {icon}
-        <span className="text-xs font-medium text-foreground">{title}</span>
+        <span className="text-[11px] font-medium text-foreground">{title}</span>
       </button>
       {isOpen && <div className="px-3 pb-2">{children}</div>}
     </div>
@@ -94,24 +100,111 @@ function PropertySetsList({ psets }: { psets: PropertySet[] }) {
   )
 }
 
-export function ElementPropertiesPanel({ element, onClose }: ElementPropertiesPanelProps) {
-  const { position, isDragging, handleMouseDown, setPosition } = useDraggable({ x: 16, y: 16 })
-
-  useEffect(() => {
-    if (element) {
-      setPosition({ x: 16, y: 16 })
-    }
-  }, [element, setPosition])
-
+/** Single element's properties content */
+function ElementProperties({ element }: { element: Record<string, unknown> }) {
   const { materials, propertySets, location, basicInfo } = useMemo(
-    () =>
-      element
-        ? extractElementData(element)
-        : { materials: [], propertySets: [], location: null, basicInfo: null },
+    () => extractElementData(element),
     [element]
   )
 
-  if (!element) return null
+  return (
+    <div className="divide-y divide-border/30">
+      <PropertySection
+        title="Information"
+        icon={<Info className="size-3.5 text-muted-foreground" />}
+      >
+        <div className="space-y-0.5">
+          {basicInfo?.ifcType && <PropertyRow label="IFC Type" value={basicInfo.ifcType} />}
+          {basicInfo?.tag && <PropertyRow label="ID" value={basicInfo.tag} />}
+          {basicInfo?.predefinedType && (
+            <PropertyRow label="Predefined Type" value={basicInfo.predefinedType} />
+          )}
+          {location?.level && <PropertyRow label="Level" value={location.level} />}
+        </div>
+      </PropertySection>
+
+      {materials.length > 0 && (
+        <PropertySection
+          title="Materials"
+          icon={<Layers className="size-3.5 text-muted-foreground" />}
+        >
+          <MaterialsList materials={materials} />
+        </PropertySection>
+      )}
+
+      {propertySets.length > 0 && (
+        <PropertySection
+          title="Properties"
+          icon={<Box className="size-3.5 text-muted-foreground" />}
+          defaultOpen={false}
+        >
+          <PropertySetsList psets={propertySets} />
+        </PropertySection>
+      )}
+    </div>
+  )
+}
+
+/** Collapsible element accordion item */
+function ElementAccordionItem({
+  element,
+  index,
+  defaultOpen,
+}: {
+  element: SelectedElement
+  index: number
+  defaultOpen: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  const { basicInfo } = useMemo(() => extractElementData(element.data), [element.data])
+  const displayName = basicInfo?.name?.split(":")[0] || `Element ${index + 1}`
+  const displayType = basicInfo?.ifcType || basicInfo?.type?.split(":")[0]
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors border-b border-border">
+        {isOpen ? (
+          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <span className="text-xs font-medium text-foreground truncate block">{displayName}</span>
+          {displayType && (
+            <span className="text-[10px] text-muted-foreground truncate block">{displayType}</span>
+          )}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="bg-muted/20">
+          <ElementProperties element={element.data} />
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
+
+export function ElementPropertiesPanel({ elements, onClose }: ElementPropertiesPanelProps) {
+  const { position, isDragging, handleMouseDown, setPosition } = useDraggable({ x: 16, y: 16 })
+
+  useEffect(() => {
+    if (elements.length > 0) {
+      setPosition({ x: 16, y: 16 })
+    }
+  }, [elements.length, setPosition])
+
+  // For single element, extract info for the header
+  const singleElementInfo = useMemo(() => {
+    if (elements.length !== 1) return null
+    const first = elements[0]
+    if (!first) return null
+    return extractElementData(first.data)
+  }, [elements])
+
+  if (elements.length === 0) return null
+
+  const isSingleElement = elements.length === 1
+  const firstElement = elements[0]
 
   return (
     <div
@@ -133,11 +226,24 @@ export function ElementPropertiesPanel({ element, onClose }: ElementPropertiesPa
       >
         <GripHorizontal className="size-4 text-muted-foreground" />
         <div className="flex-1 min-w-0">
-          <h2 className="font-medium text-sm text-foreground truncate">
-            {basicInfo?.name?.split(":")[0] || "Element"}
-          </h2>
-          {basicInfo?.type && (
-            <p className="text-xs text-muted-foreground truncate">{basicInfo.type.split(":")[0]}</p>
+          {isSingleElement ? (
+            <>
+              <h2 className="font-medium text-sm text-foreground truncate">
+                {singleElementInfo?.basicInfo?.name?.split(":")[0] || "Element"}
+              </h2>
+              {singleElementInfo?.basicInfo?.type && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {singleElementInfo.basicInfo.type.split(":")[0]}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <h2 className="font-medium text-sm text-foreground">
+                {elements.length} Elements Selected
+              </h2>
+              <p className="text-xs text-muted-foreground">Click to expand properties</p>
+            </>
           )}
         </div>
         <Button
@@ -152,35 +258,19 @@ export function ElementPropertiesPanel({ element, onClose }: ElementPropertiesPa
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto max-h-[420px]">
-        <PropertySection
-          title="Information"
-          icon={<Info className="size-4 text-muted-foreground" />}
-        >
-          <div className="space-y-0.5">
-            {basicInfo?.tag && <PropertyRow label="ID" value={basicInfo.tag} />}
-            {basicInfo?.predefinedType && (
-              <PropertyRow label="Type" value={basicInfo.predefinedType} />
-            )}
-            {location?.level && <PropertyRow label="Level" value={location.level} />}
+        {isSingleElement && firstElement ? (
+          <ElementProperties element={firstElement.data} />
+        ) : (
+          <div className="divide-y divide-border">
+            {elements.map((element, index) => (
+              <ElementAccordionItem
+                key={`${element.modelId}-${element.localId}`}
+                element={element}
+                index={index}
+                defaultOpen={index === 0}
+              />
+            ))}
           </div>
-        </PropertySection>
-
-        {materials.length > 0 && (
-          <PropertySection
-            title="Materials"
-            icon={<Layers className="size-4 text-muted-foreground" />}
-          >
-            <MaterialsList materials={materials} />
-          </PropertySection>
-        )}
-
-        {propertySets.length > 0 && (
-          <PropertySection
-            title="Properties"
-            icon={<Box className="size-4 text-muted-foreground" />}
-          >
-            <PropertySetsList psets={propertySets} />
-          </PropertySection>
         )}
       </div>
     </div>

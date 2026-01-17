@@ -8,6 +8,7 @@
 export {
   type AnthropicProviderConfig,
   createAnthropicProvider,
+  provideViewerResult,
 } from "./anthropic"
 // Factory
 export {

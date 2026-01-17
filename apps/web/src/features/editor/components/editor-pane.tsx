@@ -7,7 +7,6 @@ import { getAvailableViewers } from "../utils/viewer-registry"
 import { ViewerSwitcher } from "./viewer-switcher"
 import { CodeEditor } from "./viewers/code-editor"
 import { HtmlViewer } from "./viewers/html-viewer"
-import { IFCViewer } from "./viewers/ifc-viewer"
 import { MarkdownViewer } from "./viewers/markdown-viewer"
 import { PdfViewer } from "./viewers/pdf-viewer"
 import { UnsupportedViewer } from "./viewers/unsupported-viewer"
@@ -40,10 +39,9 @@ export function EditorPane({ projectId }: EditorPaneProps) {
   const { tabs, activeTabId, getFileContent, setFileContent, setTabViewer } = useEditor()
 
   const activeTab = tabs.find((t) => t.id === activeTabId)
-  const shouldFetchContent =
-    activeTab && activeTab.type !== "ifc" && !getFileContent(activeTab.path)
+  const shouldFetchContent = activeTab && !getFileContent(activeTab.path)
 
-  // Query for file content (non-IFC files only)
+  // Query for file content
   const contentQuery = useQuery({
     queryKey: readProjectFileQueryKey({
       path: { id: projectId },
@@ -78,12 +76,6 @@ export function EditorPane({ projectId }: EditorPaneProps) {
 
   // Determine effective viewer (user override or default)
   const effectiveViewer = activeTab.activeViewer ?? activeTab.type
-
-  // IFC has its own loading mechanism
-  if (effectiveViewer === "ifc") {
-    return <IFCViewer projectId={projectId} filePath={activeTab.path} />
-  }
-
   const content = getFileContent(activeTab.path)
 
   if (contentQuery.isLoading || !content) {

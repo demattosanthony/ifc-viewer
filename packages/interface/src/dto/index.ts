@@ -30,6 +30,7 @@ export {
   MessageResponse,
   SendMessageRequest,
   SendMessageResponse,
+  ViewerResultRequest,
 } from "./agent.dto"
 // Common
 export {

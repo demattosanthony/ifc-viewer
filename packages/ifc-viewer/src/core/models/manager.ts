@@ -66,15 +66,26 @@ export class ModelManager {
     if (this.elementCache.has(key)) return this.elementCache.get(key) ?? null
     if (this.pendingRequests.has(key)) return this.pendingRequests.get(key)!
 
-    const request = model
-      .getItemsData([elementId], ELEMENT_LOOKUP_CONFIG)
-      .then(([data]) => {
-        const result = data ?? null
+    const request = (async () => {
+      try {
+        // Get detailed attributes with relations
+        const [data] = await model.getItemsData([elementId], ELEMENT_LOOKUP_CONFIG)
+        if (!data) return null
+
+        // Get raw item data to access the IFC category (e.g., IFCWALL, IFCDOOR)
+        const rawItems = await model.getItems([elementId])
+        const rawItem = rawItems.get(elementId)
+        const ifcType = rawItem?.category ?? null
+
+        const result = { ...data, __ifcType: ifcType } as ElementData
         this.elementCache.set(key, result)
         return result
-      })
-      .catch(() => null)
-      .finally(() => this.pendingRequests.delete(key))
+      } catch {
+        return null
+      } finally {
+        this.pendingRequests.delete(key)
+      }
+    })()
 
     this.pendingRequests.set(key, request)
     return request
@@ -232,14 +243,18 @@ export class ModelManager {
   }
 
   dispose(): void {
-    const fragments = this.components.get(OBC.FragmentsManager)
+    // Only access FragmentsManager if it was initialized
+    if (this.fragmentsInitialized) {
+      const fragments = this.components.get(OBC.FragmentsManager)
 
-    for (const [, model] of fragments.list) {
-      this.world.scene.three.remove(model.object)
-      model.dispose()
+      for (const [, model] of fragments.list) {
+        this.world.scene.three.remove(model.object)
+        model.dispose()
+      }
+
+      fragments.list.clear()
     }
 
-    fragments.list.clear()
     this.elementCache.clear()
     this.pendingRequests.clear()
     this.fragmentsInitialized = false

@@ -102,6 +102,8 @@ export {
   // Models
   UploadModelRequest,
   UploadModelResponse,
+  // Viewer
+  ViewerResultRequest,
   WriteFileRequest,
 } from "./dto"
 

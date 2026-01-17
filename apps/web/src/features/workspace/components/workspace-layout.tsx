@@ -12,8 +12,7 @@ import {
 import { FilePickerModal } from "@/features/file-browser/components/file-picker-modal"
 import { Terminal } from "@/features/terminal"
 import { usePersistedState } from "@/shared/hooks/use-persisted-state"
-import { FederatedViewer } from "./federated-viewer"
-import { SingleFileViewer } from "./single-file-viewer"
+import { ViewerContainer } from "./viewer-container"
 
 interface WorkspaceLayoutProps {
   projectId: string
@@ -78,11 +77,21 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
 
         {/* Content Area */}
         <div className="flex-1 min-h-0 relative overflow-hidden">
-          {/* Federated Viewer - for Models tab (independent instance) */}
-          <FederatedViewer projectId={projectId} visible={showFederatedViewer} />
+          {/* Main Viewer - for Models tab (always mounted, visibility toggled) */}
+          <ViewerContainer
+            projectId={projectId}
+            variant="federated"
+            visible={showFederatedViewer}
+          />
 
-          {/* Single File IFC Viewer - for individual IFC tabs (independent instance) */}
-          {showIfcFileViewer && <SingleFileViewer projectId={projectId} />}
+          {/* Single File Viewer - for individual IFC file tabs */}
+          {showIfcFileViewer && activeTab && (
+            <ViewerContainer
+              projectId={projectId}
+              variant="single-file"
+              filePath={activeTab.path}
+            />
+          )}
 
           {/* Other file types (code editor, PDF, etc.) */}
           {showOtherFileViewer && (

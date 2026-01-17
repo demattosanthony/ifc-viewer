@@ -298,6 +298,12 @@ export interface AIFileDeletedEvent {
   path: string
 }
 
+export interface AIViewerExecEvent {
+  type: "viewer-exec"
+  callbackToken: string
+  code: string
+}
+
 export type AIPresenceEvent =
   | AIEditorOpenEvent
   | AIEditorCursorEvent
@@ -312,6 +318,7 @@ export type AIPresenceEvent =
   | AITerminalAppendEvent
   | AIFileCreatedEvent
   | AIFileDeletedEvent
+  | AIViewerExecEvent
 
 export type AIEvent = AIStreamEvent | AIPresenceEvent
 

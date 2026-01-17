@@ -308,6 +308,16 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
                 emitPresenceEvent({ type: "terminal-append", text: newChunk })
               }
             }
+          } else if (toolState.name === "executePython" || toolState.name === "executeViewer") {
+            // Stream in code for Python/Viewer execution tools
+            const code = extractStreamingField(toolState.buffer, "code")
+            const title = extractStreamingField(toolState.buffer, "title")
+            if (code !== null) {
+              extractedInput.code = code
+            }
+            if (title !== null) {
+              extractedInput.title = title
+            }
           }
 
           if (Object.keys(extractedInput).length > 0) {

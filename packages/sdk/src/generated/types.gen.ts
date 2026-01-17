@@ -1055,6 +1055,42 @@ export type StopGenerationResponses = {
 
 export type StopGenerationResponse = StopGenerationResponses[keyof StopGenerationResponses]
 
+export type ProvideViewerResultData = {
+  body: {
+    callbackToken: string
+    result?: unknown
+  }
+  path: {
+    id: string
+    conversationId: string
+  }
+  query?: never
+  url: "/api/projects/{id}/conversations/{conversationId}/viewer-result"
+}
+
+export type ProvideViewerResultErrors = {
+  /**
+   * Response for status 404
+   */
+  404: {
+    error: string
+  }
+}
+
+export type ProvideViewerResultError = ProvideViewerResultErrors[keyof ProvideViewerResultErrors]
+
+export type ProvideViewerResultResponses = {
+  /**
+   * Response for status 200
+   */
+  200: {
+    success: boolean
+  }
+}
+
+export type ProvideViewerResultResponse =
+  ProvideViewerResultResponses[keyof ProvideViewerResultResponses]
+
 export type ClientOptions = {
   baseUrl: `${string}://${string}` | (string & {})
 }

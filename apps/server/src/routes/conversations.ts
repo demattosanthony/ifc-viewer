@@ -19,6 +19,7 @@ import {
   type MessagePartToolUse,
   runAgentChat,
 } from "@ifc-viewer/core"
+import { provideViewerResult } from "@ifc-viewer/infrastructure"
 import {
   ConversationController,
   ConversationListResponse,
@@ -31,6 +32,7 @@ import {
   SendMessageResponse,
   SuccessResponse,
   sseResponse,
+  ViewerResultRequest,
 } from "@ifc-viewer/interface"
 import { createLogger } from "@ifc-viewer/logger"
 import { Elysia } from "elysia"
@@ -273,6 +275,28 @@ export function conversationRoutes(ctx: Context) {
             summary: "Stop ongoing generation",
             tags: ["Conversations"],
             operationId: "stopGeneration",
+          },
+        }
+      )
+      // Provide viewer tool execution result
+      .post(
+        "/:conversationId/viewer-result",
+        async ({ body, set }) => {
+          const found = provideViewerResult(body.callbackToken, body.result)
+          if (!found) {
+            set.status = 404
+            return { error: "No pending viewer execution" }
+          }
+          return { success: true }
+        },
+        {
+          params: z.object({ id: z.string(), conversationId: z.string().uuid() }),
+          body: ViewerResultRequest,
+          response: { 200: SuccessResponse, 404: ErrorResponse },
+          detail: {
+            summary: "Provide viewer tool result",
+            tags: ["Conversations"],
+            operationId: "provideViewerResult",
           },
         }
       )
