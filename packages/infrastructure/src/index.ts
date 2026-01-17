@@ -77,6 +77,8 @@ export {
   formatUsageStats,
   // Utilities
   getErrorMessage,
+  // Viewer tool result callback
+  provideViewerResult,
 } from "./ai"
 
 // Compute

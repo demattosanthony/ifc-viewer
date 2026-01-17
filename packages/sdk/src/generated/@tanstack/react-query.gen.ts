@@ -25,6 +25,7 @@ import {
   listProjectFiles,
   listProjects,
   type Options,
+  provideViewerResult,
   readProjectFile,
   sendMessage,
   stopGeneration,
@@ -75,6 +76,9 @@ import type {
   ListModelsData,
   ListProjectFilesData,
   ListProjectsData,
+  ProvideViewerResultData,
+  ProvideViewerResultError,
+  ProvideViewerResultResponse,
   ReadProjectFileData,
   SendMessageData,
   SendMessageError,
@@ -914,6 +918,48 @@ export const stopGenerationMutation = (
   > = {
     mutationFn: async (localOptions) => {
       const { data } = await stopGeneration({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const provideViewerResultQueryKey = (options: Options<ProvideViewerResultData>) =>
+  createQueryKey("provideViewerResult", options)
+
+export const provideViewerResultOptions = (options: Options<ProvideViewerResultData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await provideViewerResult({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: provideViewerResultQueryKey(options),
+  })
+}
+
+export const provideViewerResultMutation = (
+  options?: Partial<Options<ProvideViewerResultData>>
+): UseMutationOptions<
+  ProvideViewerResultResponse,
+  ProvideViewerResultError,
+  Options<ProvideViewerResultData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    ProvideViewerResultResponse,
+    ProvideViewerResultError,
+    Options<ProvideViewerResultData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await provideViewerResult({
         ...options,
         ...localOptions,
         throwOnError: true,

@@ -1,3 +1,10 @@
+/**
+ * Agent Presence Hook
+ *
+ * Handles non-viewer presence events from the AI agent (editor, files, terminal).
+ * For viewer events, use useAgentViewerPresence inside a ViewerProvider.
+ */
+
 import type { AIEvent } from "@ifc-viewer/core"
 import { useCallback, useEffect } from "react"
 import { useEditor } from "@/features/editor/context"
@@ -28,13 +35,15 @@ export function useAgentPresence({ fileBrowserRef }: UseAgentPresenceOptions) {
           fileBrowserRef.current?.refreshPath(event.path)
           break
 
-        // Terminal events are no longer handled since terminal is not available
-        // without a workspace. AI agent now runs compute internally.
+        // Terminal events - no-op since terminal is internal to compute
         case "terminal-focus":
         case "terminal-type":
         case "terminal-execute":
         case "terminal-output":
-          // No-op: terminal is internal to compute
+          break
+
+        // viewer-exec is handled by useAgentViewerPresence inside ViewerProvider
+        case "viewer-exec":
           break
       }
     },

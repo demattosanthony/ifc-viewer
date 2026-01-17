@@ -22,6 +22,7 @@ export interface BasicInfo {
   type: string
   tag: string
   predefinedType?: string
+  ifcType?: string
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -171,6 +172,10 @@ export function extractElementData(element: Record<string, unknown>) {
   const tag = getIfcString(element.Tag) ?? ""
   const predefinedType = getIfcString(element.PredefinedType)
 
+  // Extract IFC entity type (e.g., IFCWALL, IFCDOOR) from the __ifcType property
+  const rawIfcType = element.__ifcType as string | null | undefined
+  const ifcType = rawIfcType ? formatIfcType(rawIfcType) : undefined
+
   return {
     materials: hasAssociations ? extractMaterials(hasAssociations) : [],
     propertySets: isDefinedBy ? extractPropertySets(isDefinedBy) : [],
@@ -180,6 +185,17 @@ export function extractElementData(element: Record<string, unknown>) {
       type,
       tag,
       predefinedType,
+      ifcType,
     } as BasicInfo,
   }
+}
+
+/** Format IFC type from IFCWALL to IfcWall */
+function formatIfcType(ifcType: string): string {
+  if (!ifcType) return ifcType
+  // Handle formats like "IFCWALL" or "IfcWall"
+  const cleaned = ifcType.replace(/^IFC/i, "")
+  if (!cleaned) return ifcType
+  // Convert to PascalCase: "WALLSTANDARDCASE" -> "WallStandardCase"
+  return `Ifc${cleaned.toLowerCase().replace(/(?:^|_)([a-z])/g, (_, c) => c.toUpperCase())}`
 }

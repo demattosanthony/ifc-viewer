@@ -390,6 +390,25 @@ export class InteractionManager {
     this.setOrbitPoint(center)
   }
 
+  /**
+   * Fit camera to view the current selection
+   */
+  async fitToSelection(): Promise<void> {
+    if (this.selectionMeshes.size === 0) return
+
+    // Collect all selection meshes
+    const allMeshes: THREE.Mesh[] = []
+    for (const meshes of this.selectionMeshes.values()) {
+      allMeshes.push(...meshes)
+    }
+
+    if (allMeshes.length === 0) return
+
+    // Fit camera to the selection meshes
+    const camera = this.world.camera as OBC.OrthoPerspectiveCamera
+    camera.fit(allMeshes, 1.5) // 1.5 = slight padding around the selection
+  }
+
   // ============================================================================
   // Clear Methods
   // ============================================================================
@@ -439,9 +458,15 @@ export class InteractionManager {
    * Programmatically select elements and highlight them
    * @param modelId The model ID containing the elements
    * @param localIds Array of element IDs to select
-   * @param clearPrevious Whether to clear previous selection (default: true)
+   * @param options Selection options
    */
-  async selectElements(modelId: string, localIds: number[], clearPrevious = true): Promise<void> {
+  async selectElements(
+    modelId: string,
+    localIds: number[],
+    options: { clearPrevious?: boolean; fitToView?: boolean } = {}
+  ): Promise<void> {
+    const { clearPrevious = true, fitToView = false } = options
+
     if (clearPrevious) {
       this.clearSelection()
     }
@@ -453,6 +478,11 @@ export class InteractionManager {
     // Update orbit to selection center
     if (this.adaptiveOrbitOnSelect) {
       await this.setOrbitToSelection()
+    }
+
+    // Fit camera to selection if requested
+    if (fitToView) {
+      await this.fitToSelection()
     }
 
     this.emitSelectionEvent()

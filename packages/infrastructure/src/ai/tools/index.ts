@@ -7,3 +7,4 @@
 export { createFileTools } from "./file-tools"
 export { createPythonTools } from "./python-tools"
 export { createShellTools } from "./shell-tools"
+export { createViewerTools } from "./viewer-tools"
