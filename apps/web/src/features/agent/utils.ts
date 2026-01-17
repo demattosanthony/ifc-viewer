@@ -1,27 +1,14 @@
-// Shared types for tool view components
+/**
+ * Agent Feature Utilities
+ *
+ * Helper functions for tool views and formatting.
+ */
 
-export interface ToolViewProps {
-  input?: Record<string, unknown>
-  output?: Record<string, unknown>
-  isStreaming: boolean
-  isComplete?: boolean
-  error?: string
-}
+import { TOOL_NAMES, type ToolType } from "./types"
 
 // ============================================================================
-// Tool Name Constants and Helpers
+// Tool Name Helpers
 // ============================================================================
-
-/** Tool name aliases - all variations that map to the same tool type */
-export const TOOL_NAMES = {
-  writeFile: ["write_file", "writeFile"],
-  readFile: ["read_file", "readFile"],
-  executeCommand: ["executeCommand", "shell_execute"],
-  executePython: ["executePython"],
-  executeViewer: ["executeViewer"],
-} as const
-
-export type ToolType = keyof typeof TOOL_NAMES
 
 /** Check if a tool name matches a specific tool type */
 export function isToolName(name: string, tool: ToolType): boolean {

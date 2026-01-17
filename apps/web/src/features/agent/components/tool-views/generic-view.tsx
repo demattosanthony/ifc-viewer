@@ -1,6 +1,7 @@
 "use client"
 
-import { formatValue, type ToolViewProps } from "./types"
+import type { ToolViewProps } from "../../types"
+import { formatValue } from "../../utils"
 
 export function GenericToolView({ input, output, isStreaming, error }: ToolViewProps) {
   const hasInput = input && Object.keys(input).length > 0

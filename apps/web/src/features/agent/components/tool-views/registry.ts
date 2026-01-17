@@ -1,5 +1,6 @@
 import { Box, Code2, File, type LucideIcon, Terminal } from "lucide-react"
-import { generateViewerTitle, getFileName, getToolType, type ToolType } from "./types"
+import type { ToolType } from "../../types"
+import { generateViewerTitle, getFileName, getToolType } from "../../utils"
 
 // ============================================================================
 // Tool Configuration
@@ -50,7 +51,7 @@ export const TOOL_REGISTRY: Record<ToolType, ToolConfig> = {
   executePython: {
     names: ["executePython"],
     icon: Code2,
-    getTitle: (input) => (typeof input.title === "string" ? input.title : "Ran code"),
+    getTitle: (input) => (typeof input.title === "string" ? input.title : "Writing code"),
     codeLanguage: "python",
     loadingText: "Running...",
   },

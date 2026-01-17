@@ -9,10 +9,10 @@
 import { Viewer, ViewerProvider } from "@ifc-viewer/viewer"
 import { useAgent } from "@/features/agent/context"
 import { useAgentViewerPresence } from "@/features/agent/hooks/use-agent-viewer-presence"
-import { IFCViewer } from "@/features/editor/components/viewers/ifc-viewer"
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel"
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar"
 import { useElementSelectHandler } from "@/features/ifc-viewer/hooks/use-element-select-handler"
+import { useLoadIFCModel } from "@/features/ifc-viewer/hooks/use-load-ifc-model"
 import { VIEWER_CONFIG } from "./viewer-config"
 
 interface ViewerContainerProps {
@@ -41,6 +41,13 @@ function ViewerContent({ projectId, variant, filePath }: ViewerContentProps) {
     conversationId: isFederated ? conversationId : null,
   })
 
+  // Auto-load IFC file for single-file variant
+  const { error: loadError } = useLoadIFCModel({
+    projectId,
+    filePath: filePath ?? "",
+    enabled: !isFederated && !!filePath,
+  })
+
   return (
     <>
       <Viewer />
@@ -50,8 +57,13 @@ function ViewerContent({ projectId, variant, filePath }: ViewerContentProps) {
         onElementSelect={handleElementSelect}
       />
       <ElementPropertiesPanel elements={selectedElements} onClose={clearSelection} />
-      {/* Auto-load IFC file for single-file variant */}
-      {!isFederated && filePath && <IFCViewer projectId={projectId} filePath={filePath} />}
+      {loadError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm max-w-md text-center">
+            {loadError}
+          </div>
+        </div>
+      )}
     </>
   )
 }

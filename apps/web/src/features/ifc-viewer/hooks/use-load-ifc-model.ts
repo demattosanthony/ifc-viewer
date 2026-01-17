@@ -4,16 +4,38 @@ import { useViewer } from "@ifc-viewer/viewer"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useRef, useState } from "react"
 
-export interface IFCViewerProps {
+export interface UseLoadIFCModelOptions {
   projectId: string
   filePath: string
+  /** Whether to load the model (defaults to true) */
+  enabled?: boolean
 }
 
-export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
+export interface UseLoadIFCModelResult {
+  /** Whether the model is currently being loaded */
+  isLoading: boolean
+  /** Whether the model has been successfully loaded */
+  isLoaded: boolean
+  /** Error message if loading failed */
+  error: string | null
+}
+
+/**
+ * Hook that fetches and loads an IFC model into the viewer.
+ * Handles both pre-converted fragments (faster) and raw IFC files.
+ *
+ * Must be used within a ViewerProvider context.
+ */
+export function useLoadIFCModel({
+  projectId,
+  filePath,
+  enabled = true,
+}: UseLoadIFCModelOptions): UseLoadIFCModelResult {
   const { loadModel, loadFragment, unloadAllModels, isInitialized } = useViewer()
   const loadedPathRef = useRef<string | null>(null)
   const loadingRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   // Query for models list to find the model by filePath
   const modelsQuery = useQuery({
@@ -23,6 +45,7 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
       return data ?? []
     },
     staleTime: 60_000,
+    enabled,
   })
 
   // Find the model matching this filePath
@@ -55,12 +78,14 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
         return { type: "file-api" as const, data }
       }
     },
-    enabled: isInitialized && loadedPathRef.current !== filePath && modelsQuery.isSuccess,
+    enabled:
+      enabled && isInitialized && loadedPathRef.current !== filePath && modelsQuery.isSuccess,
     staleTime: Infinity,
   })
 
   // Load the model when content is available
   useEffect(() => {
+    if (!enabled) return
     if (!isInitialized) return
     if (loadingRef.current) return
     if (loadedPathRef.current === filePath) return
@@ -68,6 +93,7 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
 
     loadingRef.current = true
     setError(null)
+    setIsLoaded(false)
 
     const load = async () => {
       try {
@@ -86,6 +112,7 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
               const fragmentBuffer = await (fragmentResponse.data as Blob).arrayBuffer()
               await loadFragment(fragmentBuffer, filename)
               loadedPathRef.current = filePath
+              setIsLoaded(true)
               return
             }
           } catch (fragmentError) {
@@ -114,6 +141,7 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
 
         await loadModel(buffer, filename)
         loadedPathRef.current = filePath
+        setIsLoaded(true)
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error"
         console.error("Failed to load IFC:", err)
@@ -125,6 +153,7 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
 
     load()
   }, [
+    enabled,
     isInitialized,
     filePath,
     contentQuery.data,
@@ -144,15 +173,15 @@ export function IFCViewer({ projectId, filePath }: IFCViewerProps) {
     }
   }, [contentQuery.error])
 
-  if (error) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-        <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm max-w-md text-center">
-          {error}
-        </div>
-      </div>
-    )
-  }
+  const isLoading =
+    enabled &&
+    !isLoaded &&
+    !error &&
+    (modelsQuery.isLoading || contentQuery.isLoading || loadingRef.current)
 
-  return null
+  return {
+    isLoading,
+    isLoaded,
+    error,
+  }
 }

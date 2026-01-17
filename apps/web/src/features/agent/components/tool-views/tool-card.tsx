@@ -11,6 +11,13 @@ import { ChevronDown, File } from "lucide-react"
 import { useState } from "react"
 import type { UIToolPart } from "../../types"
 import {
+  cleanShellOutput,
+  formatViewerOutput,
+  getFileName,
+  getLanguageFromPath,
+  getToolType,
+} from "../../utils"
+import {
   CodeDisplay,
   CopyButton,
   ErrorDisplay,
@@ -19,13 +26,6 @@ import {
   ToolStatusIcon,
 } from "./primitives"
 import { getToolConfig, getToolIcon, getToolRightLabel, getToolTitle } from "./registry"
-import {
-  cleanShellOutput,
-  formatViewerOutput,
-  getFileName,
-  getLanguageFromPath,
-  getToolType,
-} from "./types"
 
 // ============================================================================
 // Tool Card Props
@@ -383,7 +383,7 @@ function CodeExecutionContent({
   if (variant === "full") {
     return (
       <CodeExecutionCollapsible
-        title={title || config?.getTitle(input) || "Ran code"}
+        title={title || config?.getTitle(input) || "Writing code"}
         code={code}
         language={language}
         output={outputText}

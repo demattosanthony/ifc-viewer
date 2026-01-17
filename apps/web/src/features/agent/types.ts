@@ -73,6 +73,33 @@ function isApiReasoningPart(p: ApiPart | ApiReasoningPart): p is ApiReasoningPar
 }
 
 /** Convert API messages to UI format */
+// ============================================================================
+// Tool View Types
+// ============================================================================
+
+export interface ToolViewProps {
+  input?: Record<string, unknown>
+  output?: Record<string, unknown>
+  isStreaming: boolean
+  isComplete?: boolean
+  error?: string
+}
+
+/** Tool name aliases - all variations that map to the same tool type */
+export const TOOL_NAMES = {
+  writeFile: ["write_file", "writeFile"],
+  readFile: ["read_file", "readFile"],
+  executeCommand: ["executeCommand", "shell_execute"],
+  executePython: ["executePython"],
+  executeViewer: ["executeViewer"],
+} as const
+
+export type ToolType = keyof typeof TOOL_NAMES
+
+// ============================================================================
+// Converter (API → UI)
+// ============================================================================
+
 export function toStreamingMessages(messages: ApiMessage[]): StreamingMessage[] {
   return messages.map((m) => {
     // Cast parts to allow reasoning type (SDK may not have it yet)
