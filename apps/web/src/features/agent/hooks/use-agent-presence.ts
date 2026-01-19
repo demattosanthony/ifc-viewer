@@ -9,14 +9,14 @@ import type { AIEvent } from "@ifc-viewer/core"
 import { useCallback, useEffect } from "react"
 import { useEditor } from "@/features/editor/context"
 import type { FileBrowserHandle } from "@/features/file-browser/components/file-browser"
-import { useAgent } from "../context"
+import { useAgentStore } from "../context"
 
 interface UseAgentPresenceOptions {
   fileBrowserRef: React.RefObject<FileBrowserHandle | null>
 }
 
 export function useAgentPresence({ fileBrowserRef }: UseAgentPresenceOptions) {
-  const { onPresenceEvent } = useAgent()
+  const { onPresenceEvent } = useAgentStore()
   const { openFile, setFileContent } = useEditor()
 
   const handleEvent = useCallback(
