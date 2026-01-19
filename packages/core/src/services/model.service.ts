@@ -36,12 +36,15 @@ export type UpdateModelInput = {
 }
 
 /**
- * Upload a new model to a project.
+ * Upload a model to a project.
  *
  * - Validates the project exists
  * - Stores IFC file in models/ directory
  * - Stores fragment file if provided
- * - Creates model metadata in database
+ * - Creates or updates model metadata in database
+ *
+ * If a model with the same file path already exists, the existing record
+ * is updated (preserving model ID) instead of creating a duplicate.
  */
 export async function uploadModel(ctx: Context, input: UploadModelInput): Promise<Model> {
   // Verify project exists
@@ -55,7 +58,16 @@ export async function uploadModel(ctx: Context, input: UploadModelInput): Promis
   const filePath = `${MODELS_DIR}/${input.fileName}`
   const storageKey = getModelStorageKey(input.projectId, filePath)
 
-  // Store IFC file in project storage
+  // Check if a model with the same file path already exists
+  const existingModel = await ctx.db.models.findByFilePath(input.projectId, filePath)
+
+  // If model exists, delete old fragment file before storing new one
+  if (existingModel?.fragmentPath) {
+    const oldFragmentKey = getModelStorageKey(input.projectId, existingModel.fragmentPath)
+    await ctx.storage.delete(oldFragmentKey)
+  }
+
+  // Store IFC file in project storage (overwrites if exists)
   await ctx.storage.put(storageKey, input.data, {
     contentType: "application/x-step",
   })
@@ -76,7 +88,20 @@ export async function uploadModel(ctx: Context, input: UploadModelInput): Promis
     })
   }
 
-  // Create model metadata in database
+  // Update existing model or create new one
+  if (existingModel) {
+    // Update existing model record (preserves model ID)
+    return ctx.db.models.update(existingModel.id, {
+      name: input.name,
+      discipline,
+      fileSize: input.data.byteLength,
+      fragmentPath,
+      fragmentSize,
+      fragmentVersion,
+    })
+  }
+
+  // Create new model metadata in database
   const model = await ctx.db.models.create({
     projectId: input.projectId,
     name: input.name,
