@@ -151,6 +151,12 @@ export interface AIErrorEvent {
   message: string
 }
 
+/** Heartbeat event - sent periodically to keep connection alive */
+export interface AIHeartbeatEvent {
+  type: "heartbeat"
+  timestamp: number
+}
+
 // Tool lifecycle events
 export interface AIToolInputStartEvent {
   type: "tool-input-start"
@@ -217,6 +223,7 @@ export type AIStreamEvent =
   | AIStepEndEvent
   | AIFinishEvent
   | AIErrorEvent
+  | AIHeartbeatEvent
   | AIToolInputStartEvent
   | AIToolInputDeltaEvent
   | AIToolInputEndEvent

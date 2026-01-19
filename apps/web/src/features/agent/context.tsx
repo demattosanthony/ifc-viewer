@@ -17,6 +17,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react"
@@ -28,14 +29,13 @@ import {
   type UIToolPart,
 } from "./types"
 
-// ============================================================================
+// =============================================================================
 // Types
-// ============================================================================
+// =============================================================================
 
 type Conversation = ListConversationsResponse[number]
 
 interface StreamingToolState {
-  id: string
   name: string
   buffer: string
   lastContentLength: number
@@ -44,34 +44,51 @@ interface StreamingToolState {
   currentColumn: number
 }
 
-interface StreamingReasoningState {
-  id: string
-  text: string
-}
-
-interface AgentContextValue {
-  messages: StreamingMessage[]
-  isLoading: boolean
+/** Stable context - rarely changes (conversation management, presence events) */
+interface AgentStoreContextValue {
   conversationId: string | null
   conversations: Conversation[]
   sendMessage: (content: string) => void
   stop: () => void
   clearMessages: () => void
+  selectConversation: (id: string) => void
   deselectConversation: () => void
-  selectConversation: (conversationId: string) => void
   createNewConversation: () => Promise<void>
-  deleteConversation: (conversationId: string) => Promise<void>
-  onPresenceEvent: (callback: (event: AIEvent) => void) => () => void
+  deleteConversation: (id: string) => Promise<void>
+  onPresenceEvent: (cb: (event: AIEvent) => void) => () => void
 }
 
-const AgentContext = createContext<AgentContextValue | null>(null)
+/** Streaming context - frequent changes during message streaming */
+interface AgentMessagesContextValue {
+  messages: StreamingMessage[]
+  isLoading: boolean
+}
 
-// ============================================================================
+// =============================================================================
+// Contexts
+// =============================================================================
+
+const AgentStoreContext = createContext<AgentStoreContextValue | null>(null)
+const AgentMessagesContext = createContext<AgentMessagesContextValue | null>(null)
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+const MAX_RECONNECT_ATTEMPTS = 3
+const RECONNECT_DELAY_MS = 1000
+const API_URL = import.meta.env.VITE_API_URL || ""
+
+// =============================================================================
 // Helpers
-// ============================================================================
+// =============================================================================
 
 function getSessionStorageKey(projectId: string): string {
   return `ifc-viewer:conversation:${projectId}`
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function extractStreamingField(buffer: string, fieldName: string): string | null {
@@ -111,9 +128,9 @@ function isReasoningPart(part: UIMessagePart): part is UIReasoningPart {
   return part.type === "reasoning"
 }
 
-// ============================================================================
+// =============================================================================
 // Provider
-// ============================================================================
+// =============================================================================
 
 interface AgentProviderProps {
   projectId: string
@@ -122,26 +139,37 @@ interface AgentProviderProps {
 
 export function AgentProvider({ projectId, children }: AgentProviderProps) {
   const queryClient = useQueryClient()
+
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
+
   const [messages, setMessages] = useState<StreamingMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(() => {
     return sessionStorage.getItem(getSessionStorageKey(projectId))
   })
 
+  // -------------------------------------------------------------------------
+  // Refs
+  // -------------------------------------------------------------------------
+
   const abortControllerRef = useRef<AbortController | null>(null)
   const presenceCallbacksRef = useRef<Set<(event: AIEvent) => void>>(new Set())
   const currentStepRef = useRef<number>(0)
   const streamingToolsRef = useRef<Map<string, StreamingToolState>>(new Map())
-  const streamingReasoningRef = useRef<Map<string, StreamingReasoningState>>(new Map())
+  const streamingReasoningRef = useRef<Map<string, string>>(new Map())
   const isActivelyStreamingRef = useRef(false)
   const streamFinishedRef = useRef(false)
   const streamTokenRef = useRef(0)
 
-  const apiUrl = import.meta.env.VITE_API_URL || ""
+  // Keep current conversationId in ref for stable callbacks
+  const conversationIdRef = useRef(conversationId)
+  conversationIdRef.current = conversationId
 
-  // ============================================================================
+  // -------------------------------------------------------------------------
   // Queries & Mutations
-  // ============================================================================
+  // -------------------------------------------------------------------------
 
   const conversationsQuery = useQuery({
     ...listConversationsOptions({ path: { id: projectId } }),
@@ -153,9 +181,17 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
   const deleteConvMutation = useMutation({ ...deleteConversationMutation() })
   const stopMutation = useMutation({ ...stopGenerationMutation() })
 
-  // ============================================================================
+  // Store mutation functions in refs for stable callbacks
+  const createConvRef = useRef(createConvMutation.mutateAsync)
+  createConvRef.current = createConvMutation.mutateAsync
+  const deleteConvRef = useRef(deleteConvMutation.mutateAsync)
+  deleteConvRef.current = deleteConvMutation.mutateAsync
+  const stopMutationRef = useRef(stopMutation.mutateAsync)
+  stopMutationRef.current = stopMutation.mutateAsync
+
+  // -------------------------------------------------------------------------
   // Event Handling
-  // ============================================================================
+  // -------------------------------------------------------------------------
 
   const emitPresenceEvent = useCallback((event: AIEvent) => {
     for (const callback of presenceCallbacksRef.current) {
@@ -226,7 +262,6 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
 
         case "tool-input-start":
           streamingToolsRef.current.set(event.id, {
-            id: event.id,
             name: event.name,
             buffer: "",
             lastContentLength: 0,
@@ -309,15 +344,10 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
               }
             }
           } else if (toolState.name === "executePython" || toolState.name === "executeViewer") {
-            // Stream in code for Python/Viewer execution tools
             const code = extractStreamingField(toolState.buffer, "code")
             const title = extractStreamingField(toolState.buffer, "title")
-            if (code !== null) {
-              extractedInput.code = code
-            }
-            if (title !== null) {
-              extractedInput.title = title
-            }
+            if (code !== null) extractedInput.code = code
+            if (title !== null) extractedInput.title = title
           }
 
           if (Object.keys(extractedInput).length > 0) {
@@ -393,9 +423,8 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           })
           break
 
-        // Reasoning events (extended thinking)
         case "reasoning-start":
-          streamingReasoningRef.current.set(event.id, { id: event.id, text: "" })
+          streamingReasoningRef.current.set(event.id, "")
           setMessages((prev) => {
             const lastIdx = prev.length - 1
             const lastMsg = prev[lastIdx]
@@ -417,10 +446,10 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           break
 
         case "reasoning-delta": {
-          const reasoningState = streamingReasoningRef.current.get(event.id)
-          if (!reasoningState) break
+          const currentText = streamingReasoningRef.current.get(event.id)
+          if (currentText === undefined) break
 
-          reasoningState.text += event.delta
+          streamingReasoningRef.current.set(event.id, currentText + event.delta)
 
           setMessages((prev) => {
             const lastIdx = prev.length - 1
@@ -488,16 +517,83 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           markInFlightTools(event.message)
           console.error("[Agent] Error:", event.message)
           break
+
+        case "heartbeat":
+          // Keep-alive, no action needed
+          break
       }
     },
     [emitPresenceEvent, markInFlightTools]
   )
 
-  // ============================================================================
-  // Conversation Loading
-  // ============================================================================
+  // -------------------------------------------------------------------------
+  // SSE Connection with reconnection support
+  // -------------------------------------------------------------------------
 
-  // Save conversationId to session storage
+  const connectToEvents = useCallback(
+    async (
+      convId: string,
+      streamToken: number,
+      controller: AbortController,
+      cancelled: { current: boolean }
+    ): Promise<void> => {
+      let reconnectAttempts = 0
+
+      const connect = async (): Promise<void> => {
+        await fetchSSE<AIEvent>({
+          url: `${API_URL}/api/projects/${projectId}/conversations/${convId}/events`,
+          method: "GET",
+          onEvent: handleAIEvent,
+          onComplete: () => {
+            if (!cancelled.current) handleStreamEnd(streamToken, "Cancelled")
+          },
+          onError: async (error) => {
+            const shouldReconnect =
+              !cancelled.current &&
+              streamToken === streamTokenRef.current &&
+              !streamFinishedRef.current &&
+              !controller.signal.aborted &&
+              reconnectAttempts < MAX_RECONNECT_ATTEMPTS
+
+            if (shouldReconnect) {
+              reconnectAttempts++
+              console.log(
+                `[Agent] Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}):`,
+                error.message
+              )
+
+              await delay(RECONNECT_DELAY_MS * reconnectAttempts)
+
+              try {
+                const { data: conv } = await getConversation({
+                  path: { id: projectId, conversationId: convId },
+                })
+
+                if (conv?.isGenerating && !cancelled.current && !controller.signal.aborted) {
+                  await connect()
+                  return
+                }
+              } catch {
+                console.error("[Agent] Failed to check generation status")
+              }
+            }
+
+            if (!cancelled.current) handleStreamEnd(streamToken, error.message)
+          },
+          signal: controller.signal,
+          eventName: "message",
+        })
+      }
+
+      await connect()
+    },
+    [projectId, handleAIEvent, handleStreamEnd]
+  )
+
+  // -------------------------------------------------------------------------
+  // Session storage sync
+  // -------------------------------------------------------------------------
+
   useEffect(() => {
     if (conversationId) {
       sessionStorage.setItem(getSessionStorageKey(projectId), conversationId)
@@ -506,18 +602,20 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
     }
   }, [conversationId, projectId])
 
-  // Load conversation: check isGenerating, connect to /events if needed
+  // -------------------------------------------------------------------------
+  // Load conversation on mount or switch
+  // -------------------------------------------------------------------------
+
   useEffect(() => {
     if (!conversationId) {
       setMessages([])
       return
     }
 
-    // Don't interfere if sendMessage is actively streaming
     if (isActivelyStreamingRef.current) return
 
     const convId = conversationId
-    let cancelled = false
+    const cancelled = { current: false }
     const controller = new AbortController()
 
     async function loadConversation() {
@@ -526,14 +624,12 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           path: { id: projectId, conversationId: convId },
         })
 
-        if (error || !conv || cancelled) return
+        if (error || !conv || cancelled.current) return
         const dbMessages = toStreamingMessages(conv.messages)
 
         if (conv.isGenerating) {
-          // Active generation - connect to /events
           console.log("[Agent] Reconnecting to active generation")
 
-          // Keep all existing messages, add empty assistant for streaming
           setMessages([
             ...dbMessages,
             {
@@ -549,65 +645,38 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           streamFinishedRef.current = false
           const streamToken = ++streamTokenRef.current
 
-          // Connect to events stream
-          await fetchSSE<AIEvent>({
-            url: `${apiUrl}/api/projects/${projectId}/conversations/${convId}/events`,
-            method: "GET",
-            onEvent: handleAIEvent,
-            onComplete: () => {
-              if (!cancelled) {
-                handleStreamEnd(streamToken, "Cancelled")
-              }
-            },
-            onError: (error) => {
-              if (!cancelled) {
-                handleStreamEnd(streamToken, error.message)
-              }
-            },
-            signal: controller.signal,
-            eventName: "message",
-          })
+          await connectToEvents(convId, streamToken, controller, cancelled)
 
-          if (!cancelled) {
+          if (!cancelled.current) {
             setIsLoading(false)
             abortControllerRef.current = null
           }
         } else {
-          // No active generation - just show messages from DB
-          if (!cancelled) {
-            setMessages(dbMessages)
-          }
+          if (!cancelled.current) setMessages(dbMessages)
         }
       } catch (error) {
-        if (!cancelled) {
-          console.error("[Agent] Failed to load conversation:", error)
-        }
+        if (!cancelled.current) console.error("[Agent] Failed to load conversation:", error)
       }
     }
 
     loadConversation()
 
     return () => {
-      cancelled = true
+      cancelled.current = true
       controller.abort()
     }
-  }, [conversationId, projectId, handleAIEvent, handleStreamEnd])
+  }, [conversationId, projectId, connectToEvents])
 
-  // ============================================================================
-  // Conversation Management
-  // ============================================================================
+  // -------------------------------------------------------------------------
+  // Conversation Management Actions (stable callbacks)
+  // -------------------------------------------------------------------------
 
-  const selectConversation = useCallback((convId: string) => {
-    setConversationId(convId)
-  }, [])
-
-  const deselectConversation = useCallback(() => {
-    setConversationId(null)
-  }, [])
+  const selectConversation = useCallback((convId: string) => setConversationId(convId), [])
+  const deselectConversation = useCallback(() => setConversationId(null), [])
 
   const createNewConversation = useCallback(async () => {
     try {
-      const result = await createConvMutation.mutateAsync({
+      const result = await createConvRef.current({
         path: { id: projectId },
         body: {},
       })
@@ -618,30 +687,28 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
     } catch (error) {
       console.error("[Agent] Failed to create conversation:", error)
     }
-  }, [createConvMutation, projectId])
+  }, [projectId])
 
   const deleteConversationHandler = useCallback(
     async (convId: string) => {
       try {
-        await deleteConvMutation.mutateAsync({
+        await deleteConvRef.current({
           path: { id: projectId, conversationId: convId },
         })
         queryClient.invalidateQueries({
           queryKey: listConversationsQueryKey({ path: { id: projectId } }),
         })
-        if (convId === conversationId) {
-          setConversationId(null)
-        }
+        if (convId === conversationIdRef.current) setConversationId(null)
       } catch (error) {
         console.error("[Agent] Failed to delete conversation:", error)
       }
     },
-    [deleteConvMutation, projectId, conversationId, queryClient]
+    [projectId, queryClient]
   )
 
-  // ============================================================================
-  // Chat
-  // ============================================================================
+  // -------------------------------------------------------------------------
+  // Chat Actions (stable callbacks)
+  // -------------------------------------------------------------------------
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -653,11 +720,10 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
       const controller = new AbortController()
       abortControllerRef.current = controller
 
-      // Create conversation if needed
-      let activeConvId = conversationId
+      let activeConvId = conversationIdRef.current
       if (!activeConvId) {
         try {
-          const conv = await createConvMutation.mutateAsync({
+          const conv = await createConvRef.current({
             path: { id: projectId },
             body: {},
           })
@@ -674,7 +740,6 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
         }
       }
 
-      // Optimistically add user message + empty assistant message
       const userMessage: StreamingMessage = {
         id: `msg-${Date.now()}`,
         role: "user",
@@ -699,26 +764,13 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
           body: { content },
         })
 
-        if (error) {
-          throw new Error("Failed to send message")
-        }
+        if (error) throw new Error("Failed to send message")
 
-        // Connect to /events to receive generation events
         streamFinishedRef.current = false
         const streamToken = ++streamTokenRef.current
-        await fetchSSE<AIEvent>({
-          url: `${apiUrl}/api/projects/${projectId}/conversations/${activeConvId}/events`,
-          method: "GET",
-          onEvent: handleAIEvent,
-          onComplete: () => {
-            handleStreamEnd(streamToken, "Cancelled")
-          },
-          onError: (error) => {
-            handleStreamEnd(streamToken, error.message)
-          },
-          signal: controller.signal,
-          eventName: "message",
-        })
+        const cancelled = { current: false }
+
+        await connectToEvents(activeConvId, streamToken, controller, cancelled)
       } catch (error) {
         if (!(error instanceof Error && error.name === "AbortError")) {
           console.error("[Agent] Error:", error)
@@ -732,15 +784,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
         })
       }
     },
-    [
-      projectId,
-      conversationId,
-      createConvMutation,
-      handleAIEvent,
-      handleStreamEnd,
-      markInFlightTools,
-      queryClient,
-    ]
+    [projectId, connectToEvents, markInFlightTools, queryClient]
   )
 
   const stop = useCallback(async () => {
@@ -750,9 +794,10 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
     streamFinishedRef.current = true
     isActivelyStreamingRef.current = false
 
-    if (conversationId) {
+    const convId = conversationIdRef.current
+    if (convId) {
       try {
-        await stopMutation.mutateAsync({ path: { id: projectId, conversationId } })
+        await stopMutationRef.current({ path: { id: projectId, conversationId: convId } })
       } catch (error) {
         if (!(error instanceof Error && error.message.includes("404"))) {
           console.error("[Agent] Failed to stop:", error)
@@ -762,12 +807,13 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
 
     setIsLoading(false)
     streamingToolsRef.current.clear()
-  }, [stopMutation, projectId, conversationId, markInFlightTools])
+  }, [projectId, markInFlightTools])
 
   const clearMessages = useCallback(async () => {
-    if (conversationId) {
+    const convId = conversationIdRef.current
+    if (convId) {
       try {
-        await deleteConvMutation.mutateAsync({ path: { id: projectId, conversationId } })
+        await deleteConvRef.current({ path: { id: projectId, conversationId: convId } })
         queryClient.invalidateQueries({
           queryKey: listConversationsQueryKey({ path: { id: projectId } }),
         })
@@ -777,7 +823,7 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
     }
     setConversationId(null)
     setMessages([])
-  }, [deleteConvMutation, projectId, conversationId, queryClient])
+  }, [projectId, queryClient])
 
   const onPresenceEvent = useCallback((callback: (event: AIEvent) => void) => {
     presenceCallbacksRef.current.add(callback)
@@ -786,32 +832,78 @@ export function AgentProvider({ projectId, children }: AgentProviderProps) {
     }
   }, [])
 
+  // -------------------------------------------------------------------------
+  // Context Values (memoized to prevent unnecessary re-renders)
+  // -------------------------------------------------------------------------
+
+  // Store context: stable values that rarely change
+  const storeValue = useMemo<AgentStoreContextValue>(
+    () => ({
+      conversationId,
+      conversations,
+      sendMessage,
+      stop,
+      clearMessages,
+      selectConversation,
+      deselectConversation,
+      createNewConversation,
+      deleteConversation: deleteConversationHandler,
+      onPresenceEvent,
+    }),
+    [
+      conversationId,
+      conversations,
+      sendMessage,
+      stop,
+      clearMessages,
+      selectConversation,
+      deselectConversation,
+      createNewConversation,
+      deleteConversationHandler,
+      onPresenceEvent,
+    ]
+  )
+
+  // Messages context: streaming values that change frequently
+  const messagesValue = useMemo<AgentMessagesContextValue>(
+    () => ({
+      messages,
+      isLoading,
+    }),
+    [messages, isLoading]
+  )
+
   return (
-    <AgentContext.Provider
-      value={{
-        messages,
-        isLoading,
-        conversationId,
-        conversations,
-        sendMessage,
-        stop,
-        clearMessages,
-        deselectConversation,
-        selectConversation,
-        createNewConversation,
-        deleteConversation: deleteConversationHandler,
-        onPresenceEvent,
-      }}
-    >
-      {children}
-    </AgentContext.Provider>
+    <AgentStoreContext.Provider value={storeValue}>
+      <AgentMessagesContext.Provider value={messagesValue}>
+        {children}
+      </AgentMessagesContext.Provider>
+    </AgentStoreContext.Provider>
   )
 }
 
-export function useAgent() {
-  const context = useContext(AgentContext)
-  if (!context) {
-    throw new Error("useAgent must be used within an AgentProvider")
-  }
+// =============================================================================
+// Hooks
+// =============================================================================
+
+/**
+ * Access stable agent store values (conversation management, presence events).
+ * Does NOT re-render during message streaming.
+ * Use this for components that only need conversationId or onPresenceEvent.
+ */
+export function useAgentStore(): AgentStoreContextValue {
+  const context = useContext(AgentStoreContext)
+  if (!context) throw new Error("useAgentStore must be used within an AgentProvider")
   return context
+}
+
+/**
+ * Full agent hook - combines store and messages.
+ * Re-renders during message streaming.
+ */
+export function useAgent() {
+  const store = useAgentStore()
+  const messagesCtx = useContext(AgentMessagesContext)
+  if (!messagesCtx) throw new Error("useAgent must be used within an AgentProvider")
+  return { ...store, ...messagesCtx }
 }

@@ -7,7 +7,7 @@
  */
 
 import { Viewer, ViewerProvider } from "@ifc-viewer/viewer"
-import { useAgent } from "@/features/agent/context"
+import { useAgentStore } from "@/features/agent/context"
 import { useAgentViewerPresence } from "@/features/agent/hooks/use-agent-viewer-presence"
 import { ElementPropertiesPanel } from "@/features/ifc-viewer/components/element-properties-panel"
 import { ViewerToolBar } from "@/features/ifc-viewer/components/viewer-toolbar"
@@ -31,7 +31,7 @@ interface ViewerContentProps {
 
 function ViewerContent({ projectId, variant, filePath }: ViewerContentProps) {
   const { selectedElements, clearSelection, handleElementSelect } = useElementSelectHandler()
-  const { conversationId } = useAgent()
+  const { conversationId } = useAgentStore()
 
   const isFederated = variant === "federated"
 

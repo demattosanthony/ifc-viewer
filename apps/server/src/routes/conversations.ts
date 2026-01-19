@@ -228,6 +228,14 @@ export function conversationRoutes(ctx: Context) {
           }
 
           const sseStream = createSSEStream(async (sseCtx) => {
+            // Send heartbeat every 15 seconds to keep connection alive
+            const HEARTBEAT_INTERVAL_MS = 15000
+            const heartbeatInterval = setInterval(() => {
+              if (sseCtx.isOpen) {
+                sseCtx.send("message", { type: "heartbeat", timestamp: Date.now() } as AIEvent)
+              }
+            }, HEARTBEAT_INTERVAL_MS)
+
             try {
               // Subscribe to stream events (replays past events, then live)
               for await (const { sequence, event } of ctx.streams.subscribe(stream.id)) {
@@ -235,6 +243,7 @@ export function conversationRoutes(ctx: Context) {
                 sseCtx.send("message", { ...(event as AIEvent), sequence })
               }
             } finally {
+              clearInterval(heartbeatInterval)
               sseCtx.close()
             }
           })

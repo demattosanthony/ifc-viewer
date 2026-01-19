@@ -14,7 +14,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useCallback, useEffect } from "react"
 import { extractElementData } from "@/features/ifc-viewer/utils/ifc-element"
 import { getChildren, getHierarchy } from "@/features/ifc-viewer/utils/spatial-tree"
-import { useAgent } from "../context"
+import { useAgentStore } from "../context"
 
 interface UseAgentViewerPresenceOptions {
   projectId: string
@@ -25,7 +25,7 @@ export function useAgentViewerPresence({
   projectId,
   conversationId,
 }: UseAgentViewerPresenceOptions) {
-  const { onPresenceEvent } = useAgent()
+  const { onPresenceEvent } = useAgentStore()
   const viewer = useViewer()
   const sendViewerResult = useMutation(provideViewerResultMutation())
 

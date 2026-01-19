@@ -19,6 +19,7 @@ export type {
   AIFileCreatedEvent,
   AIFileDeletedEvent,
   AIFinishEvent,
+  AIHeartbeatEvent,
   AIMessage,
   AIMessageContent,
   AIMessageTextPart,
